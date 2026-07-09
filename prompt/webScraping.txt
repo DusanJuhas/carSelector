@@ -1,0 +1,2 @@
+Copilot:
+I would like to develop a tool that collects a car prize lists and car equipment from all OEMs that are actively selling new cars in Czechia. My idea is to maintain a list of web pages on which such an information can be found, if there is something new (not downloaded yet), download the PDF version, parse it and store the information in a local SQL database. The main programming language should be Python. Can you suggest the solution architecture?
