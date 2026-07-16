@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @keyframes cf-flash { 0% { background: var(--cf-flash-c); } 100% { background: transparent; } }
+  @keyframes cf-fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</helmet>
+<div style="{{ styles.root }}">
+  <div style="{{ styles.header }}">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div style="{{ styles.brand }}">Rovis</div>
+      <div style="{{ styles.tagline }}">Describe your life. We'll find the car.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button style="{{ styles.restartBtn }}" onClick="{{ restart }}">Restart</button>
+      <button style="{{ styles.drawerToggle }}" onClick="{{ toggleDrawer }}">
+        Technical requirements
+        <span style="{{ styles.badge }}">{{ requirements.length }}</span>
+      </button>
+    </div>
+  </div>
+
+  <div style="{{ styles.main }}">
+    <div style="{{ styles.chatCol }}">
+      <div style="{{ styles.chatScroll }}">
+        <sc-for list="{{ messages }}" as="msg" hint-placeholder-count="1">
+          <div style="{{ msg.bubbleWrap }}">
+            <div style="{{ msg.bubble }}">{{ msg.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="{{ styles.composer }}">
+        <sc-if value="{{ hasNextChip }}" hint-placeholder-val="{{ true }}">
+          <button style="{{ styles.chip }}" onClick="{{ sendNext }}">{{ nextChipText }}</button>
+        </sc-if>
+        <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ styles.doneNote }}">Conversation complete — shortlist finalized.</div>
+        </sc-if>
+        <div style="{{ styles.fakeInput }}">Type your reply…</div>
+      </div>
+    </div>
+
+    <div style="{{ styles.resultsCol }}">
+      <div style="{{ styles.resultsHeader }}">
+        <div style="{{ styles.resultsTitle }}">{{ resultsTitle }}</div>
+        <div style="{{ styles.resultsSub }}">{{ resultsSub }}</div>
+      </div>
+      <sc-if value="{{ hasCars }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ styles.grid }}">
+          <sc-for list="{{ cars }}" as="car" hint-placeholder-count="4">
+            <div style="{{ car.cardStyle }}">
+              <sc-if value="{{ car.topPick }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ styles.topPickTag }}">Top match</div>
+              </sc-if>
+              <div style="{{ car.photoStyle }}">car photo — {{ car.make }} {{ car.model }}</div>
+              <div style="{{ styles.cardBody }}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                  <div>
+                    <div style="{{ styles.carName }}">{{ car.make }} {{ car.model }}</div>
+                    <div style="{{ styles.carPrice }}">{{ car.price }}</div>
+                  </div>
+                  <div style="{{ car.scoreStyle }}">{{ car.score }}%</div>
+                </div>
+                <div style="{{ styles.specRow }}">
+                  <sc-for list="{{ car.specChips }}" as="spec" hint-placeholder-count="2">
+                    <span style="{{ styles.specChip }}">{{ spec }}</span>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ car.hasFlag }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ styles.flagNote }}">{{ car.flag }}</div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noCars }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ styles.emptyState }}">Your shortlist will appear here once you describe how you'll use the car.</div>
+      </sc-if>
+    </div>
+
+    <div style="{{ styles.backdrop }}" onClick="{{ toggleDrawer }}"></div>
+    <div style="{{ styles.drawer }}">
+      <div style="{{ styles.drawerHeader }}">Technical requirements</div>
+      <div style="{{ styles.drawerSub }}">Plain-language input, translated to specs.</div>
+      <sc-if value="{{ hasRequirements }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ styles.reqList }}">
+          <sc-for list="{{ requirements }}" as="req" hint-placeholder-count="4">
+            <div style="{{ req.rowStyle }}">
+              <div style="{{ styles.reqLabel }}">{{ req.label }}</div>
+              <div style="{{ styles.reqValue }}">{{ req.value }}</div>
+              <div style="{{ styles.reqSource }}">{{ req.source }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noRequirements }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ styles.emptyState }}">No requirements captured yet.</div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;friendly&quot;,&quot;options&quot;:[&quot;friendly&quot;,&quot;premium&quot;],&quot;tsType&quot;:&quot;'friendly'|'premium'&quot;}}">
+class Component extends DCLogic {
+  static SCRIPT = [
+    {
+      userText: "We're a family of 4 and head to the mountains almost every weekend for skiing. I need something that won't slip on snowy roads and can fit our ski bags.",
+      assistantText: "Got it — weekly mountain trips with the family means slippery roads and ski gear are a big factor. I'm prioritizing all-wheel drive, real cargo room, and cold-weather readiness in your shortlist.",
+      requirements: [
+        { id: 'drivetrain', label: 'Drivetrain', value: 'All-wheel drive (4x4)', source: '"won\'t slip on snowy roads"', changed: true },
+        { id: 'seating', label: 'Seating', value: '5 seats', source: '"family of 4"', changed: true },
+        { id: 'cargo', label: 'Cargo', value: 'Large cargo area, roof-rack ready', source: '"fit our ski bags"', changed: true },
+        { id: 'climate', label: 'Climate readiness', value: 'Cold-weather package', source: '"mountains... snowy roads"', changed: true },
+      ],
+      cars: [
+        { id: 'subaru', make: 'Subaru', model: 'Outback Wilderness', price: '$34,500', score: 93, specs: ['AWD', '5 seats', 'Wagon cargo'], flag: null },
+        { id: 'volvo', make: 'Volvo', model: 'XC60', price: '$48,900', score: 88, specs: ['AWD', '5 seats', 'Premium'], flag: null },
+        { id: 'rav4', make: 'Toyota', model: 'RAV4 Adventure', price: '$33,200', score: 86, specs: ['AWD', '5 seats'], flag: null },
+        { id: 'kodiaq', make: 'Škoda', model: 'Kodiaq 4x4', price: '$37,600', score: 81, specs: ['AWD', '7 seats'], flag: null },
+      ],
+    },
+    {
+      userText: "Actually most of my driving is around the city — parking is tight and I'd like something efficient on fuel.",
+      assistantText: "Noted — daily city driving changes things. I'm dialing up fuel efficiency and easier parking, and treating all-wheel drive as a nice-to-have rather than a must.",
+      requirements: [
+        { id: 'drivetrain', label: 'Drivetrain', value: 'AWD — optional, not required', source: '"most of my driving is around the city"', changed: true },
+        { id: 'seating', label: 'Seating', value: '5 seats', source: '"family of 4"', changed: false },
+        { id: 'cargo', label: 'Cargo', value: 'Large cargo area, roof-rack ready', source: '"fit our ski bags"', changed: false },
+        { id: 'climate', label: 'Climate readiness', value: 'Cold-weather package', source: '"mountains... snowy roads"', changed: false },
+        { id: 'body', label: 'Body type', value: 'Compact, easy to park', source: '"parking is tight"', changed: true },
+        { id: 'efficiency', label: 'Efficiency', value: 'Hybrid or electric', source: '"efficient on fuel"', changed: true },
+      ],
+      cars: [
+        { id: 'corollax', make: 'Toyota', model: 'Corolla Cross Hybrid AWD', price: '$29,800', score: 95, specs: ['Hybrid', 'AWD', 'Compact'], flag: null },
+        { id: 'crv', make: 'Honda', model: 'CR-V Hybrid', price: '$34,200', score: 90, specs: ['Hybrid', 'AWD'], flag: null },
+        { id: 'niro', make: 'Kia', model: 'Niro Hybrid', price: '$27,450', score: 84, specs: ['Hybrid', 'Compact'], flag: null },
+        { id: 'kona', make: 'Hyundai', model: 'Kona Electric', price: '$32,900', score: 79, specs: ['Electric', 'Compact'], flag: null },
+      ],
+    },
+    {
+      userText: "Budget's around $30–32k, and safety is non-negotiable — we have two young kids.",
+      assistantText: "Perfect — I've filtered to your $30–32k range and pushed safety ratings to the top of the ranking. Here's your best match.",
+      requirements: [
+        { id: 'drivetrain', label: 'Drivetrain', value: 'AWD — optional, not required', source: '"most of my driving is around the city"', changed: false },
+        { id: 'seating', label: 'Seating', value: '5 seats', source: '"family of 4"', changed: false },
+        { id: 'cargo', label: 'Cargo', value: 'Large cargo area, roof-rack ready', source: '"fit our ski bags"', changed: false },
+        { id: 'climate', label: 'Climate readiness', value: 'Cold-weather package', source: '"mountains... snowy roads"', changed: false },
+        { id: 'body', label: 'Body type', value: 'Compact, easy to park', source: '"parking is tight"', changed: false },
+        { id: 'efficiency', label: 'Efficiency', value: 'Hybrid or electric', source: '"efficient on fuel"', changed: false },
+        { id: 'budget', label: 'Budget', value: '$30,000 – $32,000', source: '"budget\'s around $30-32k"', changed: true },
+        { id: 'safety', label: 'Safety', value: 'Top crash-test rating, rear-seat sensors', source: '"two young kids... non-negotiable"', changed: true },
+      ],
+      cars: [
+        { id: 'corollax', make: 'Toyota', model: 'Corolla Cross Hybrid AWD', price: '$29,800', score: 97, specs: ['Hybrid', 'AWD', '5-star safety'], flag: null, topPick: true },
+        { id: 'niro', make: 'Kia', model: 'Niro Hybrid', price: '$27,450', score: 89, specs: ['Hybrid', '5-star safety'], flag: null },
+        { id: 'crv', make: 'Honda', model: 'CR-V Hybrid', price: '$34,200', score: 72, specs: ['Hybrid', 'AWD'], flag: 'Over budget by ~$2,200' },
+        { id: 'kona', make: 'Hyundai', model: 'Kona Electric', price: '$32,900', score: 68, specs: ['Electric'], flag: 'Limited cold-weather range' },
+      ],
+    },
+  ];
+
+  static INTRO = "Hi! Tell me about how you'll use your next car — where you drive, who's riding along, what matters most — and I'll translate that into the right specs and shortlist real cars for you.";
+
+  state = { turnIndex: 0, drawerOpen: false };
+
+  restart = () => this.setState({ turnIndex: 0, drawerOpen: false });
+  toggleDrawer = () => this.setState(s => ({ drawerOpen: !s.drawerOpen }));
+  sendNext = () => this.setState(s => ({ turnIndex: Math.min(s.turnIndex + 1, Component.SCRIPT.length) }));
+
+  themeTokens(theme) {
+    if (theme === 'premium') {
+      return {
+        bg: 'oklch(0.16 0.01 260)', panel: 'oklch(0.20 0.012 260)', panel2: 'oklch(0.235 0.012 260)',
+        text: 'oklch(0.93 0.01 90)', subtext: 'oklch(0.66 0.015 90)', border: 'oklch(0.32 0.012 260)',
+        accent: 'oklch(0.70 0.15 45)', accentSoft: 'oklch(0.70 0.15 45 / 0.16)', accentText: 'oklch(0.16 0.01 260)',
+        radius: '10px', radiusSm: '6px', font: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        cardShadow: '0 8px 24px oklch(0 0 0 / 0.35)', flagColor: 'oklch(0.72 0.14 55)', flagBg: 'oklch(0.72 0.14 55 / 0.14)',
+        aiBubbleBg: 'oklch(0.235 0.012 260)',
+      };
+    }
+    return {
+      bg: 'oklch(0.975 0.012 75)', panel: 'oklch(0.995 0.004 75)', panel2: 'oklch(0.95 0.015 75)',
+      text: 'oklch(0.27 0.02 55)', subtext: 'oklch(0.52 0.02 55)', border: 'oklch(0.9 0.015 70)',
+      accent: 'oklch(0.58 0.15 250)', accentSoft: 'oklch(0.58 0.15 250 / 0.14)', accentText: 'oklch(0.99 0.005 75)',
+      radius: '18px', radiusSm: '10px', font: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+      cardShadow: '0 6px 18px oklch(0.4 0.02 60 / 0.12)', flagColor: 'oklch(0.55 0.15 40)', flagBg: 'oklch(0.55 0.15 40 / 0.12)',
+      aiBubbleBg: 'oklch(0.95 0.035 235)',
+    };
+  }
+
+  renderVals() {
+    const theme = this.props.theme === 'premium' ? 'premium' : 'friendly';
+    const t = this.themeTokens(theme);
+    const { turnIndex, drawerOpen } = this.state;
+    const SCRIPT = Component.SCRIPT;
+
+    const messages = [{ bubbleWrap: this.wrapStyle('assistant', t), bubble: this.bubbleStyle('assistant', t), text: Component.INTRO }];
+    for (let i = 0; i < turnIndex; i++) {
+      messages.push({ bubbleWrap: this.wrapStyle('user', t), bubble: this.bubbleStyle('user', t), text: SCRIPT[i].userText });
+      messages.push({ bubbleWrap: this.wrapStyle('assistant', t), bubble: this.bubbleStyle('assistant', t), text: SCRIPT[i].assistantText });
+    }
+
+    const activeState = turnIndex > 0 ? SCRIPT[turnIndex - 1] : null;
+    const requirements = (activeState ? activeState.requirements : []).map(r => ({
+      ...r,
+      rowStyle: `padding:12px 4px;border-bottom:1px solid ${t.border};${r.changed ? `animation:cf-flash 1.6s ease-out;` : ''}`,
+    }));
+    // set css var for flash color via inline style workaround
+    requirements.forEach(r => { r.rowStyle += `--cf-flash-c:${t.accentSoft};`; });
+
+    const maxScore = activeState ? Math.max(...activeState.cars.map(c => c.score)) : 0;
+    const cars = (activeState ? activeState.cars : []).map(c => ({
+      ...c,
+      topPick: !!c.topPick,
+      hasFlag: !!c.flag,
+      specChips: c.specs,
+      cardStyle: `position:relative;background:${t.panel};border:1px solid ${c.topPick ? t.accent : t.border};border-radius:${t.radius};overflow:hidden;box-shadow:${t.cardShadow};display:flex;flex-direction:column;animation:cf-fade-in 0.4s ease-out;`,
+      photoStyle: `height:140px;background:repeating-linear-gradient(45deg, ${t.panel2}, ${t.panel2} 10px, ${t.border} 10px, ${t.border} 20px);display:flex;align-items:center;justify-content:center;font-family:'SF Mono',Menlo,monospace;font-size:11px;color:${t.subtext};text-align:center;padding:0 12px;`,
+      scoreStyle: `flex-shrink:0;font-family:${t.font};font-weight:700;font-size:15px;color:${c.score >= 90 ? t.accent : t.subtext};background:${c.score >= 90 ? t.accentSoft : 'transparent'};padding:4px 9px;border-radius:999px;`,
+    }));
+
+    const turnStage = ['start', 'mountain trips', 'city commuting', 'budget & safety'][turnIndex];
+    const resultsTitle = turnIndex === 0 ? 'Your shortlist' : `${cars.length} matches ranked for you`;
+    const resultsSub = turnIndex === 0 ? 'Start the conversation to see cars appear.' : `Updated after: ${turnStage}`;
+
+    return {
+      styles: {
+        root: `position:relative;width:100%;height:100%;display:flex;flex-direction:column;background:${t.bg};color:${t.text};font-family:${t.font};overflow:hidden;`,
+        header: `display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid ${t.border};flex-shrink:0;`,
+        brand: `font-size:20px;font-weight:700;letter-spacing:-0.01em;`,
+        tagline: `font-size:12.5px;color:${t.subtext};`,
+        restartBtn: `background:transparent;border:1px solid ${t.border};color:${t.subtext};font-size:13px;padding:8px 14px;border-radius:${t.radiusSm};cursor:pointer;font-family:${t.font};`,
+        drawerToggle: `display:flex;align-items:center;gap:8px;background:${t.panel2};border:1px solid ${t.border};color:${t.text};font-size:13px;font-weight:600;padding:8px 14px;border-radius:${t.radiusSm};cursor:pointer;font-family:${t.font};`,
+        badge: `background:${t.accent};color:${t.accentText};font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;`,
+        main: `position:relative;flex:1;display:flex;min-height:0;`,
+        chatCol: `width:400px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid ${t.border};min-height:0;`,
+        chatScroll: `flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;min-height:0;`,
+        composer: `padding:16px 20px;border-top:1px solid ${t.border};display:flex;flex-direction:column;gap:10px;`,
+        chip: `text-align:left;background:${t.accentSoft};border:1px solid ${t.accent};color:${t.text};font-size:13px;line-height:1.4;padding:10px 14px;border-radius:${t.radiusSm};cursor:pointer;font-family:${t.font};`,
+        doneNote: `font-size:12.5px;color:${t.subtext};text-align:center;padding:6px 0;`,
+        fakeInput: `background:${t.aiBubbleBg};border:1px solid ${t.border};border-radius:999px;padding:10px 16px;font-size:13px;color:${t.subtext};`,
+        resultsCol: `flex:1;min-width:0;overflow-y:auto;padding:24px 28px;`,
+        resultsHeader: `margin-bottom:18px;`,
+        resultsTitle: `font-size:19px;font-weight:700;`,
+        resultsSub: `font-size:13px;color:${t.subtext};margin-top:2px;`,
+        grid: `display:grid;grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));gap:16px;`,
+        cardBody: `padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px;`,
+        carName: `font-size:14.5px;font-weight:700;`,
+        carPrice: `font-size:12.5px;color:${t.subtext};margin-top:2px;`,
+        specRow: `display:flex;flex-wrap:wrap;gap:6px;`,
+        specChip: `font-size:11px;font-weight:600;background:${t.panel2};border:1px solid ${t.border};color:${t.subtext};padding:3px 9px;border-radius:999px;`,
+        topPickTag: `position:absolute;top:10px;left:10px;background:${t.accent};color:${t.accentText};font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:4px 9px;border-radius:999px;z-index:1;`,
+        flagNote: `font-size:11.5px;color:${t.flagColor};background:${t.flagBg};padding:6px 9px;border-radius:${t.radiusSm};`,
+        emptyState: `font-size:13px;color:${t.subtext};padding:40px 20px;text-align:center;`,
+        backdrop: `position:absolute;inset:0;background:oklch(0 0 0 / ${drawerOpen ? 0.25 : 0});pointer-events:${drawerOpen ? 'auto' : 'none'};transition:background 0.25s ease;z-index:5;`,
+        drawer: `position:absolute;top:0;right:0;bottom:0;width:360px;background:${t.panel};border-left:1px solid ${t.border};box-shadow:${t.cardShadow};transform:translateX(${drawerOpen ? '0' : '100%'});transition:transform 0.28s ease;z-index:6;padding:22px 22px;overflow-y:auto;`,
+        drawerHeader: `font-size:16px;font-weight:700;`,
+        drawerSub: `font-size:12.5px;color:${t.subtext};margin-bottom:8px;`,
+        reqList: `display:flex;flex-direction:column;`,
+        reqLabel: `font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${t.subtext};`,
+        reqValue: `font-size:14px;font-weight:600;margin-top:3px;`,
+        reqSource: `font-size:12px;color:${t.subtext};margin-top:4px;font-style:italic;`,
+      },
+      messages, requirements, cars,
+      hasRequirements: requirements.length > 0,
+      hasCars: cars.length > 0,
+      noRequirements: requirements.length === 0,
+      noCars: cars.length === 0,
+      resultsTitle, resultsSub,
+      hasNextChip: turnIndex < SCRIPT.length,
+      isDone: turnIndex === SCRIPT.length,
+      nextChipText: turnIndex < SCRIPT.length ? SCRIPT[turnIndex].userText : '',
+    };
+  }
+
+  wrapStyle(role, t) {
+    return `display:flex;justify-content:${role === 'user' ? 'flex-end' : 'flex-start'};`;
+  }
+  bubbleStyle(role, t) {
+    const isUser = role === 'user';
+    return `max-width:82%;font-size:13.5px;line-height:1.5;padding:11px 14px;border-radius:${t.radiusSm};background:${isUser ? t.accent : t.aiBubbleBg};color:${isUser ? t.accentText : t.text};border:1px solid ${isUser ? t.accent : t.border};`;
+  }
+}
+
+</script>
+</body>
+</html>

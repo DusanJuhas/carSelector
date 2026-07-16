@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Car Finder — Concepts</title>
+<template id="__bundler_thumbnail" data-bg-color="#f2efe9">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#f2efe9"/>
+    <rect x="80" y="120" width="360" height="560" rx="24" fill="#ffffff" stroke="#e3ddd0" stroke-width="4"/>
+    <rect x="480" y="120" width="640" height="560" rx="24" fill="#ffffff" stroke="#e3ddd0" stroke-width="4"/>
+    <circle cx="720" cy="260" r="60" fill="#e07a3f"/>
+    <rect x="520" y="360" width="560" height="120" rx="16" fill="#f4ede4"/>
+    <rect x="520" y="500" width="560" height="120" rx="16" fill="#f4ede4"/>
+  </svg>
+</template>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: oklch(0.94 0.005 90); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+  @keyframes cf-flash { 0% { background: var(--cf-flash-c); } 100% { background: transparent; } }
+  @keyframes cf-fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .cf-app { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  .cf-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; flex-shrink: 0; }
+  .cf-main { position: relative; flex: 1; display: flex; min-height: 0; }
+  .cf-chat-col { width: 400px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0; }
+  .cf-chat-scroll { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+  .cf-composer { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .cf-results-col { flex: 1; min-width: 0; overflow-y: auto; padding: 24px 28px; }
+  .cf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+  .cf-spec-row { display: flex; flex-wrap: wrap; gap: 6px; }
+</style>
+</head>
+<body>
+<section style="padding:40px;display:flex;flex-direction:column;gap:56px;">
+  <div>
+    <h1 style="font-size:22px;margin:0 0 4px;color:oklch(0.3 0.01 80);">AI car finder — two visual directions</h1>
+    <p style="font-size:14px;color:oklch(0.5 0.01 80);margin:0;max-width:640px;">Click the suggested reply chip in the chat to advance the scripted conversation — watch the requirements drawer and results grid update together. Toggle "Technical requirements" to see the translation table.</p>
+  </div>
+  <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="background:oklch(0.68 0.16 45);color:white;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;">1a</span>
+        <span style="font-size:14px;font-weight:600;color:oklch(0.3 0.01 80);">Friendly, warm-light</span>
+      </div>
+      <div id="mount-friendly" style="width:1440px;height:900px;border-radius:20px;overflow:hidden;box-shadow:0 20px 50px oklch(0.3 0.02 60 / 0.18);"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="background:oklch(0.68 0.16 45);color:white;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;">1b</span>
+        <span style="font-size:14px;font-weight:600;color:oklch(0.3 0.01 80);">Premium, dark</span>
+      </div>
+      <div id="mount-premium" style="width:1440px;height:900px;border-radius:12px;overflow:hidden;box-shadow:0 20px 50px oklch(0.1 0.02 260 / 0.35);"></div>
+    </div>
+  </div>
+</section>
+<script>
+const SCRIPT = [
+  {
+    userText: "We're a family of 4 and head to the mountains almost every weekend for skiing. I need something that won't slip on snowy roads and can fit our ski bags.",
+    assistantText: "Got it — weekly mountain trips with the family means slippery roads and ski gear are a big factor. I'm prioritizing all-wheel drive, real cargo room, and cold-weather readiness in your shortlist.",
+    requirements: [
+      { label: 'Drivetrain', value: 'All-wheel drive (4x4)', source: '"won\'t slip on snowy roads"', changed: true },
+      { label: 'Seating', value: '5 seats', source: '"family of 4"', changed: true },
+      { label: 'Cargo', value: 'Large cargo area, roof-rack ready', source: '"fit our ski bags"', changed: true },
+      { label: 'Climate readiness', value: 'Cold-weather package', source: '"mountains... snowy roads"', changed: true },
+    ],
+    cars: [
+      { make: 'Subaru', model: 'Outback Wilderness', price: '$34,500', score: 93, specs: ['AWD', '5 seats', 'Wagon cargo'], flag: null },
+      { make: 'Volvo', model: 'XC60', price: '$48,900', score: 88, specs: ['AWD', '5 seats', 'Premium'], flag: null },
+      { make: 'Toyota', model: 'RAV4 Adventure', price: '$33,200', score: 86, specs: ['AWD', '5 seats'], flag: null },
+      { make: 'Škoda', model: 'Kodiaq 4x4', price: '$37,600', score: 81, specs: ['AWD', '7 seats'], flag: null },
+    ],
+  },
+  {
+    userText: "Actually most of my driving is around the city — parking is tight and I'd like something efficient on fuel.",
+    assistantText: "Noted — daily city driving changes things. I'm dialing up fuel efficiency and easier parking, and treating all-wheel drive as a nice-to-have rather than a must.",
+    requirements: [
+      { label: 'Drivetrain', value: 'AWD — optional, not required', source: '"most of my driving is around the city"', changed: true },
+      { label: 'Seating', value: '5 seats', source: '"family of 4"', changed: false },
+      { label: 'Cargo', value: 'Large cargo area, roof-rack ready', source: '"fit our ski bags"', changed: false },
+      { label: 'Climate readiness', value: 'Cold-weather package', source: '"mountains... snowy roads"', changed: false },
+      { label: 'Body type', value: 'Compact, easy to park', source: '"parking is tight"', changed: true },
+      { label: 'Efficiency', value: 'Hybrid or electric', source: '"efficient on fuel"', changed: true },
+    ],
+    cars: [
+      { make: 'Toyota', model: 'Corolla Cross Hybrid AWD', price: '$29,800', score: 95, specs: ['Hybrid', 'AWD', 'Compact'], flag: null },
+      { make: 'Honda', model: 'CR-V Hybrid', price: '$34,200', score: 90, specs: ['Hybrid', 'AWD'], flag: null },
+      { make: 'Kia', model: 'Niro Hybrid', price: '$27,450', score: 84, specs: ['Hybrid', 'Compact'], flag: null },
+      { make: 'Hyundai', model: 'Kona Electric', price: '$32,900', score: 79, specs: ['Electric', 'Compact'], flag: null },
+    ],
+  },
+  {
+    userText: "Budget's around $30–32k, and safety is non-negotiable — we have two young kids.",
+    assistantText: "Perfect — I've filtered to your $30–32k range and pushed safety ratings to the top of the ranking. Here's your best match.",
+    requirements: [
+      { label: 'Drivetrain', value: 'AWD — optional, not required', source: '"most of my driving is around the city"', changed: false },
+      { label: 'Seating', value: '5 seats', source: '"family of 4"', changed: false },
+      { label: 'Cargo', value: 'Large cargo area, roof-rack ready', source: '"fit our ski bags"', changed: false },
+      { label: 'Climate readiness', value: 'Cold-weather package', source: '"mountains... snowy roads"', changed: false },
+      { label: 'Body type', value: 'Compact, easy to park', source: '"parking is tight"', changed: false },
+      { label: 'Efficiency', value: 'Hybrid or electric', source: '"efficient on fuel"', changed: false },
+      { label: 'Budget', value: '$30,000 – $32,000', source: '"budget\'s around $30-32k"', changed: true },
+      { label: 'Safety', value: 'Top crash-test rating, rear-seat sensors', source: '"two young kids... non-negotiable"', changed: true },
+    ],
+    cars: [
+      { make: 'Toyota', model: 'Corolla Cross Hybrid AWD', price: '$29,800', score: 97, specs: ['Hybrid', 'AWD', '5-star safety'], flag: null, topPick: true },
+      { make: 'Kia', model: 'Niro Hybrid', price: '$27,450', score: 89, specs: ['Hybrid', '5-star safety'], flag: null },
+      { make: 'Honda', model: 'CR-V Hybrid', price: '$34,200', score: 72, specs: ['Hybrid', 'AWD'], flag: 'Over budget by ~$2,200' },
+      { make: 'Hyundai', model: 'Kona Electric', price: '$32,900', score: 68, specs: ['Electric'], flag: 'Limited cold-weather range' },
+    ],
+  },
+];
+const INTRO = "Hi! Tell me about how you'll use your next car — where you drive, who's riding along, what matters most — and I'll translate that into the right specs and shortlist real cars for you.";
+
+function themeTokens(theme) {
+  if (theme === 'premium') {
+    return {
+      bg: 'oklch(0.16 0.01 260)', panel: 'oklch(0.20 0.012 260)', panel2: 'oklch(0.235 0.012 260)',
+      text: 'oklch(0.93 0.01 90)', subtext: 'oklch(0.66 0.015 90)', border: 'oklch(0.32 0.012 260)',
+      accent: 'oklch(0.70 0.15 45)', accentSoft: 'oklch(0.70 0.15 45 / 0.16)', accentText: 'oklch(0.16 0.01 260)',
+      radius: '10px', radiusSm: '6px', cardShadow: '0 8px 24px oklch(0 0 0 / 0.35)',
+      flagColor: 'oklch(0.72 0.14 55)', flagBg: 'oklch(0.72 0.14 55 / 0.14)',
+    };
+  }
+  return {
+    bg: 'oklch(0.975 0.012 75)', panel: 'oklch(0.995 0.004 75)', panel2: 'oklch(0.95 0.015 75)',
+    text: 'oklch(0.27 0.02 55)', subtext: 'oklch(0.52 0.02 55)', border: 'oklch(0.9 0.015 70)',
+    accent: 'oklch(0.68 0.16 45)', accentSoft: 'oklch(0.68 0.16 45 / 0.14)', accentText: 'oklch(0.99 0.005 75)',
+    radius: '18px', radiusSm: '10px', cardShadow: '0 6px 18px oklch(0.4 0.02 60 / 0.12)',
+    flagColor: 'oklch(0.55 0.15 40)', flagBg: 'oklch(0.55 0.15 40 / 0.12)',
+  };
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function mountApp(root, theme) {
+  const t = themeTokens(theme);
+  let turnIndex = 0, drawerOpen = false;
+
+  root.innerHTML = `
+    <div class="cf-app" style="background:${t.bg};color:${t.text};">
+      <div class="cf-header" style="border-bottom:1px solid ${t.border};">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;">Rovis</div>
+          <div style="font-size:12.5px;color:${t.subtext};">Describe your life. We'll find the car.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="cf-restart" style="background:transparent;border:1px solid ${t.border};color:${t.subtext};font-size:13px;padding:8px 14px;border-radius:${t.radiusSm};cursor:pointer;">Restart</button>
+          <button class="cf-drawer-toggle" style="display:flex;align-items:center;gap:8px;background:${t.panel2};border:1px solid ${t.border};color:${t.text};font-size:13px;font-weight:600;padding:8px 14px;border-radius:${t.radiusSm};cursor:pointer;">
+            Technical requirements
+            <span class="cf-badge" style="background:${t.accent};color:${t.accentText};font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;">0</span>
+          </button>
+        </div>
+      </div>
+      <div class="cf-main">
+        <div class="cf-chat-col" style="border-right:1px solid ${t.border};">
+          <div class="cf-chat-scroll"></div>
+          <div class="cf-composer" style="border-top:1px solid ${t.border};"></div>
+        </div>
+        <div class="cf-results-col">
+          <div class="cf-results-header" style="margin-bottom:18px;">
+            <div class="cf-results-title" style="font-size:19px;font-weight:700;"></div>
+            <div class="cf-results-sub" style="font-size:13px;color:${t.subtext};margin-top:2px;"></div>
+          </div>
+          <div class="cf-grid-wrap"></div>
+        </div>
+        <div class="cf-backdrop" style="position:absolute;inset:0;z-index:5;"></div>
+        <div class="cf-drawer" style="position:absolute;top:0;right:0;bottom:0;width:360px;background:${t.panel};border-left:1px solid ${t.border};box-shadow:${t.cardShadow};z-index:6;padding:22px 22px;overflow-y:auto;transition:transform 0.28s ease;">
+          <div style="font-size:16px;font-weight:700;">Technical requirements</div>
+          <div style="font-size:12.5px;color:${t.subtext};margin-bottom:8px;">Plain-language input, translated to specs.</div>
+          <div class="cf-req-list"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const chatScroll = root.querySelector('.cf-chat-scroll');
+  const composer = root.querySelector('.cf-composer');
+  const gridWrap = root.querySelector('.cf-grid-wrap');
+  const resultsTitle = root.querySelector('.cf-results-title');
+  const resultsSub = root.querySelector('.cf-results-sub');
+  const reqList = root.querySelector('.cf-req-list');
+  const badge = root.querySelector('.cf-badge');
+  const drawer = root.querySelector('.cf-drawer');
+  const backdrop = root.querySelector('.cf-backdrop');
+
+  function bubble(role, text) {
+    const isUser = role === 'user';
+    return `<div style="display:flex;justify-content:${isUser ? 'flex-end' : 'flex-start'};">
+      <div style="max-width:82%;font-size:13.5px;line-height:1.5;padding:11px 14px;border-radius:${t.radiusSm};background:${isUser ? t.accent : t.panel2};color:${isUser ? t.accentText : t.text};border:1px solid ${isUser ? t.accent : t.border};">${esc(text)}</div>
+    </div>`;
+  }
+
+  function render() {
+    let html = bubble('assistant', INTRO);
+    for (let i = 0; i < turnIndex; i++) {
+      html += bubble('user', SCRIPT[i].userText);
+      html += bubble('assistant', SCRIPT[i].assistantText);
+    }
+    chatScroll.innerHTML = html;
+    chatScroll.scrollTop = chatScroll.scrollHeight;
+
+    let composerHtml = '';
+    if (turnIndex < SCRIPT.length) {
+      composerHtml += `<button class="cf-chip" style="text-align:left;background:${t.accentSoft};border:1px solid ${t.accent};color:${t.text};font-size:13px;line-height:1.4;padding:10px 14px;border-radius:${t.radiusSm};cursor:pointer;">${esc(SCRIPT[turnIndex].userText)}</button>`;
+    } else {
+      composerHtml += `<div style="font-size:12.5px;color:${t.subtext};text-align:center;padding:6px 0;">Conversation complete — shortlist finalized.</div>`;
+    }
+    composerHtml += `<div style="background:${t.panel2};border:1px solid ${t.border};border-radius:999px;padding:10px 16px;font-size:13px;color:${t.subtext};">Type your reply…</div>`;
+    composer.innerHTML = composerHtml;
+    const chip = composer.querySelector('.cf-chip');
+    if (chip) chip.addEventListener('click', () => { turnIndex = Math.min(turnIndex + 1, SCRIPT.length); render(); });
+
+    const activeState = turnIndex > 0 ? SCRIPT[turnIndex - 1] : null;
+    const requirements = activeState ? activeState.requirements : [];
+    const cars = activeState ? activeState.cars : [];
+
+    resultsTitle.textContent = turnIndex === 0 ? 'Your shortlist' : `${cars.length} matches ranked for you`;
+    const stageNames = ['start', 'mountain trips', 'city commuting', 'budget & safety'];
+    resultsSub.textContent = turnIndex === 0 ? 'Start the conversation to see cars appear.' : `Updated after: ${stageNames[turnIndex]}`;
+
+    if (cars.length === 0) {
+      gridWrap.innerHTML = `<div style="font-size:13px;color:${t.subtext};padding:40px 20px;text-align:center;">Your shortlist will appear here once you describe how you'll use the car.</div>`;
+    } else {
+      let g = '<div class="cf-grid">';
+      cars.forEach(c => {
+        g += `<div style="position:relative;background:${t.panel};border:1px solid ${c.topPick ? t.accent : t.border};border-radius:${t.radius};overflow:hidden;box-shadow:${t.cardShadow};display:flex;flex-direction:column;animation:cf-fade-in 0.4s ease-out;">
+          ${c.topPick ? `<div style="position:absolute;top:10px;left:10px;background:${t.accent};color:${t.accentText};font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:4px 9px;border-radius:999px;z-index:1;">Top match</div>` : ''}
+          <div style="height:140px;background:repeating-linear-gradient(45deg, ${t.panel2}, ${t.panel2} 10px, ${t.border} 10px, ${t.border} 20px);display:flex;align-items:center;justify-content:center;font-family:'SF Mono',Menlo,monospace;font-size:11px;color:${t.subtext};text-align:center;padding:0 12px;">car photo — ${esc(c.make)} ${esc(c.model)}</div>
+          <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+              <div>
+                <div style="font-size:14.5px;font-weight:700;">${esc(c.make)} ${esc(c.model)}</div>
+                <div style="font-size:12.5px;color:${t.subtext};margin-top:2px;">${esc(c.price)}</div>
+              </div>
+              <div style="flex-shrink:0;font-weight:700;font-size:15px;color:${c.score >= 90 ? t.accent : t.subtext};background:${c.score >= 90 ? t.accentSoft : 'transparent'};padding:4px 9px;border-radius:999px;">${c.score}%</div>
+            </div>
+            <div class="cf-spec-row">${c.specs.map(s => `<span style="font-size:11px;font-weight:600;background:${t.panel2};border:1px solid ${t.border};color:${t.subtext};padding:3px 9px;border-radius:999px;">${esc(s)}</span>`).join('')}</div>
+            ${c.flag ? `<div style="font-size:11.5px;color:${t.flagColor};background:${t.flagBg};padding:6px 9px;border-radius:${t.radiusSm};">${esc(c.flag)}</div>` : ''}
+          </div>
+        </div>`;
+      });
+      g += '</div>';
+      gridWrap.innerHTML = g;
+    }
+
+    badge.textContent = requirements.length;
+    if (requirements.length === 0) {
+      reqList.innerHTML = `<div style="font-size:13px;color:${t.subtext};padding:40px 20px;text-align:center;">No requirements captured yet.</div>`;
+    } else {
+      reqList.innerHTML = requirements.map(r => `
+        <div style="padding:12px 4px;border-bottom:1px solid ${t.border};${r.changed ? `animation:cf-flash 1.6s ease-out;--cf-flash-c:${t.accentSoft};` : ''}">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${t.subtext};">${esc(r.label)}</div>
+          <div style="font-size:14px;font-weight:600;margin-top:3px;">${esc(r.value)}</div>
+          <div style="font-size:12px;color:${t.subtext};margin-top:4px;font-style:italic;">${esc(r.source)}</div>
+        </div>`).join('');
+    }
+
+    drawer.style.transform = `translateX(${drawerOpen ? '0' : '100%'})`;
+    backdrop.style.background = `oklch(0 0 0 / ${drawerOpen ? 0.25 : 0})`;
+    backdrop.style.pointerEvents = drawerOpen ? 'auto' : 'none';
+  }
+
+  root.querySelector('.cf-restart').addEventListener('click', () => { turnIndex = 0; drawerOpen = false; render(); });
+  root.querySelector('.cf-drawer-toggle').addEventListener('click', () => { drawerOpen = !drawerOpen; render(); });
+  backdrop.addEventListener('click', () => { drawerOpen = false; render(); });
+
+  render();
+}
+
+mountApp(document.getElementById('mount-friendly'), 'friendly');
+mountApp(document.getElementById('mount-premium'), 'premium');
+</script>
+</body>
+</html>

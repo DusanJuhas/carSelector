@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>body { margin: 0; background: oklch(0.94 0.005 90); }</style>
+</helmet>
+<section id="1a-wrap" style="padding:40px;display:flex;flex-direction:column;gap:56px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <div>
+    <h1 style="font-size:22px;margin:0 0 4px;color:oklch(0.3 0.01 80);">Turn 1 — AI car finder, two visual directions</h1>
+    <p style="font-size:14px;color:oklch(0.5 0.01 80);margin:0;max-width:640px;">Click the suggested reply chip in the chat to advance the scripted conversation — watch the requirements drawer and results grid update together. Toggle "Technical requirements" to see the translation table.</p>
+  </div>
+  <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div id="1a" style="display:flex;align-items:center;gap:10px;">
+        <span style="background:oklch(0.68 0.16 45);color:white;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;">1a</span>
+        <span style="font-size:14px;font-weight:600;color:oklch(0.3 0.01 80);">Friendly, warm-light</span>
+      </div>
+      <div style="width:1440px;height:900px;border-radius:20px;overflow:hidden;box-shadow:0 20px 50px oklch(0.3 0.02 60 / 0.18);">
+        <dc-import name="CarFinderApp" theme="friendly" hint-size="1440px,900px"></dc-import>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div id="1b" style="display:flex;align-items:center;gap:10px;">
+        <span style="background:oklch(0.68 0.16 45);color:white;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;">1b</span>
+        <span style="font-size:14px;font-weight:600;color:oklch(0.3 0.01 80);">Premium, dark</span>
+      </div>
+      <div style="width:1440px;height:900px;border-radius:12px;overflow:hidden;box-shadow:0 20px 50px oklch(0.1 0.02 260 / 0.35);">
+        <dc-import name="CarFinderApp" theme="premium" hint-size="1440px,900px"></dc-import>
+      </div>
+    </div>
+  </div>
+</section>
+
+</x-dc>
+</body>
+</html>
