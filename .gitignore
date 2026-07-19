@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# carSelector scraper — downloaded PDFs and local SQLite DB
+scraper/storage/*
+!scraper/storage/.gitkeep

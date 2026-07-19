@@ -1,0 +1,27 @@
+"""Common interface for finding links to PDF price lists. Same principle as
+`parsers/base.py`: both the structure and the number of pages that need to
+be fetched differ from brand to brand, hence per-brand implementations
+instead of one universal HTML parser — see the `pdf_pattern` field in
+`config/sources.yaml`.
+
+Making the HTTP request is deliberately part of `discover` (not done
+upfront in `SourceMonitor` and passed in as `html`): Škoda has a single
+listing page with all models (one GET), but VW has a separate price list
+page per model (`source.models` GETs) — because the discoverer also
+controls the fetch, each brand can have a different strategy without
+`SourceMonitor` needing to change.
+
+A new brand = a new file in this directory + registration in
+`registry.py`, nothing else needs to change.
+"""
+from __future__ import annotations
+
+from scraper.sources.registry import Source
+
+
+class BaseDiscoverer:
+    """Discoverer interface. `discover` must return {model: price_list_url}
+    for the models in `source.models` for which a price list link was found."""
+
+    def discover(self, source: Source) -> dict[str, str]:
+        raise NotImplementedError

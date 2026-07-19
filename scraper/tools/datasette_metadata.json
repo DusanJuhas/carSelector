@@ -1,0 +1,20 @@
+{
+  "databases": {
+    "scraper": {
+      "tables": {
+        "variant": {
+          "facets": ["brand", "model", "trim", "powertrain"],
+          "sort_desc": "id"
+        },
+        "document": {
+          "facets": ["source_brand"],
+          "sort_desc": "id"
+        },
+        "equipment_assignment": {
+          "facets": ["availability"],
+          "sort_desc": "id"
+        }
+      }
+    }
+  }
+}
