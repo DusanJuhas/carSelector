@@ -1,374 +1,194 @@
-\# Car Selector
+# Car Selector
 
+## Goal
 
-
-\## Goal
-
-
-
-\*\*AI-Powered Car Selection Assistant\*\*
-
-
+**AI-Powered Car Selection Assistant**
 
 Inspired by: https://www.autohled.cz/
 
+## Challenge Title
 
+**DriveWise AI – Intelligent Car Selection Platform**
 
-\## Challenge Title
+---
 
+# Functional Requirements
 
+## Core Features
 
-\*\*DriveWise AI – Intelligent Car Selection Platform\*\*
-
-
-
-\---
-
-
-
-\# Functional Requirements
-
-
-
-\## Core Features
-
-
-
-\### 1. Vehicle Database
-
-
+### 1. Vehicle Database
 
 Store information about cars such as:
 
+- Brand
+- Model
+- Year
+- Body type
+- Number of seats
+- Fuel type
+- Engine power
+- Consumption
+- Trunk size
+- Price
+- AWD availability
 
-
-\- Brand
-
-\- Model
-
-\- Year
-
-\- Body type
-
-\- Number of seats
-
-\- Fuel type
-
-\- Engine power
-
-\- Consumption
-
-\- Trunk size
-
-\- Price
-
-\- AWD availability
-
-
-
-\### Example
-
-
+### Example
 
 ```json
-
 {
-
-&#x20; "brand": "Skoda",
-
-&#x20; "model": "Kodiaq",
-
-&#x20; "seats": 7,
-
-&#x20; "fuel\_type": "Diesel",
-
-&#x20; "body\_type": "SUV",
-
-&#x20; "trunk\_capacity": 835
-
+  "brand": "Skoda",
+  "model": "Kodiaq",
+  "seats": 7,
+  "fuel_type": "Diesel",
+  "body_type": "SUV",
+  "trunk_capacity": 835
 }
+```
 
-
-
-2\. AI Requirement Interpreter
-
-
+### 2. AI Requirement Interpreter
 
 The chatbot should:
 
+- Understand user needs
+- Ask follow-up questions if required
+- Transform the conversation into structured search parameters
 
+### Example
 
-Understand user needs
+**User:**
 
-Ask follow-up questions if required
+> I want a car to transport my whole family to our cottage.
 
-Transform the conversation into structured search parameters
+**AI Output:**
 
-Example
-
-
-
-User:
-
-
-
-I want a car to transport my whole family to our cottage.
-
-
-
-AI Output:
-
-
-
+```json
 {
-
-&#x20; "min\_seats": 5,
-
-&#x20; "body\_type": "SUV",
-
-&#x20; "large\_trunk": true,
-
-&#x20; "suitable\_for\_long\_trips": true
-
+  "min_seats": 5,
+  "body_type": "SUV",
+  "large_trunk": true,
+  "suitable_for_long_trips": true
 }
+```
 
-
-
-3\. Recommendation Engine
-
-
+### 3. Recommendation Engine
 
 Based on extracted requirements:
 
+- Filter vehicle database
+- Rank matching vehicles
+- Present recommendations with explanations
 
+### Example
 
-Filter vehicle database
+**Recommended:** Skoda Kodiaq
 
-Rank matching vehicles
+**Reason:**
 
-Present recommendations with explanations
+- 7 seats
+- Large luggage compartment
+- Suitable for family trips
+- Available with AWD
 
-Example
-
-
-
-Recommended: Skoda Kodiaq
-
-
-
-Reason:
-
-
-
-7 seats
-
-Large luggage compartment
-
-Suitable for family trips
-
-Available with AWD
-
-4\. Vehicle Comparison
-
-
+### 4. Vehicle Comparison
 
 Users can compare:
 
+- Multiple vehicles
+- Technical parameters
+- Cost-related metrics
 
-
-Multiple vehicles
-
-Technical parameters
-
-Cost-related metrics
-
-5\. User Interface
-
-
+### 5. User Interface
 
 Provide:
 
+- Chat window
+- Vehicle recommendations
+- Vehicle details page
+- Comparison page
 
+# Suggested Architecture
 
-Chat window
-
-Vehicle recommendations
-
-Vehicle details page
-
-Comparison page
-
-Suggested Architecture
-
+```text
 Frontend
-
-&#x20;  |
-
-&#x20;  v
-
+   |
+   v
 Flask / FastAPI Backend
-
-&#x20;  |
-
-&#x20;  +------------------+
-
-&#x20;  |                  |
-
-&#x20;  v                  v
-
+   |
+   +------------------+
+   |                  |
+   v                  v
 AI Assistant     Car Database
-
-&#x20;  |
-
-&#x20;  v
-
+   |
+   v
 Requirement Extraction
-
-&#x20;  |
-
-&#x20;  v
-
+   |
+   v
 Recommendation Engine
+```
 
+# Recommended Technology Stack
 
+## Backend
+- Python 3.11+
+- FastAPI or Flask
 
-Recommended Technology Stack
+## Frontend
+- React
+- Vue
+- HTMX
+- Flask templates
 
-Backend
+## Database
+- PostgreSQL
+- SQLite (acceptable for prototype)
 
-Python 3.11+
+## AI
+- Azure OpenAI
+- OpenAI
+- LangChain
+- Hugging Face
+- Ollama
 
-FastAPI or Flask
+## DevOps
+- Docker
+- GitHub Actions
+- Unit Testing
 
-Frontend
+# Bonus Features
 
-React
+## AI Features
+- Voice interface
+- Sentiment analysis
+- Personalized recommendations
+- Retrieval-Augmented Generation (RAG)
+- Multi-language support
 
-Vue
+## Technical Features
+- Containerized deployment
+- CI/CD pipeline
+- Authentication
+- Analytics dashboard
+- API documentation (Swagger/OpenAPI)
 
-HTMX
-
-Flask templates
-
-Database
-
-PostgreSQL
-
-SQLite (acceptable for prototype)
-
-AI
-
-Azure OpenAI
-
-OpenAI
-
-LangChain
-
-Hugging Face
-
-Ollama
-
-DevOps
-
-Docker
-
-GitHub Actions
-
-Unit Testing
-
-Bonus Features
-
-
-
-Teams may earn bonus points by implementing:
-
-
-
-AI Features
-
-Voice interface
-
-Sentiment analysis
-
-Personalized recommendations
-
-Retrieval-Augmented Generation (RAG)
-
-Multi-language support
-
-Technical Features
-
-Containerized deployment
-
-CI/CD pipeline
-
-Authentication
-
-Analytics dashboard
-
-API documentation (Swagger/OpenAPI)
-
-Success Scenario
-
-
+# Success Scenario
 
 A user enters:
 
+> "We are a family with three children and often travel to our cottage on gravel roads. We need enough luggage space and our budget is 35,000 EUR."
 
-
-"We are a family with three children and often travel to our cottage on gravel roads. We need enough luggage space and our budget is 35,000 EUR."
-
-
-
-The AI assistant:
-
-
-
-Asks follow-up questions if needed.
-
-Extracts requirements.
-
-Searches the database.
-
-Recommends suitable vehicles.
-
-
+The AI assistant asks follow-up questions if needed, extracts requirements, searches the database, and recommends suitable vehicles.
 
 Example recommendations:
+- Skoda Kodiaq
+- Volkswagen Tiguan Allspace
+- Toyota RAV4
+- Hyundai Santa Fe
 
-
-
-Skoda Kodiaq
-
-Volkswagen Tiguan Allspace
-
-Toyota RAV4
-
-Hyundai Santa Fe
-
-
-
-Each recommendation includes explanations showing how the vehicle matches the stated needs.
-
-
-
-Expected Outcomes
-
-
+# Expected Outcomes
 
 This challenge validates:
-
-
-
-Teamwork
-
-AI integration
-
-Python development skills
-
-System design
-
-Practical business problem solving
-
-
-
+- Teamwork
+- AI integration
+- Python development skills
+- System design
+- Practical business problem solving
