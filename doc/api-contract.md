@@ -50,9 +50,10 @@ a `configuration_id`, not a synthetic slug.
 | price | Money | no | current price (`prices` row with `valid_to IS NULL`) |
 | match_score | integer (0–100) | yes | null outside a recommendation context (e.g. plain catalog browse) |
 | specs | string[] | no | short display tags, e.g. `["AWD", "5 seats", "Hybrid"]` — derived, not a DB column |
-| flag | string | yes | e.g. `"Over budget by ~2,200 Kč"` — set by the recommendation engine, not stored |
+| flag | string | yes | e.g. `"Over budget by ~2,200 Kč"` — reserved for a future graceful over-budget-inclusion feature; the current recommendation engine treats budget as a hard filter, so this is always null for now |
 | top_pick | boolean | no | default `false` |
 | thumbnail_url | string | yes | no image data exists in the scraped source yet — expect null for the foreseeable future |
+| explanation | string | yes | AI-generated, grounded only in this vehicle's own specs (never invents attributes). Null outside a chat context, or if the AI layer isn't configured |
 
 ### VehicleDetail
 
@@ -223,11 +224,25 @@ Model overview: all trims and their configurations, for a "choose your trim" bro
 
 ## Open items for the backend implementation
 
-- `match_score` and `flag` are recommendation‑engine outputs, not stored fields — confirm the
-  ranking algorithm (see `drivewise-ai-recommendations` skill) actually produces both per vehicle,
-  not just a rank order.
+- `match_score`, `flag`, and `explanation` are recommendation‑engine/AI outputs, not stored
+  fields. Implemented: `match_score` (weighted scorer over drivetrain/priority/budget‑headroom
+  matches) and `explanation` (per‑vehicle Claude call). Not implemented: `flag` — the engine
+  currently treats budget as a hard filter rather than gracefully including near‑budget
+  over-shoots with a warning badge.
 - `thumbnail_url` has no source yet; either scope image sourcing into the scraper later or drop the
   field from `VehicleSummary` until there's a plan for it.
 - `GET /api/vehicles` filtering by `budget_max` needs a currency‑aware comparison against
-  `prices.currency` — reject or convert cross‑currency queries rather than silently comparing
-  numbers across currencies.
+  `prices.currency` — implemented: rejects nothing yet, just filters on `currency = <param>`
+  server-side rather than converting; a cross‑currency budget silently returns zero matches
+  rather than erroring, which is arguably wrong — worth revisiting.
+- Conversation state (message history + accumulated `StructuredRequirements`) is held **in a
+  process‑local in‑memory dict**, keyed by `conversation_id` — not persisted, lost on restart,
+  and won't work past a single backend worker process. The DB schema doesn't have
+  conversation/message tables; adding them is a separate design decision, not made yet.
+- `min_seats` (in `StructuredRequirements` and `GET /api/vehicles` query params) has no backing
+  data — neither sample source document states seat count anywhere. Accepted by the schema,
+  not actually filterable yet.
+- The AI layer (`app/ai/requirement_interpreter.py`, `app/ai/explanation_generator.py`) was
+  written without access to a live `ANTHROPIC_API_KEY` and has not been exercised against the
+  real Claude API — verify prompt behavior (JSON-only compliance, follow-up-question quality)
+  before relying on it.
