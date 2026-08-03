@@ -1,0 +1,101 @@
+# OEM source registry. Anyone on the team can add their brand as a new
+# entry without touching the rest of the code — the parser hooks in via
+# `parser_key`.
+#
+# active: false = the brand is in the registry, but the monitor/downloader
+# doesn't process it yet (waiting on a parser or on verifying the source page).
+
+sources:
+  # Škoda has both combustion models and EVs on the same page, but the
+  # price list structure is completely different for them (engine/fuel/
+  # transmission/drivetrain vs. battery/power/range), so they're two
+  # sources with the same source_url but a different parser_key and model
+  # list — this lets the EV parser be worked on without touching the ICE
+  # parser (and vice versa), and makes it easy to filter by powertrain in
+  # the DB/API.
+  - brand: skoda
+    country: cz
+    # Verified 2026-07-10. The page is server-rendered, but the PDF links
+    # do NOT have a .pdf extension — they look like
+    # https://www.skoda-auto.cz/_doc/<uuid> (confirmed via
+    # Content-Type: application/pdf); the model + document type can only
+    # be told from the link text, e.g. "Octavia - Ceník".
+    source_url: "https://www.skoda-auto.cz/nabidka/ceniky-katalogy"
+    # Not a static filename, but a regex to find the link to the specific
+    # PDF price list in the page HTML (anchor text ends with "- Ceník").
+    pdf_pattern: 'href="(https://www\.skoda-auto\.cz/_doc/[a-f0-9-]+)">[^<]*-\s*Ceník</a>'
+    parser_key: skoda_ice
+    active: true
+    models: [Fabia, Scala, Kamiq, Octavia, Karoq, Kodiaq, Superb]
+
+  # Verified 2026-07-19 on real price lists for all four models. Enyaq
+  # has two tables on one page (SUV and Coupé body styles) — SkodaEvParser
+  # therefore looks for the header on every line as it goes, not just once
+  # at the start of the page like ICE (where a second table is always on
+  # a different page).
+  - brand: skoda
+    country: cz
+    source_url: "https://www.skoda-auto.cz/nabidka/ceniky-katalogy"
+    pdf_pattern: 'href="(https://www\.skoda-auto\.cz/_doc/[a-f0-9-]+)">[^<]*-\s*Ceník</a>'
+    parser_key: skoda_ev
+    active: true
+    models: [Enyaq, Elroq, Epiq, Peaq]
+
+  # Verified 2026-07-19. Unlike Škoda, VW doesn't have a single listing
+  # page with all models — each model has its own price list page at
+  # https://www.volkswagen.cz/<slug>/<slug>/ceniky (VolkswagenDiscoverer
+  # builds that URL itself for each model in `models`; source_url here is
+  # just an informational link to the model overview). pdf_pattern isn't
+  # used for VW (the link is found via the data-gtm-element attribute,
+  # not a regex).
+  #
+  # All 11 currently offered combustion/hybrid models (verified against
+  # real PDFs, see commit "Rozšířit VW na všechny spalovací modely").
+  # Touareg currently has no regular price list (only "Ceník akčního
+  # modelu Touareg Final Edition" — the model is being phased out), so
+  # VolkswagenDiscoverer won't find it for now; that's not a bug, just
+  # the current state of the lineup.
+  - brand: volkswagen
+    country: cz
+    source_url: "https://www.volkswagen.cz/modely"
+    pdf_pattern: null
+    parser_key: volkswagen
+    active: true
+    models: [Golf, Golf Variant, Passat, Polo, T-Cross, T-Roc, Taigo, Tayron, Tiguan, Touareg, Touran]
+
+  # EVs (ID.) have a different engine-description format than ICE (and
+  # it's inconsistent even among themselves — "140 kW, 58 kWh" for
+  # ID.4/ID.7 vs. "50 kWh 125 kW" for ID.3 Neo/ID. Polo, see
+  # VolkswagenEvParser). The "ID.3" model currently has no page of its
+  # own (only "ID.3 Neo" — a refresh), so it's listed directly under that
+  # name; see discovery/volkswagen.py _SLUG_OVERRIDES for each model's
+  # slug (can't be derived from the name because of the period in "ID.").
+  # Verified 2026-07-19 on real price lists for all five.
+  - brand: volkswagen
+    country: cz
+    source_url: "https://www.volkswagen.cz/modely"
+    pdf_pattern: null
+    parser_key: volkswagen_ev
+    active: true
+    models: [ID.3 Neo, ID.4, ID.7, ID.7 Tourer, ID. Polo]
+
+  - brand: toyota
+    country: cz
+    source_url: null
+    pdf_pattern: null
+    parser_key: toyota
+    active: false
+
+  - brand: hyundai
+    country: cz
+    source_url: null
+    pdf_pattern: null
+    parser_key: hyundai
+    active: false
+
+  - brand: kia
+    country: cz
+    source_url: null
+    pdf_pattern: null
+    parser_key: kia
+    active: false

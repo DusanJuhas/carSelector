@@ -1,0 +1,12 @@
+# Skutečně používané závislosti (ověřeno grepem přes scraper/ 19.7.2026).
+# Cílový tech stack z doc/arch/webScraping/Car_Price_List_Architecture.md
+# (Playwright pro JS-rendered OEM weby, Camelot/PyMuPDF pro table extraction,
+# Postgres/Alembic, FastAPI, APScheduler) se doplní až se pro ně najde
+# reálné využití — viz IMPLEMENTATION_PLAN.md.
+requests>=2.31
+beautifulsoup4>=4.12
+pdfplumber>=0.11
+sqlalchemy>=2.0
+pyyaml>=6.0
+click>=8.1
+pytest>=8.0
