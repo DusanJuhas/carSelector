@@ -27,13 +27,21 @@ the main repo:
 | Škoda | Enyaq, Elroq, Epiq, Peaq | EV |
 | Volkswagen | Golf, Golf Variant, Passat, Polo, T-Cross, T-Roc, Taigo, Tayron, Tiguan, Touran | ICE / MHEV / PHEV |
 | Volkswagen | ID.3 Neo, ID.4, ID.7, ID.7 Tourer, ID. Polo | EV |
+| Kia | Ceed SW, Niro, Sportage | ICE / MHEV / HEV / PHEV |
 
 Every variant has a price, a trim level, and a link back to the page/
 exact text in the source PDF (`raw_text`), so it can always be verified
 against the source. Škoda additionally includes optional equipment (the
 "Samostatné prvky výbavy" / standalone equipment items page — other
-equipment formats, VW equipment, and other OEMs are listed under
-[Status and next steps](#status-and-next-steps)).
+equipment formats, VW/Kia equipment, and other OEMs are listed under
+[Status and next steps](#status-and-next-steps)). Kia's Sportage has its
+ICE and HEV/PHEV variants as two separate source documents rather than
+one — both are discovered and parsed the same way, see
+`parsers/kia.py`/`monitors/discovery/kia.py`. Kia price lists don't carry
+a release date `extract_release_date` understands (a closed monthly
+validity range, not an open-ended start date like Škoda/VW), so Kia
+variants currently have `valid_from` = download date rather than the
+price list's own effective date.
 
 ## Installation
 
@@ -128,12 +136,15 @@ Adding a new brand/model = a new file in `parsers/` and
 ## Status and next steps
 
 Done: OOP architecture (class + plugin registry for both parsers and
-discoverers), Škoda and VW complete (both ICE and EV), optional
-equipment for Škoda (one of three formats — "Samostatné prvky výbavy" /
-standalone equipment items).
+discoverers), Škoda and VW complete (both ICE and EV), Kia price lists
+(Ceed SW/Niro/Sportage, ICE/MHEV/HEV/PHEV), optional equipment for Škoda
+(one of three formats — "Samostatné prvky výbavy" / standalone equipment
+items).
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
-(the other two equipment formats), VW equipment (different format),
-Toyota/Hyundai/Kia. Details and the reasoning for scaling one piece at a
-time (vertical slice, verify on real data, then generalize) are in
+(the other two equipment formats), VW/Kia equipment, Kia release-date
+extraction (see [Current data coverage](#current-data-coverage)),
+Toyota/Hyundai/Dacia/Mercedes-Benz/Ford/Renault/BMW. Details and the
+reasoning for scaling one piece at a time (vertical slice, verify on
+real data, then generalize) are in
 `doc/arch/webScraping/IMPLEMENTATION_PLAN.md`.
