@@ -9,6 +9,7 @@ from .base import BaseParser
 from .kia import KiaParser
 from .skoda_ev import SkodaEvParser
 from .skoda_ice import SkodaIceParser
+from .toyota import ToyotaParser
 from .volkswagen import VolkswagenParser
 from .volkswagen_ev import VolkswagenEvParser
 
@@ -18,4 +19,5 @@ PARSERS: dict[str, type[BaseParser]] = {
     "volkswagen": VolkswagenParser,
     "volkswagen_ev": VolkswagenEvParser,
     "kia": KiaParser,
+    "toyota": ToyotaParser,
 }

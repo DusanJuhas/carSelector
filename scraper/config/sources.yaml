@@ -96,35 +96,60 @@ sources:
     active: true
     models: [Ceed SW, Sportage, Niro]
 
+  # Verified 2026-08-13 on real price lists for all 7 documents (5 models,
+  # Corolla split into 3 body styles). source_url is the REAL JSON API the
+  # toyota.cz listing page itself calls client-side (found in the page's
+  # inline script) — the page's own HTML has no PDF links or model data,
+  # it's rendered entirely from this endpoint, so ToyotaDiscoverer fetches
+  # it directly rather than scraping HTML. Toyota's catalog has two
+  # recurring quirks handled generically (not hardcoded per-model) in
+  # ToyotaDiscoverer: (1) each model has many documents (current + prior
+  # year, "akce"/"limited_edition" promotional variants, catalogs,
+  # accessories, ...) — the current plain price list is picked by
+  # excluding promotional markers and taking the highest document id;
+  # (2) a redesigned model can appear as two separate catalog entries, a
+  # stale one under the plain name and the real current one under a
+  # "Nová"/"Nový"/"Nové"-prefixed name (e.g. "RAV4" vs "Nová RAV4") — the
+  # prefixed one wins on collision. Corolla Cross is deliberately not
+  # included under "Corolla" — Toyota sells it as its own nameplate, not
+  # a Corolla body style, see monitors/discovery/toyota.py.
+  - brand: toyota
+    country: cz
+    source_url: "https://pdf.sites.toyota.cz/api/models-documents?_format=json&filter[active]=true&sortBy[itemOrder]=asc"
+    pdf_pattern: null
+    parser_key: toyota
+    active: true
+    models: [Yaris, Yaris Cross, Corolla, C-HR, RAV4]
+
   # --- Remaining top-10 OEMs by CZ market share -------------------------
   # Placeholder entries (no discoverer/parser yet, same as before) for the
   # rest of the 10 best-selling brands in the Czech Republic, per 2025
   # new-passenger-car registration data (SDA figures via Cebia.cz/Auto.cz,
-  # checked 2026-08-13): Škoda 33.73%, Hyundai 8.31%, Toyota 7.49%,
-  # Volkswagen 6.67%, Dacia 4.70%, Kia 4.37% (now active, see above),
-  # Mercedes-Benz 3.36%, Ford 3.15%, Renault 2.97%, BMW 2.32%. `models`
-  # lists each brand's current core CZ lineup (~proportional to sales
-  # share) so the registry already reflects the target model set once a
-  # discoverer/parser is written for that brand — activating one is then
-  # just flipping `active: true` and filling in `pdf_pattern` (regex or
-  # null, depending on whether the discoverer needs one, same as Škoda vs.
-  # VW above).
+  # checked 2026-08-13): Škoda 33.73%, Hyundai 8.31%, Toyota 7.49% (now
+  # active, see above), Volkswagen 6.67%, Dacia 4.70%, Kia 4.37% (now
+  # active, see above), Mercedes-Benz 3.36%, Ford 3.15%, Renault 2.97%,
+  # BMW 2.32%. `models` lists each brand's current core CZ lineup
+  # (~proportional to sales share) so the registry already reflects the
+  # target model set once a discoverer/parser is written for that brand —
+  # activating one is then just flipping `active: true` and filling in
+  # `pdf_pattern` (regex or null, depending on whether the discoverer
+  # needs one, same as Škoda vs. VW above).
   #
   # source_url below is informational only until each brand's discoverer
   # is written (no discover() implementation reads it yet). Checked
   # 2026-08-13: Dacia/Kia/Renault confirmed reachable (HTTP 200) with a
   # single page listing PDF price lists for multiple/all models directly,
-  # same pattern as Škoda. Hyundai/Toyota confirmed reachable but are
-  # overview pages linking out to a separate price-list page per model
-  # (pattern closer to VW — a future discoverer would build per-model
-  # URLs, not scrape this page directly). Ford and BMW pages were found by
-  # search with titles matching "price lists/catalogs for download" but
-  # could not be fetched from this environment (TLS/network timeout on
-  # ford.cz and bmw.cz specifically) — URL not independently verified,
-  # re-check before building a discoverer against it. Mercedes-Benz has no
-  # single ceníky hub — price lists live on per-model, per-body-style
-  # pages with generation-code URLs (e.g. .../models/gle/suv-v167/...);
-  # left null pending a proper investigation of that structure.
+  # same pattern as Škoda. Hyundai confirmed reachable but is an overview
+  # page linking out to a separate price-list page per model (pattern
+  # closer to VW — a future discoverer would build per-model URLs, not
+  # scrape this page directly). Ford and BMW pages were found by search
+  # with titles matching "price lists/catalogs for download" but could
+  # not be fetched from this environment (TLS/network timeout on ford.cz
+  # and bmw.cz specifically) — URL not independently verified, re-check
+  # before building a discoverer against it. Mercedes-Benz has no single
+  # ceníky hub — price lists live on per-model, per-body-style pages with
+  # generation-code URLs (e.g. .../models/gle/suv-v167/...); left null
+  # pending a proper investigation of that structure.
 
   - brand: hyundai
     country: cz
@@ -133,14 +158,6 @@ sources:
     parser_key: hyundai
     active: false
     models: [i10, i20, i30, Kona, Tucson]
-
-  - brand: toyota
-    country: cz
-    source_url: "https://www.toyota.cz/koupe-a-nabidky/ceniky"
-    pdf_pattern: null
-    parser_key: toyota
-    active: false
-    models: [Yaris, Yaris Cross, Corolla, C-HR, RAV4]
 
   - brand: dacia
     country: cz
