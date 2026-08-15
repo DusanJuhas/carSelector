@@ -1,51 +1,18 @@
-# carSelector — web scraping module
+# DriveWise AI – scraper
 
-Local working copy for developing the web scraping module for the
-[carSelector](https://github.com/DusanJuhas/carSelector) project (AI
-Assisted Car Selection Tool). The module (`scraper/`) downloads vehicle
-price lists directly from manufacturer websites, extracts variants/
-prices/equipment from the PDFs, and stores them in a database that the
-rest of the application (car selection/filtering) will query.
+Standalone Python service that downloads vehicle price lists directly from manufacturer websites,
+extracts variants/prices/equipment from the PDFs, and stores them in its own database. See
+`doc/prompt/CLAUDE.md` for repo-wide conventions.
 
-## Why local and not directly in the main GitHub repo
+**For architecture, data coverage, and status/next-steps, see
+[`doc/arch/webScraping/`](../doc/arch/webScraping/)** — this README only covers running the module
+locally. `Car_Price_List_Architecture.md` there is the target design; `IMPLEMENTATION_PLAN.md` has
+the phased rollout plan plus the current brand/model coverage table and remaining work, kept up to
+date as brands are added.
 
-The rest of the team works in the main repo (frontend, backend, AI
-layer). The web scraping module is developed and verified separately so
-it doesn't break things for others through work-in-progress PRs. Once
-the module is working and verified on real data, it will be moved into
-the main repo:
-
-- `scraper/` → new folder in the root of `carSelector` (production code)
-- `doc/arch/webScraping/` → merged with the existing folder of the same
-  name in the main repo (architecture and docs only, no code)
-
-## Current data coverage
-
-| Brand | Model | Powertrain |
-|---|---|---|
-| Škoda | Fabia, Scala, Kamiq, Octavia, Karoq, Kodiaq, Superb | ICE |
-| Škoda | Enyaq, Elroq, Epiq, Peaq | EV |
-| Volkswagen | Golf, Golf Variant, Passat, Polo, T-Cross, T-Roc, Taigo, Tayron, Tiguan, Touran | ICE / MHEV / PHEV |
-| Volkswagen | ID.3 Neo, ID.4, ID.7, ID.7 Tourer, ID. Polo | EV |
-| Kia | Ceed SW, Niro, Sportage | ICE / MHEV / HEV / PHEV |
-| Toyota | Yaris, Yaris Cross, Corolla Sedan, Corolla Hatchback, Corolla Touring Sports, C-HR, RAV4 | HEV / PHEV |
-
-Every variant has a price, a trim level, and a link back to the page/
-exact text in the source PDF (`raw_text`), so it can always be verified
-against the source. Škoda additionally includes optional equipment (the
-"Samostatné prvky výbavy" / standalone equipment items page — other
-equipment formats, VW/Kia/Toyota equipment, and other OEMs are listed
-under [Status and next steps](#status-and-next-steps)). Kia's Sportage
-and Toyota's Corolla both have more than one source document per model
-(Sportage: ICE vs. HEV/PHEV; Corolla: Sedan/Hatchback/Touring Sports body
-styles) — all are discovered and parsed the same way, see
-`parsers/kia.py`/`monitors/discovery/kia.py` and
-`parsers/toyota.py`/`monitors/discovery/toyota.py`. Kia and Toyota price
-lists don't carry a release date `extract_release_date` understands (Kia:
-a closed monthly validity range; Toyota: "Ceník platí od", not
-"Platnost od" — neither matches Škoda/VW's open-ended "Platnost od D. M.
-RRRR"), so their variants currently have `valid_from` = download date
-rather than the price list's own effective date.
+Note this schema is separate from the backend's catalog database (`backend/app/models/`) — there
+is currently no import step from `scraper/storage/scraper.db` into it; see
+`.claude/skills/drivewise-data-model/SKILL.md` for that boundary.
 
 ## Installation
 
@@ -111,45 +78,24 @@ Other options:
 ## Structure
 
 ```text
-carSelector/
-├── scraper/                    # production code — will move to the root of the main repo
-│   ├── config/                  # OEM source registry, sources.yaml
-│   ├── sources/                 # SourceRegistry — loads the registry
-│   ├── downloaders/             # PdfDownloader — downloads PDFs
-│   ├── monitors/
-│   │   ├── discovery/            # BaseDiscoverer + per-brand discoverers
-│   │   └── source_monitor.py     # SourceMonitor — orchestrates finding new documents
-│   ├── parsers/                 # BaseParser + per-brand/powertrain parsers (plugin architecture)
-│   ├── normalization/           # EquipmentNormalizer — unifies equipment names across brands
-│   ├── database/                # SQLAlchemy models + repositories (Document/Variant/Equipment)
-│   ├── verification/            # review_cli.py — manually verify extracted data against the PDF
-│   ├── storage/                 # downloaded PDFs + SQLite DB (gitignored, except .gitkeep)
-│   ├── tests/                   # tests + PDF fixtures
-│   ├── tools/                   # datasette_metadata.json — data browsing config
-│   └── main.py                  # ScraperPipeline — entry point (python -m scraper.main)
-└── doc/arch/webScraping/        # architecture and decisions — will move to the main repo
-    ├── Car_Price_List_Architecture.md   # target architecture (full tech stack, all OEMs)
-    └── IMPLEMENTATION_PLAN.md            # phased plan (vertical slice → generalization)
+scraper/
+├── config/                  # OEM source registry, sources.yaml
+├── sources/                 # SourceRegistry — loads the registry
+├── downloaders/             # PdfDownloader — downloads PDFs
+├── monitors/
+│   ├── discovery/            # BaseDiscoverer + per-brand discoverers
+│   └── source_monitor.py     # SourceMonitor — orchestrates finding new documents
+├── parsers/                 # BaseParser + per-brand/powertrain parsers (plugin architecture)
+├── normalization/           # EquipmentNormalizer — unifies equipment names across brands
+├── database/                # SQLAlchemy models + repositories (Document/Variant/Equipment)
+├── verification/            # review_cli.py — manually verify extracted data against the PDF
+├── storage/                 # downloaded PDFs + SQLite DB (gitignored, except .gitkeep)
+├── tests/                   # tests + PDF fixtures
+├── tools/                   # datasette_metadata.json — data browsing config
+└── main.py                  # ScraperPipeline — entry point (python -m scraper.main)
 ```
 
 Adding a new brand/model = a new file in `parsers/` and
 `monitors/discovery/` + an entry in both registries
 (`parsers/registry.py`, `monitors/discovery/registry.py`) + an entry in
 `sources.yaml` — without touching existing code for other brands.
-
-## Status and next steps
-
-Done: OOP architecture (class + plugin registry for both parsers and
-discoverers), Škoda and VW complete (both ICE and EV), Kia price lists
-(Ceed SW/Niro/Sportage, ICE/MHEV/HEV/PHEV), Toyota price lists (Yaris,
-Yaris Cross, Corolla x3 body styles, C-HR, RAV4, HEV/PHEV), optional
-equipment for Škoda (one of three formats — "Samostatné prvky výbavy" /
-standalone equipment items).
-
-Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
-(the other two equipment formats), VW/Kia/Toyota equipment, Kia/Toyota
-release-date extraction (see
-[Current data coverage](#current-data-coverage)),
-Hyundai/Dacia/Mercedes-Benz/Ford/Renault/BMW. Details and the reasoning
-for scaling one piece at a time (vertical slice, verify on real data,
-then generalize) are in `doc/arch/webScraping/IMPLEMENTATION_PLAN.md`.

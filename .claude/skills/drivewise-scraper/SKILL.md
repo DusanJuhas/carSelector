@@ -1,50 +1,72 @@
 ---
 name: drivewise-scraper
-description: The web-scraping data-collection service for DriveWise AI that gathers vehicle models, specs, features, and pricing from external sources and writes cleaned records into PostgreSQL. Use this whenever building or changing anything that ingests vehicle data from outside the system — scrapers, parsers, data-cleaning steps, scheduled collection jobs, or the pipeline that feeds the catalog. Reach for it any time a task involves pulling car data from manufacturer sites, dealer portals, or marketplaces, or preparing raw external data for the database, even if it's just called "the data pipeline" or "getting car data."
+description: The web-scraping data-collection service (scraper/) for DriveWise AI that downloads manufacturer PDF price lists, parses variants/prices/equipment via per-brand plugin parsers, and stores them in its own SQLite/Postgres database (document/variant/price_history/equipment). Use this whenever building or changing anything under scraper/ — discoverers, parsers, downloaders, normalization, or the ScraperPipeline. Reach for it any time a task involves pulling car data from manufacturer sites or PDF price lists, adding a new brand/model, or verifying extracted data against a source document.
 ---
 
-# DriveWise AI — Web Scraping Service
+# DriveWise AI — Web Scraping Service (`scraper/`)
 
-A dedicated, standalone Python service that populates the vehicle catalog. It runs **offline, outside the request path** — user requests never trigger or wait on scraping. Its only output is cleaned rows written to PostgreSQL.
+A standalone Python service, independent of `backend/`. It runs **offline, outside the request
+path**: for every active source in `scraper/config/sources.yaml`, it discovers new/changed PDF
+price lists, downloads them, parses variants/prices/(optional) equipment, and stores the result in
+its own database — `scraper/storage/scraper.db` (SQLite by default; swappable via
+`SCRAPER_DATABASE_URL`). Entry point: `python -m scraper.main` (`ScraperPipeline`).
+
+**This is a different schema from `backend`'s catalog** (see `drivewise-data-model`) — there is no
+live import step between them yet. Don't assume scraped data automatically appears in the backend
+API; verify against `scraper/storage/scraper.db` (e.g. via Datasette) instead.
 
 ## Pipeline
 
 ```
-Data sources → Scraper → Data cleaning → PostgreSQL → (Recommendation engine reads later)
+sources.yaml → SourceMonitor (discoverers) → PdfDownloader → per-brand Parser → EquipmentNormalizer → scraper.db
 ```
 
-1. **Collect** from external sources.
-2. **Clean/normalize** raw fields into the catalog's shape.
-3. **Write** into `cars`, `car_specs`, `car_prices`, `car_features` (see `drivewise-data-model` for the schema — the scraper is the write-owner of `car_prices.last_updated`).
+## Schema (`scraper/database/models.py`)
 
-## Sources
+```
+document     id, source_brand, document_url, sha256_hash (dedup), file_path, release_date,
+             downloaded_at
 
-- Manufacturer websites
-- Dealer websites / portals
-- Vehicle marketplaces
-- Public price lists
+variant      id, document_id → document, brand, powertrain ("ICE"/"EV"), model, trim,
+             variant_name, source_page, raw_text
+             — source_page + raw_text make every value traceable back to the exact PDF text
 
-## Collected data
+price_history  id, variant_id → variant, document_id → document, price, currency, valid_from
 
-Vehicle models, technical specifications, features, pricing information, and vehicle descriptions — mapped onto the four catalog tables.
+equipment    id, canonical_name (unique)  — normalized name, see normalization/equipment_alias.py
 
-## Tooling
+equipment_assignment  id, variant_id → variant, equipment_id → equipment,
+             availability (STANDARD/OPTIONAL/PACKAGE/NOT_AVAILABLE)
+```
 
-Pick per source, cheapest that works:
-- **BeautifulSoup** — static HTML pages.
-- **Scrapy** — larger crawls, many pages, built-in throttling/pipelines.
-- **Playwright** — JS-rendered pages that need a real browser.
+Every `Variant`/`PriceHistory` row links back to `document.source_page` + `raw_text` by design —
+extraction can always be verified against the source, not trusted blindly.
+
+## Plugin architecture — adding a brand/model
+
+Each layer is a registry of per-brand plugins, so adding a brand touches only new files:
+1. `scraper/monitors/discovery/<brand>.py` — a `BaseDiscoverer` subclass that finds the PDF link(s) on the OEM's page; register in `monitors/discovery/registry.py`.
+2. `scraper/parsers/<brand>.py` — a `BaseParser` subclass matching that brand's PDF layout; register in `parsers/registry.py`.
+3. An entry in `scraper/config/sources.yaml` (`source_url`, `pdf_pattern`, `active: true`).
+
+Existing brands (Škoda, VW, Kia, Toyota — ICE/EV/MHEV/HEV/PHEV as applicable) are the reference
+implementations; see `doc/arch/webScraping/IMPLEMENTATION_PLAN.md` for current status and the
+"vertical slice, then generalize" rollout order, and `doc/arch/webScraping/Car_Price_List_Architecture.md`
+for the longer-term target (10 OEMs, Postgres, OCR fallback, LLM-assisted parsing).
 
 ## Cleaning conventions
 
-- Normalize units before writing: consumption, power, trunk capacity, currency — don't store whatever string the source used.
-- Deduplicate on a stable natural key (brand + model + year + trim) so re-runs update rather than duplicate.
-- Keep `price` and `currency` together; stamp `last_updated` on every price write.
-- Map source-specific attributes without a dedicated column into `car_features` rows rather than widening tables.
-- Fail soft per-record: a malformed listing should be logged and skipped, not abort the whole run.
+- `EquipmentNormalizer` (`scraper/normalization/`) unifies equipment names across brands into one canonical set — map source-specific aliases onto it rather than storing brand-specific strings.
+- Dedup documents by `sha256_hash` per brand, not URL — OEMs replace PDF content at the same URL.
+- Kia/Toyota price lists don't carry a release date the current date-extraction logic understands, so their variants use the download date as `valid_from` rather than a source-stated effective date — a known, accepted gap, not a bug to silently "fix" by guessing.
+
+## Verifying data
+
+- `pytest scraper/tests/ -v` — tests run against real PDF fixtures with values transcribed by hand, not derived from the parser.
+- `python -m scraper.verification.review_cli --document-id <ID>` — prints every extracted variant next to its source `raw_text`.
+- Datasette (`datasette scraper/storage/scraper.db --metadata scraper/tools/datasette_metadata.json`) for browsing/faceting the whole DB.
 
 ## Operational notes
 
-- Be a good citizen: respect robots.txt and rate limits, set a real User-Agent, back off on errors.
-- Make runs idempotent and re-runnable (upsert, don't blind-insert).
-- The service is decoupled and independently scalable — keep it free of backend/API imports so it can run as its own container or scheduled job.
+- Runs are idempotent/re-runnable by design (hash-based dedup on `document`, not blind-insert).
+- Kept free of `backend/` imports — it's a fully standalone service with its own dependencies (`scraper/requirements.txt`).

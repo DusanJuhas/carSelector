@@ -1,69 +1,80 @@
 ---
 name: drivewise-data-model
-description: The PostgreSQL schema and ORM/validation conventions for DriveWise AI — the cars, car_specs, car_prices, and car_features tables plus their SQLAlchemy models and Pydantic schemas. Use this whenever writing or changing anything that touches the vehicle database — models, migrations, queries, seed data, or the shape of vehicle objects returned by the API. Reach for it before defining a new table or column, writing a SQLAlchemy query, or building a Pydantic model for vehicle data, even if the task only mentions "the database" or "car data" generally.
+description: The PostgreSQL catalog schema and ORM/validation conventions for DriveWise AI — brands, models, trims, powertrains, configurations, colors, option_items, option_availability, prices, and source_documents — plus their SQLAlchemy models and Pydantic schemas. Use this whenever writing or changing anything that touches the vehicle database — models, migrations, queries, seed data, or the shape of vehicle objects returned by the API. Reach for it before defining a new table or column, writing a SQLAlchemy query, or building a Pydantic model for vehicle data, even if the task only mentions "the database" or "car data" generally.
 ---
 
 # DriveWise AI — Data Model
 
-The vehicle catalog is normalized across four PostgreSQL tables. Keep this normalization: specs, pricing, and features are separate from the core `cars` record so a car can carry many prices (per market) and many feature rows without wide sparse columns.
+The catalog is normalized across ten tables (`backend/app/models/`), built around one core idea:
+a **`configuration`** (trim × powertrain) is the actual sellable unit everything else hangs off of
+— prices, option availability, and color availability are all scoped to a `configuration_id`, not
+to a bare model or trim. Populated from whatever a source document actually lists as orderable,
+never a computed trim × powertrain cross product (not every trim offers every engine).
+
+Source of truth for the schema: `backend/app/models/*.py` and `doc/db/db-structure.md`. This skill
+is a map of it, not a copy — re-check the models if this drifts.
 
 ## Schema
 
 ```
-cars
-├── id            (PK)
-├── brand
-├── model
-├── category      (a.k.a. body_type: SUV, hatchback, ...)
-├── year
-└── description
+brands            id, slug, name
 
-car_specs
-├── car_id        (FK → cars.id)
-├── fuel_type
-├── horsepower
-├── transmission
-├── consumption
-└── drivetrain    (FWD / RWD / AWD)
+models            id, brand_id → brands, slug, name, category (body type), model_year, description
 
-car_prices
-├── car_id        (FK → cars.id)
-├── market
-├── price
-├── currency
-└── last_updated
+trims             id, model_id → models, name, display_order, description
 
-car_features
-├── car_id        (FK → cars.id)
-├── feature_name
-└── feature_value
+powertrains       id, model_id → models, manufacturer_code, fuel_type (enum), transmission,
+                   drivetrain (enum: fwd/rwd/awd), displacement_cc, power_kw/hp, torque_nm,
+                   consumption_min/max + unit, co2_min/max_g_km, emission_standard, fuel_tank_l
+
+configurations     id, trim_id → trims, powertrain_id → powertrains, manufacturer_code
+                   (UNIQUE(trim_id, powertrain_id) — the sellable unit)
+
+colors             id, model_id → models, name, manufacturer_code, finish_type (enum)
+
+configuration_colors  id, configuration_id → configurations, color_id → colors, surcharge_amount, currency
+
+option_items       id, model_id → models, category (enum: equipment/package/warranty/service),
+                   code, name, description  (the open-ended long tail: features, packages, warranties)
+
+option_availability  id, option_item_id → option_items, configuration_id → configurations,
+                   availability (enum: standard/optional/unavailable), surcharge_amount, currency
+
+prices             id, configuration_id → configurations, source_document_id → source_documents,
+                   market, currency, list_price, discount_amount, price_incl_vat, price_excl_vat,
+                   vat_rate, lowest_price_30d, valid_from, valid_to, scraped_at
+                   — APPEND-ONLY history; "current price" = the row with valid_to IS NULL
+                   (enforced by a partial unique index per configuration+market)
+
+source_documents   id, model_id → models, file_path, document_type (enum), market, locale,
+                   effective_date, campaign_valid_from/to, retrieved_at
+                   — provenance for every price row
 ```
 
-Fields from the domain spec that map onto these tables: brand, model, year, body type (`cars.category`), seats, fuel type (`car_specs.fuel_type`), engine power (`car_specs.horsepower`), consumption (`car_specs.consumption`), trunk size, price (`car_prices`), AWD availability (`car_specs.drivetrain`). Store attributes that don't have a dedicated column (e.g. seat count, trunk capacity) as `car_features` rows so the model stays extensible.
+Fields from the original domain spec map onto this schema as: brand → `brands`, model → `models`,
+body type → `models.category`, fuel type/AWD/power → `powertrains`, price → `prices`, optional
+equipment → `option_items`/`option_availability`. Seats and trunk capacity have **no dedicated
+column yet** — no source price list states them; see `doc/api-contract.md`'s "open items" before
+adding one.
 
 ## Conventions
 
-- Use **SQLAlchemy** models — one class per table, relationships declared with `relationship()` and matching foreign keys. A `Car` has many `CarSpec`, `CarPrice`, and `CarFeature` (typically one spec row, many prices/features).
-- Use **Pydantic** schemas for API I/O — never return raw ORM objects. Keep separate `...Create`, `...Read`, and internal schemas; the `Read` schema is what the API contract exposes.
-- Pydantic schema shapes must match `docs/api-contract.md`. If you change a vehicle field, update the contract in the same change.
-- `car_prices.last_updated` is set by the scraper — treat it as write-owned by the data-collection layer, read-only elsewhere.
-- Money: store `price` + `currency` together; never assume a single currency. Filter/compare in the recommendation engine, not by hardcoding conversions here.
+- **SQLAlchemy** models, one class per table (`backend/app/models/`), relationships via `relationship()`. `CarModel` (not `Model` — avoids colliding with ORM-framework naming) is the class for the `models` table.
+- **Pydantic** schemas for all API I/O (`backend/app/schemas/`) — never return raw ORM objects.
+- Pydantic schema shapes must match `doc/api-contract.md`. If you change a catalog field, update the contract in the same change.
+- Money: `list_price`/`price_incl_vat`/`price_excl_vat` + `currency` always travel together — never assume CZK, never derive excl-VAT from an assumed rate when the source doesn't state one.
+- `prices` is append-only — a price change is a new row (`valid_from` = today) after closing the previous row (`valid_to` = today), never an in-place update.
 
 ## Query guidance
 
-- The recommendation engine reads candidate vehicles from here; expose query helpers that filter by the structured parameters the AI layer produces (min_seats, body_type, budget, fuel_type, drivetrain, etc.) rather than scattering raw queries across the codebase.
-- Join specs/prices/features eagerly when returning a full vehicle detail; keep list/search queries lean.
+- The recommendation engine reads candidate vehicles through query helpers that filter by the AI layer's structured parameters (budget, body_type, fuel_type, drivetrain, etc.) — see `drivewise-ai-recommendations`.
+- Join eagerly (trim, powertrain, current price) when returning a full vehicle detail; keep list/search queries lean.
 
-## Example vehicle (denormalized view)
+## How the catalog actually gets populated today
 
-```json
-{
-  "brand": "Skoda",
-  "model": "Kodiaq",
-  "seats": 7,
-  "fuel_type": "Diesel",
-  "body_type": "SUV",
-  "trunk_capacity": 835,
-  "drivetrain": "AWD"
-}
-```
+There is **no live pipeline yet** from the `scraper/` service into this schema — they're two
+separate databases with two separate schemas. `backend/tests/conftest.py` seeds this schema by
+hand from real Mazda CX-5 price-list data in `storage/cars/`; the `scraper/` service writes into
+its own SQLite DB (`scraper/storage/scraper.db`) using a different, document-centric schema
+(`document`/`variant`/`price_history`/`equipment`) — see `drivewise-scraper`. Building the
+ETL/import step between the two is not done; don't assume it exists.

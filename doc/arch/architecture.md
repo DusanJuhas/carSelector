@@ -1,5 +1,25 @@
 # Car Selector – Architecture Overview
 
+> **Status: original concept sketch, partially superseded.** This document was written early to
+> capture the overall shape of the system (frontend ↔ backend ↔ AI ↔ DB ↔ scraper) and is still
+> accurate at that level. Specific choices below have since been locked down or changed by later,
+> more detailed documents — defer to these where they disagree with this page:
+> - **Tech stack** (frontend framework, styling, state management) → [`doc/prompt/CLAUDE.md`](../prompt/CLAUDE.md)
+>   locks React + TypeScript + Vite + **Tailwind CSS** + **Zustand** (not "React or Vue.js" /
+>   Material UI / Vuetify as shown below).
+> - **API shapes** → [`doc/api-contract.md`](../api-contract.md) is the source of truth, not the
+>   inline JSON examples here.
+> - **Database schema** → [`doc/db/db-structure.md`](../db/db-structure.md) has the actual
+>   normalized catalog (`brands/models/trims/powertrains/configurations/...`), not the simple
+>   `cars`/`car_specs`/`car_prices`/`car_features` tables sketched below.
+> - **Scraper** → [`doc/arch/webScraping/`](webScraping/) has the real, implemented architecture
+>   (PDF-based, per-brand plugin parsers), not the generic "manufacturer/dealer website scraping"
+>   described below.
+>
+> Keep this page for the high-level picture and rationale ("why a recommendation engine sits
+> behind the API", "why the scraper is decoupled"); don't treat the specific tech/schema/endpoint
+> details below as current without checking the links above first.
+
 ## Purpose
 
 The Car Selector application helps users find suitable vehicles based on their requirements, preferences, and budget. Users interact through a modern web interface, while the backend combines AI-powered requirement analysis with vehicle data stored in a centralized database.

@@ -31,4 +31,11 @@ You can also invoke any of them explicitly, e.g. `/drivewise-data-model`.
 
 ## Keeping them honest
 
-The skills defer to the repo as source of truth in this order: `CLAUDE.md` → `docs/api-contract.md` → the skill. If you change a layer boundary, a table, or an endpoint, update the matching skill in the same change so it doesn't drift.
+The skills defer to the repo as source of truth in this order: `CLAUDE.md` → `doc/api-contract.md` → the skill. If you change a layer boundary, a table, or an endpoint, update the matching skill in the same change so it doesn't drift.
+
+**Known drift (2026-08):** these skills were generated early from `doc/main.md` and the original
+`doc/arch/architecture.md` sketch. The backend and scraper have since landed with a different,
+normalized schema (`brands/models/trims/powertrains/configurations/...`, see
+`doc/db/db-structure.md` and `doc/api-contract.md`) than the `cars/car_specs/car_prices/car_features`
+tables the skills below describe. `drivewise-data-model` and `drivewise-scraper` have been updated
+to match; re-check the others whenever the schema or API contract changes.

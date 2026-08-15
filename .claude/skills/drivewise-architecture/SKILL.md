@@ -10,8 +10,8 @@ DriveWise AI helps users find suitable vehicles based on their requirements, pre
 ## Source of truth
 
 This skill is the map, not the law. When it conflicts with the repo, the repo wins in this order:
-1. `CLAUDE.md` — locked conventions (stack versions, style, structure)
-2. `docs/api-contract.md` — endpoint signatures and shared schemas
+1. `doc/prompt/CLAUDE.md` — locked conventions (stack versions, style, structure)
+2. `doc/api-contract.md` — endpoint signatures and shared schemas
 3. This skill — high-level architecture and layer responsibilities
 
 If you change a layer boundary or add a component, update this skill so it stays trustworthy.
@@ -46,14 +46,13 @@ The scraper runs independently of the request path — it populates the catalog 
 
 ## Technology stack
 
-Defer to `CLAUDE.md` for exact versions; this is the intended shape.
+Locked per `doc/prompt/CLAUDE.md` — do not swap these without discussion.
 
-- **Backend:** Python 3.11+, FastAPI, SQLAlchemy, Pydantic
-- **Frontend:** React + TypeScript (Vue is an acceptable alternative if the repo uses it), Axios for HTTP
-- **Database:** PostgreSQL (SQLite is acceptable only for a throwaway prototype)
-- **AI:** Claude API for requirement extraction and explanations (OpenAI / Azure OpenAI / LangChain / Ollama are alternatives the project may use)
-- **Scraping:** BeautifulSoup, Scrapy, or Playwright
-- **DevOps:** Docker, GitHub Actions, unit tests
+- **Backend:** Python 3.11+, FastAPI, SQLAlchemy, Pydantic v2, PostgreSQL (Alembic for migrations)
+- **Frontend:** React + TypeScript, Vite, Tailwind CSS, Zustand (state), Axios, Vitest + React Testing Library
+- **AI:** Claude API (Anthropic SDK) only, called exclusively from `backend/app/ai`
+- **Scraping:** the standalone `scraper/` service — requests/BeautifulSoup/pdfplumber today, see `doc/arch/webScraping/` for the target/phased stack
+- **DevOps:** Docker, GitHub Actions, unit tests (aspirational — not yet set up)
 
 ## Design principles to preserve
 

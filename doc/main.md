@@ -1,5 +1,13 @@
 # Car Selector
 
+> **Status: original challenge brief, historical.** This is the initial spec the project started
+> from — kept for context on the "why" behind later decisions, not as the current source of truth.
+> Scope has since been narrowed and re-decided in [`doc/po/MVP.md`](po/MVP.md) and
+> [`doc/po/Version2.md`](po/Version2.md), the tech stack locked in
+> [`doc/prompt/CLAUDE.md`](prompt/CLAUDE.md) (FastAPI + **Claude API**, not Flask/OpenAI/Azure as
+> suggested below), and the API/DB shapes superseded by [`doc/api-contract.md`](api-contract.md)
+> and [`doc/db/db-structure.md`](db/db-structure.md).
+
 ## Goal
 
 **AI-Powered Car Selection Assistant**

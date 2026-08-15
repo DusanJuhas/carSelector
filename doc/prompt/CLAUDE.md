@@ -8,7 +8,8 @@ opakovat v každém promptu.
 
 DriveWise AI je aplikace pro výběr vozidel na základě požadavků, preferencí a rozpočtu uživatele.
 Kombinuje AI analýzu požadavků (Claude API) s katalogem vozidel v PostgreSQL databázi.
-Plná architektura: viz `docs/architecture.md`.
+Plná architektura: viz `doc/arch/architecture.md` (pozor: aktuálně superseded, viz poznámka
+na začátku toho souboru).
 
 ## Struktura repozitáře
 
@@ -29,7 +30,7 @@ Plná architektura: viz `docs/architecture.md`.
     /models      SQLAlchemy modely
     /schemas     Pydantic schémata (request/response)
 /scraper         samostatná Python služba pro sběr dat o vozidlech
-/docs            architektura, API kontrakty, poznámky
+/doc             architektura, API kontrakty, poznámky (viz doc/README.md pro přehled)
 ```
 
 ## Tech stack (závazně, neměnit bez domluvy)
@@ -72,13 +73,12 @@ Plná architektura: viz `docs/architecture.md`.
 
 ## API kontrakt (zdroj pravdy)
 
-Aktuální request/response tvary jsou v `/docs/api-contract.md` (pokud soubor zatím neexistuje,
-agent má nejprve navrhnout jeho obsah na základě příkladu v `architecture.md`, ne si ho vymýšlet
-ad hoc v komponentě).
+Aktuální request/response tvary jsou v `/doc/api-contract.md` — toto je zdroj pravdy, existuje a
+je aktuální; `frontend/src/types` a `backend/app/schemas` mu musí odpovídat.
 
 ## Design tokeny
 
-Barvy, typografie a spacing viz `/docs/design-tokens.md` (TODO – doplnit před stylingem UI).
+Barvy, typografie a spacing viz `/doc/design-tokens.md`.
 
 ## Co agent nemá dělat bez domluvy
 
