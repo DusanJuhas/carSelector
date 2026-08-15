@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from scraper.database.models import Base
 
-DEFAULT_SQLITE_PATH = Path(__file__).resolve().parent.parent / "storage" / "scraper.db"
+# Repo-root storage/scraper.db, not scraper/storage/scraper.db - see
+# downloaders/pdf_downloader.py's STORAGE_ROOT and storage/README.md.
+DEFAULT_SQLITE_PATH = Path(__file__).resolve().parents[2] / "storage" / "scraper.db"
 DATABASE_URL = os.environ.get("SCRAPER_DATABASE_URL", f"sqlite:///{DEFAULT_SQLITE_PATH}")
 
 engine = create_engine(DATABASE_URL, echo=False)

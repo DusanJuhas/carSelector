@@ -217,3 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# DriveWise AI — local data (see storage/README.md)
+# backend/'s dev DB: regenerated via `alembic upgrade head` + `python -m app.db.seed`,
+# not committed. storage/scraper.db and storage/scraper/**/*.pdf ARE committed on
+# purpose (a reproducible scraped-data baseline) - don't broaden this pattern.
+/storage/drivewise.db
+

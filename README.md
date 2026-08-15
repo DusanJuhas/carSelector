@@ -27,7 +27,7 @@ frontend/   React + TypeScript + Vite + Tailwind — chat UI, results/comparison
 scraper/    Standalone Python service — downloads & parses manufacturer PDF price lists
 doc/        Architecture, API contract, DB schema, scope decisions — see doc/README.md for the index
 scripts/    Convenience launchers (e.g. run-ui.sh/.bat/.ps1 — frontend only, mock-backed)
-storage/    Sample source price-list PDFs used to hand-seed backend test/demo data
+storage/    All local DB files + PDF copies for backend/ and scraper/ — see storage/README.md
 .claude/    Claude Code project config: skills (doc/prompt/CLAUDE.md is the main conventions file)
 requirements.txt, requirements-dev.txt   Python deps for backend/ + scraper/ (one shared venv;
             frontend/ is Node, see frontend/package.json)

@@ -110,6 +110,7 @@ piece at a time (vertical slice, verify on real data, then generalize)
 are in the phases above.
 
 Also remaining, per `drivewise-data-model`: there is no import/ETL step
-from this scraper's database (`scraper/storage/scraper.db`) into the
-backend's normalized catalog schema (`backend/app/models/`) yet — they
-are two separate databases with two separate schemas today.
+from this scraper's database (`storage/scraper.db`, repo root — see
+`storage/README.md`) into the backend's normalized catalog schema
+(`backend/app/models/`) yet — they are two separate databases with two
+separate schemas today.

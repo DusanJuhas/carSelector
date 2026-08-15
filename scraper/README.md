@@ -11,8 +11,8 @@ the phased rollout plan plus the current brand/model coverage table and remainin
 date as brands are added.
 
 Note this schema is separate from the backend's catalog database (`backend/app/models/`) — there
-is currently no import step from `scraper/storage/scraper.db` into it; see
-`.claude/skills/drivewise-data-model/SKILL.md` for that boundary.
+is currently no import step from `storage/scraper.db` (repo root — see `storage/README.md`) into
+it; see `.claude/skills/drivewise-data-model/SKILL.md` for that boundary.
 
 ## Installation
 
@@ -40,9 +40,10 @@ python -m scraper.main
 
 For every active source (`scraper/config/sources.yaml`, `active: true`)
 it checks for new/changed price lists, downloads them into
-`scraper/storage/<brand>/`, parses them, and stores the result in a
-local SQLite database at `scraper/storage/scraper.db` (can be switched
-via the `SCRAPER_DATABASE_URL` environment variable, e.g. to Postgres).
+`storage/scraper/<brand>/` (repo root — see `storage/README.md`), parses
+them, and stores the result in a local SQLite database at
+`storage/scraper.db` (can be switched via the `SCRAPER_DATABASE_URL`
+environment variable, e.g. to Postgres).
 
 ## Tests
 
@@ -62,7 +63,7 @@ over the whole database:
 
 ```bash
 pip install datasette
-datasette scraper/storage/scraper.db \
+datasette storage/scraper.db \
   --metadata scraper/tools/datasette_metadata.json \
   --port 8001
 ```
@@ -73,8 +74,8 @@ table for `source_brand`, the `equipment_assignment` table for
 `availability`, all sorted with the newest records first.
 
 Other options:
-- **Raw SQL:** `sqlite3 scraper/storage/scraper.db`
-- **GUI app:** [DB Browser for SQLite](https://sqlitebrowser.org/) (free) — open `scraper/storage/scraper.db`
+- **Raw SQL:** `sqlite3 storage/scraper.db`
+- **GUI app:** [DB Browser for SQLite](https://sqlitebrowser.org/) (free) — open `storage/scraper.db`
 - **Verify against the PDF:** `python -m scraper.verification.review_cli --document-id <ID>` prints every variant together with the exact `raw_text` it was extracted from
 
 ## Structure
@@ -83,19 +84,23 @@ Other options:
 scraper/
 ├── config/                  # OEM source registry, sources.yaml
 ├── sources/                 # SourceRegistry — loads the registry
-├── downloaders/             # PdfDownloader — downloads PDFs
+├── downloaders/             # PdfDownloader — downloads PDFs (into ../storage/scraper/)
 ├── monitors/
 │   ├── discovery/            # BaseDiscoverer + per-brand discoverers
 │   └── source_monitor.py     # SourceMonitor — orchestrates finding new documents
 ├── parsers/                 # BaseParser + per-brand/powertrain parsers (plugin architecture)
 ├── normalization/           # EquipmentNormalizer — unifies equipment names across brands
-├── database/                # SQLAlchemy models + repositories (Document/Variant/Equipment)
+├── database/                # SQLAlchemy models + repositories (Document/Variant/Equipment),
+│                             # DB file at ../storage/scraper.db
 ├── verification/            # review_cli.py — manually verify extracted data against the PDF
-├── storage/                 # downloaded PDFs + SQLite DB (gitignored, except .gitkeep)
 ├── tests/                   # tests + PDF fixtures
 ├── tools/                   # datasette_metadata.json — data browsing config
 └── main.py                  # ScraperPipeline — entry point (python -m scraper.main)
 ```
+
+Downloaded PDFs and the SQLite DB live in [`../storage/`](../storage/README.md) (repo root), not
+under `scraper/` — shared with `backend/`'s dev DB, and (unlike that one) committed on purpose: a
+reproducible scraped-data baseline, not gitignored.
 
 Adding a new brand/model = a new file in `parsers/` and
 `monitors/discovery/` + an entry in both registries

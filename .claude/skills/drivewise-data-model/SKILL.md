@@ -72,8 +72,9 @@ adding one.
 
 ## Database: SQLite by default, Postgres is the target
 
-`DATABASE_URL` defaults to a local SQLite file (`backend/drivewise.db`) so the backend runs without
-installing Postgres — see `backend/README.md`'s Database section. The schema/migration is kept
+`DATABASE_URL` defaults to a local SQLite file (`storage/drivewise.db`, repo root — see
+`storage/README.md`) so the backend runs without installing Postgres — see `backend/README.md`'s
+Database section. The schema/migration is kept
 dual-dialect on purpose (`app/db/base.py`'s `BigIntPK`, the `prices` partial index's
 `postgresql_where`/`sqlite_where` pair, the Postgres-only `DROP TYPE` downgrade guard) — don't add
 Postgres-only DDL to a model or migration without a SQLite equivalent, and don't assume Postgres
@@ -86,6 +87,6 @@ separate databases with two separate schemas. `backend/app/db/seed.py`'s `seed_d
 one source of truth for the demo dataset (real Mazda CX-5 price-list data from `storage/cars/`),
 shared by `backend/tests/conftest.py` (in-memory SQLite, per test) and `python -m app.db.seed`
 (the persistent dev SQLite file); the `scraper/` service writes into its own SQLite DB
-(`scraper/storage/scraper.db`) using a different, document-centric schema
+(`storage/scraper.db`) using a different, document-centric schema
 (`document`/`variant`/`price_history`/`equipment`) — see `drivewise-scraper`. Building the
 ETL/import step between the two is not done; don't assume it exists.

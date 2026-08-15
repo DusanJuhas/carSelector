@@ -31,6 +31,8 @@ na začátku toho souboru).
     /schemas     Pydantic schémata (request/response)
 /scraper         samostatná Python služba pro sběr dat o vozidlech
 /doc             architektura, API kontrakty, poznámky (viz doc/README.md pro přehled)
+/storage         všechny lokální DB soubory + PDF kopie pro /backend a /scraper (viz storage/README.md) —
+                 ne uvnitř backend/ nebo scraper/
 requirements.txt, requirements-dev.txt   Python závislosti pro /backend + /scraper (jeden sdílený
                  venv v rootu; /frontend má vlastní package.json)
 ```

@@ -36,8 +36,9 @@ cd backend
 Commands below (`uvicorn`, `alembic`, `pytest`) still need to run with `backend/` as the working
 directory (that's where `app/`, `alembic.ini`, etc. live) — only dependency installation moved.
 
-`DATABASE_URL` defaults to a SQLite file at `backend/drivewise.db` — no database server to install,
-see Database below. To use PostgreSQL instead, set `DATABASE_URL` (or create a `.env` file):
+`DATABASE_URL` defaults to a SQLite file at `storage/drivewise.db` (repo root, see
+`storage/README.md`) — no database server to install, see Database below. To use PostgreSQL
+instead, set `DATABASE_URL` (or create a `.env` file):
 
 ```
 DATABASE_URL=postgresql+psycopg://drivewise:drivewise@localhost:5432/drivewise
@@ -62,7 +63,7 @@ reasonable) before relying on it.
 
 ## Database
 
-SQLite (a local file, `backend/drivewise.db`, gitignored) is the default for now, so the app runs
+SQLite (a local file, `storage/drivewise.db`, gitignored) is the default for now, so the app runs
 without installing anything database-related. The schema (`app/models/`, the Alembic migration) is
 written to stay dual-dialect rather than SQLite-only — see `app/db/base.py`'s `BigIntPK` (SQLite
 only auto-increments a PK when the column is literally `INTEGER`, unlike Postgres's `BIGSERIAL`)
@@ -70,7 +71,7 @@ and the `prices` table's partial unique index (`postgresql_where`/`sqlite_where`
 switching `DATABASE_URL` to Postgres later needs no model/migration changes.
 
 ```bash
-alembic upgrade head      # creates backend/drivewise.db and the schema in it
+alembic upgrade head      # creates storage/drivewise.db and the schema in it
 python -m app.db.seed     # seeds one real, hand-verified vehicle (Mazda CX-5) - safe to re-run,
                            # skips if the DB already has data
 ```

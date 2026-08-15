@@ -8,12 +8,12 @@ description: The web-scraping data-collection service (scraper/) for DriveWise A
 A standalone Python service, independent of `backend/`. It runs **offline, outside the request
 path**: for every active source in `scraper/config/sources.yaml`, it discovers new/changed PDF
 price lists, downloads them, parses variants/prices/(optional) equipment, and stores the result in
-its own database — `scraper/storage/scraper.db` (SQLite by default; swappable via
+its own database — `storage/scraper.db` (SQLite by default; swappable via
 `SCRAPER_DATABASE_URL`). Entry point: `python -m scraper.main` (`ScraperPipeline`).
 
 **This is a different schema from `backend`'s catalog** (see `drivewise-data-model`) — there is no
 live import step between them yet. Don't assume scraped data automatically appears in the backend
-API; verify against `scraper/storage/scraper.db` (e.g. via Datasette) instead.
+API; verify against `storage/scraper.db` (e.g. via Datasette) instead.
 
 ## Pipeline
 
@@ -64,7 +64,7 @@ for the longer-term target (10 OEMs, Postgres, OCR fallback, LLM-assisted parsin
 
 - `pytest scraper/tests/ -v` — tests run against real PDF fixtures with values transcribed by hand, not derived from the parser.
 - `python -m scraper.verification.review_cli --document-id <ID>` — prints every extracted variant next to its source `raw_text`.
-- Datasette (`datasette scraper/storage/scraper.db --metadata scraper/tools/datasette_metadata.json`) for browsing/faceting the whole DB.
+- Datasette (`datasette storage/scraper.db --metadata scraper/tools/datasette_metadata.json`) for browsing/faceting the whole DB.
 
 ## Operational notes
 

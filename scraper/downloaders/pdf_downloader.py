@@ -9,7 +9,11 @@ from pathlib import Path
 
 import requests
 
-STORAGE_ROOT = Path(__file__).resolve().parent.parent / "storage"
+# Repo-root storage/scraper/, not scraper/storage/ - all local data files
+# (this module's downloads, scraper.db, backend's drivewise.db, the hand-
+# picked fixture PDFs in storage/cars/) live under one top-level storage/
+# directory - see storage/README.md.
+STORAGE_ROOT = Path(__file__).resolve().parents[2] / "storage" / "scraper"
 
 
 def sha256_of(content: bytes) -> str:
@@ -27,7 +31,7 @@ class PdfDownloader:
         self._storage_root = storage_root
 
     def download(self, url: str, brand: str, *, timeout: int = 30) -> tuple[Path, str]:
-        """Downloads the PDF and stores it at storage/<brand>/<year>/<hash>.pdf.
+        """Downloads the PDF and stores it at storage/scraper/<brand>/<year>/<hash>.pdf.
 
         Returns (file_path, sha256_hash) — the hash is compared in the
         monitor against the document table so the same content is never
