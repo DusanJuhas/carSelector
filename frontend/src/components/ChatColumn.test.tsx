@@ -4,24 +4,42 @@ import { describe, expect, it, vi } from 'vitest';
 import { ChatColumn } from './ChatColumn';
 
 describe('ChatColumn', () => {
-  it('calls onSelectSuggestion when the suggested reply chip is clicked', async () => {
-    const onSelectSuggestion = vi.fn();
+  it('sends the typed message and clears the input', async () => {
+    const onSend = vi.fn();
     render(
-      <ChatColumn
-        messages={[{ role: 'assistant', text: 'Ahoj!' }]}
-        nextSuggestion="Hodně jezdíme v horách"
-        onSelectSuggestion={onSelectSuggestion}
-      />,
+      <ChatColumn messages={[{ role: 'assistant', text: 'Ahoj!' }]} isSending={false} onSend={onSend} />,
     );
 
-    await userEvent.click(screen.getByText('Hodně jezdíme v horách'));
-    expect(onSelectSuggestion).toHaveBeenCalledOnce();
+    const input = screen.getByPlaceholderText('Napište odpověď…');
+    await userEvent.type(input, 'Hodně jezdíme v horách');
+    await userEvent.click(screen.getByRole('button', { name: 'Odeslat' }));
+
+    expect(onSend).toHaveBeenCalledWith('Hodně jezdíme v horách');
+    expect(input).toHaveValue('');
   });
 
-  it('shows a completion message when there is no next suggestion', () => {
-    render(
-      <ChatColumn messages={[{ role: 'assistant', text: 'Ahoj!' }]} nextSuggestion={null} onSelectSuggestion={vi.fn()} />,
-    );
-    expect(screen.getByText(/konverzace dokončena/i)).toBeInTheDocument();
+  it('sends on Enter as well as on the button click', async () => {
+    const onSend = vi.fn();
+    render(<ChatColumn messages={[]} isSending={false} onSend={onSend} />);
+
+    await userEvent.type(screen.getByPlaceholderText('Napište odpověď…'), 'Rodinné auto{Enter}');
+
+    expect(onSend).toHaveBeenCalledWith('Rodinné auto');
+  });
+
+  it('does not send an empty or whitespace-only message', async () => {
+    const onSend = vi.fn();
+    render(<ChatColumn messages={[]} isSending={false} onSend={onSend} />);
+
+    await userEvent.type(screen.getByPlaceholderText('Napište odpověď…'), '   {Enter}');
+
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it('disables the input and shows a typing indicator while sending', () => {
+    render(<ChatColumn messages={[]} isSending={true} onSend={vi.fn()} />);
+
+    expect(screen.getByPlaceholderText('Napište odpověď…')).toBeDisabled();
+    expect(screen.getByText('Přemýšlím…')).toBeInTheDocument();
   });
 });

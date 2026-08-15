@@ -10,10 +10,11 @@ must match.
 src/
   components/  reusable UI components — one component = one file + one *.test.tsx
   pages/       routed screens (currently: ChatPage)
-  hooks/       custom React hooks (e.g. useConversation)
-  api/         backend calls, typed — real client + a mock/ subfolder (see below)
+  hooks/       custom React hooks (useConversation, useCatalog)
+  api/         typed backend calls — client.ts (Axios instance + ApiError), conversation.ts,
+               catalog.ts, vehicleSummary.ts (shared VehicleSummary DTO + Car adapter)
   types/       shared TS types, mirroring backend/app/schemas per doc/api-contract.md
-  store/       global state (Zustand) — conversationStore
+  store/       global state (Zustand) — conversationStore, catalogStore
   i18n/        i18next config + locale resource bundles (see Language below)
   utils/       small pure helpers (e.g. money formatting)
 ```
@@ -27,20 +28,41 @@ type, spacing) are in `doc/design-tokens.md`.
 The UI ships in Czech only — `src/i18n/config.ts` fixes `lng`/`fallbackLng` to `'cs'`, there's no
 language switcher. All static UI copy goes through `useTranslation()`/`t()` against
 `src/i18n/locales/cs.json`, not hardcoded strings in components; `en.json` exists alongside it with
-the same keys so a second language is a resource file + a switcher, not a rewrite. The scripted
-demo conversation (`src/api/mock/conversation.ts`) is written directly in Czech instead of going
-through the translation keys — it stands in for AI-generated content the backend will eventually
-produce already-localized, not static chrome.
+the same keys so a second language is a resource file + a switcher, not a rewrite. AI-generated
+content (the assistant's messages, per-vehicle explanations) comes from the backend already in
+Czech — see `doc/prompt/CLAUDE.md`'s language convention — and isn't routed through the
+translation keys, since it isn't static chrome.
 
 Prices are a `Money` object (`{ amount, currency }`, matching `doc/api-contract.md`), formatted via
 `src/utils/money.ts`'s `formatMoney()` (`Intl.NumberFormat('cs-CZ', { style: 'currency', currency:
 'CZK' })`) — never a hardcoded currency symbol or a pre-formatted string in mock/seed data.
 
-## Current status: chat UI runs against mock data
+## Talking to the backend
 
-There is no `src/api/client.ts` yet — `src/api/mock/conversation.ts` is the only implementation of
-the conversation API today, and `hooks/useConversation.ts` calls into it. The backend's real
-conversation endpoints exist (see `backend/README.md`) but aren't wired up from here yet.
+`hooks/useConversation.ts` calls `api/conversation.ts`'s `startConversation`/`sendMessage` (an
+Axios client, `api/client.ts`) against the real backend — `VITE_API_BASE_URL` overrides the
+default of `http://localhost:8000/api` (see backend/README.md for running it). Errors surface as
+a typed `ApiError` with a `code` (`"ai_not_configured"`, `"network_error"`, ...) so the UI can
+show a specific message instead of a generic failure - see `ChatPage`'s error banner for the
+`ai_not_configured` case.
+
+### Browsing mode vs. narrowed mode
+
+`ChatPage` shows one of two things in the results panel, decided by `conversationStore`'s
+`hasNarrowed` flag:
+
+- **Browsing** (default, and whenever the AI hasn't actually searched yet): the full catalog,
+  loaded page by page via `hooks/useCatalog.ts` → `api/catalog.ts`'s `listVehicles` (`GET
+  /vehicles`, paginated, "Load more" to fetch another page). This needs no conversation and no
+  `ANTHROPIC_API_KEY` - it's what you see before typing anything, and what you're left with if the
+  AI layer isn't configured (see the banner above).
+- **Narrowed**: once a chat turn's response has `searched: true` (the recommendation engine
+  actually ran - see doc/api-contract.md), the AI-ranked/filtered shortlist from that turn.
+  `hasNarrowed` stays `true` through later follow-up-only turns (a real zero-match search must
+  show "0 matches", not silently fall back to the catalog) - only `restart()` clears it.
+
+`Car.score` is `null` in browsing mode (no match to score against) - `CarCard` hides the
+score badge/top-pick ribbon when it's `null` rather than showing a misleading 0%.
 
 ## Setup
 

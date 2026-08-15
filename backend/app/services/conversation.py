@@ -20,19 +20,25 @@ from app.schemas.conversation import ChatMessage, MessageResponse
 from app.schemas.requirement import StructuredRequirements, UserRequirement
 from app.services.recommendation_engine import RecommendationEngine, engine as default_engine
 
+# Czech, like every other user-facing string in this module - see
+# doc/prompt/CLAUDE.md's language convention. This one in particular went
+# unnoticed as English for a while: nothing rendered it live until the
+# frontend was wired to the real API (frontend/src/api/conversation.ts) -
+# the scripted frontend mock it replaced had its own separately-authored
+# Czech copy, so a wrong language here was invisible until then.
 INTRO_MESSAGE = (
-    "Hi! Tell me about how you'll use your next car - where you drive, who's riding along, "
-    "what matters most - and I'll translate that into the right specs and shortlist real cars "
-    "for you."
+    "Ahoj! Řekněte mi, jak budete své nové auto využívat — kde jezdíte, kdo s vámi jezdí, "
+    "co je pro vás nejdůležitější — a já to přetavím do konkrétních parametrů a vyberu vám "
+    "reálné vozy k porovnání."
 )
 
 _FIELD_LABELS = {
-    "body_type": "Body type",
-    "min_seats": "Seating",
-    "budget_max": "Budget",
-    "fuel_type": "Fuel type",
-    "drivetrain": "Drivetrain",
-    "priorities": "Priorities",
+    "body_type": "Karoserie",
+    "min_seats": "Počet míst",
+    "budget_max": "Rozpočet",
+    "fuel_type": "Palivo",
+    "drivetrain": "Pohon",
+    "priorities": "Priority",
 }
 
 
@@ -175,7 +181,9 @@ class ConversationOrchestrator:
         Returns:
             The assistant's reply for this turn: either a follow-up
             question (if requirements are still underspecified, in which
-            case `vehicles` is empty) or an updated shortlist with
+            case `vehicles` is empty and `searched` is `False`) or an
+            updated shortlist (`searched=True`, though `vehicles` can
+            still legitimately be empty - nothing matched) with
             explanations where the AI layer is configured.
 
         Raises:
@@ -192,13 +200,14 @@ class ConversationOrchestrator:
         state.history.append(ChatMessage(role="user", text=text))
 
         if extraction.requirements is None:
-            assistant_text = extraction.follow_up_question or "Could you tell me a bit more about what you need?"
+            assistant_text = extraction.follow_up_question or "Můžete mi prosím říct trochu více o tom, co potřebujete?"
             state.history.append(ChatMessage(role="assistant", text=assistant_text))
             return MessageResponse(
                 assistant_text=assistant_text,
                 requirements=self._to_user_requirements(state.requirements, set(), text),
                 structured_requirements=state.requirements,
                 vehicles=[],
+                searched=False,
             )
 
         merged, changed = self._merge_requirements(state.requirements, extraction.requirements)
@@ -217,9 +226,10 @@ class ConversationOrchestrator:
             explained.append(vehicle.model_copy(update={"explanation": explanation}) if explanation else vehicle)
 
         assistant_text = (
-            f"Updated your shortlist based on what you've told me - {len(explained)} vehicles match so far."
+            f"Na základě toho, co jste mi řekli, jsem aktualizoval váš výběr — aktuálně vyhovuje "
+            f"{len(explained)} vozů."
             if explained
-            else "I've updated your requirements, but nothing in the catalog matches yet - want to loosen anything?"
+            else "Aktualizoval jsem vaše požadavky, ale v katalogu zatím nic nevyhovuje — chcete něco uvolnit?"
         )
         state.history.append(ChatMessage(role="assistant", text=assistant_text))
 
@@ -228,6 +238,7 @@ class ConversationOrchestrator:
             requirements=self._to_user_requirements(merged, changed, text),
             structured_requirements=merged,
             vehicles=explained,
+            searched=True,
         )
 
 

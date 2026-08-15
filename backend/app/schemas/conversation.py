@@ -27,3 +27,10 @@ class MessageResponse(BaseModel):
     requirements: list[UserRequirement]
     structured_requirements: StructuredRequirements
     vehicles: list[VehicleSummary]
+    # True iff the recommendation engine actually ran this turn (enough was
+    # known to search on) - false while the AI is still asking follow-up
+    # questions. Distinguishes "haven't searched yet" from "searched and
+    # found nothing" for a client showing an unfiltered catalog as a
+    # fallback before the first real search (both cases leave `vehicles`
+    # empty, but only the second should say "0 matches").
+    searched: bool

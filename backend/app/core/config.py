@@ -22,3 +22,16 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{_DEFAULT_SQLITE_PATH}")
 # than silently run without a key.
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5")
+
+# Origins the frontend can call this API from (see app/main.py's
+# CORSMiddleware). Vite's dev server defaults to port 5173 on both
+# localhost and 127.0.0.1 - both are listed since browsers treat them as
+# different origins. Override/extend via CORS_ALLOWED_ORIGINS (comma-
+# separated) once there's a real deployed frontend origin to allow.
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
+    if origin.strip()
+]

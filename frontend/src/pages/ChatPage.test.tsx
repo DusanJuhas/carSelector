@@ -1,35 +1,171 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatPage } from './ChatPage';
+import { ApiError } from '../api/client';
+import * as conversationApi from '../api/conversation';
+import * as catalogApi from '../api/catalog';
 import { useConversationStore } from '../store/conversationStore';
+import { useCatalogStore } from '../store/catalogStore';
+import type { Car } from '../types';
 
-afterEach(() => {
-  useConversationStore.setState({ turnIndex: 0, drawerOpen: false });
+vi.mock('../api/conversation');
+vi.mock('../api/catalog');
+
+const mockedStart = vi.mocked(conversationApi.startConversation);
+const mockedSend = vi.mocked(conversationApi.sendMessage);
+const mockedListVehicles = vi.mocked(catalogApi.listVehicles);
+
+const octavia: Car = {
+  id: '1',
+  make: 'Škoda',
+  model: 'Octavia',
+  trim: 'Selection',
+  price: { amount: 700000, currency: 'CZK' },
+  score: null,
+  specs: ['Diesel'],
+  flag: null,
+};
+
+const fabia: Car = {
+  id: '2',
+  make: 'Škoda',
+  model: 'Fabia',
+  trim: 'Classic',
+  price: { amount: 450000, currency: 'CZK' },
+  score: null,
+  specs: ['Petrol'],
+  flag: null,
+};
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  useConversationStore.setState({
+    conversationId: null,
+    messages: [],
+    requirements: [],
+    cars: [],
+    hasNarrowed: false,
+    drawerOpen: false,
+  });
+  useCatalogStore.setState({ cars: [], page: 0, pageSize: 20, total: 0 });
+  mockedStart.mockResolvedValue({
+    conversationId: 'conv-1',
+    introMessage: { role: 'assistant', text: 'Ahoj! Jak vám mohu pomoci?' },
+  });
+  mockedListVehicles.mockResolvedValue({ cars: [octavia, fabia], page: 1, pageSize: 20, total: 2 });
 });
 
 describe('ChatPage', () => {
-  it('shows the empty shortlist state before the conversation starts', () => {
+  it('shows the full catalog by default, before any discussion narrows it', async () => {
     render(<ChatPage />);
-    expect(screen.getByText('Váš výběr')).toBeInTheDocument();
-    expect(screen.getByText(/začněte konverzaci/i)).toBeInTheDocument();
+
+    expect(await screen.findByText('Škoda Octavia Selection')).toBeInTheDocument();
+    expect(screen.getByText('Škoda Fabia Classic')).toBeInTheDocument();
+    expect(screen.getByText('2 vozy v katalogu')).toBeInTheDocument();
+    expect(screen.getByText(/AI vám katalog zúží/i)).toBeInTheDocument();
+    // Catalog cars carry no match score - browsing mode, not a recommendation.
+    expect(screen.queryByText(/%$/)).not.toBeInTheDocument();
   });
 
-  it('reveals requirements and a ranked shortlist after picking a suggested reply', async () => {
+  it('offers to load more of the catalog when more pages exist', async () => {
+    mockedListVehicles.mockResolvedValueOnce({ cars: [octavia], page: 1, pageSize: 1, total: 2 });
     render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
 
-    await userEvent.click(screen.getByText(/čtyřčlenná rodina/i));
+    mockedListVehicles.mockResolvedValueOnce({ cars: [fabia], page: 2, pageSize: 1, total: 2 });
+    await userEvent.click(screen.getByRole('button', { name: 'Načíst další' }));
 
-    expect(screen.getByText(/\d+ shod/i)).toBeInTheDocument();
-    expect(screen.getByText('Subaru Outback Wilderness')).toBeInTheDocument();
+    expect(await screen.findByText('Škoda Fabia Classic')).toBeInTheDocument();
+    expect(mockedListVehicles).toHaveBeenCalledWith({ page: 2, pageSize: 1 });
   });
 
-  it('restarts the conversation back to the empty state', async () => {
-    render(<ChatPage />);
+  it('switches to the AI-narrowed shortlist once the assistant actually searches', async () => {
+    mockedSend.mockResolvedValue({
+      assistantMessage: { role: 'assistant', text: 'Tady je váš výběr.' },
+      requirements: [{ label: 'Rozpočet', value: '700 000 Kč', source: '"asi 700 000 Kč"', changed: true }],
+      cars: [{ ...octavia, score: 90, topPick: true }],
+      searched: true,
+    });
 
-    await userEvent.click(screen.getByText(/čtyřčlenná rodina/i));
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection'); // catalog, before narrowing
+
+    await userEvent.type(screen.getByPlaceholderText('Napište odpověď…'), 'Potřebuju rodinné auto{Enter}');
+
+    expect(await screen.findByText('Tady je váš výběr.')).toBeInTheDocument();
+    expect(screen.getByText('90%')).toBeInTheDocument();
+    expect(screen.queryByText('Škoda Fabia Classic')).not.toBeInTheDocument();
+    expect(screen.getByText('1 shoda pro vás')).toBeInTheDocument();
+    expect(mockedSend).toHaveBeenCalledWith('conv-1', 'Potřebuju rodinné auto');
+  });
+
+  it('stays on the catalog while the AI is still asking a follow-up question', async () => {
+    mockedSend.mockResolvedValue({
+      assistantMessage: { role: 'assistant', text: 'Jaký je váš rozpočet?' },
+      requirements: [],
+      cars: [],
+      searched: false,
+    });
+
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
+
+    await userEvent.type(screen.getByPlaceholderText('Napište odpověď…'), 'Chci rodinné auto{Enter}');
+
+    expect(await screen.findByText('Jaký je váš rozpočet?')).toBeInTheDocument();
+    // Still browsing the full catalog, not a (wrongly) empty "0 matches" state.
+    expect(screen.getByText('Škoda Octavia Selection')).toBeInTheDocument();
+    expect(screen.getByText('Škoda Fabia Classic')).toBeInTheDocument();
+    expect(screen.getByText('2 vozy v katalogu')).toBeInTheDocument();
+  });
+
+  it('shows a real "no matches" state (not the catalog) when a search finds nothing', async () => {
+    mockedSend.mockResolvedValue({
+      assistantMessage: { role: 'assistant', text: 'Nic nevyhovuje.' },
+      requirements: [{ label: 'Rozpočet', value: '10 000 Kč', source: '"10 000 Kč"', changed: true }],
+      cars: [],
+      searched: true,
+    });
+
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
+
+    await userEvent.type(screen.getByPlaceholderText('Napište odpověď…'), 'Auto za 10 000 Kč{Enter}');
+
+    expect(await screen.findByText('Nic nevyhovuje.')).toBeInTheDocument();
+    expect(screen.getByText('0 shod pro vás')).toBeInTheDocument();
+    expect(screen.queryByText('Škoda Octavia Selection')).not.toBeInTheDocument();
+  });
+
+  it('shows a specific banner when the AI layer is not configured', async () => {
+    mockedSend.mockRejectedValue(new ApiError('ai_not_configured', 'no key set'));
+
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
+
+    await userEvent.type(screen.getByPlaceholderText('Napište odpověď…'), 'Potřebuju rodinné auto{Enter}');
+
+    expect(await screen.findByText(/AI vrstva zatím není nastavená/i)).toBeInTheDocument();
+    // Browsing mode never went away - this is exactly the fallback it's for.
+    expect(screen.getByText('Škoda Octavia Selection')).toBeInTheDocument();
+  });
+
+  it('restarts the conversation back to browsing mode', async () => {
+    mockedSend.mockResolvedValue({
+      assistantMessage: { role: 'assistant', text: 'Tady je váš výběr.' },
+      requirements: [],
+      cars: [{ ...octavia, score: 90 }],
+      searched: true,
+    });
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
+    await userEvent.type(screen.getByPlaceholderText('Napište odpověď…'), 'Rodinné auto{Enter}');
+    await screen.findByText('1 shoda pro vás');
+
     await userEvent.click(screen.getByRole('button', { name: 'Restartovat' }));
 
-    expect(screen.getByText('Váš výběr')).toBeInTheDocument();
+    expect(await screen.findByText('2 vozy v katalogu')).toBeInTheDocument();
+    expect(mockedStart).toHaveBeenCalledTimes(2);
   });
 });

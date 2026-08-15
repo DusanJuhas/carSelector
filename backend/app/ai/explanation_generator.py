@@ -13,7 +13,9 @@ from app.core.config import CLAUDE_MODEL
 from app.schemas.requirement import StructuredRequirements
 from app.schemas.vehicle import VehicleSummary
 
-SYSTEM_PROMPT = """You explain a car recommendation in one short sentence (max ~25 words).
+SYSTEM_PROMPT = """You explain a car recommendation in one short sentence (max ~25 words), in Czech
+- the user and the rest of the conversation are in Czech (see doc/prompt/CLAUDE.md's language
+convention).
 Ground the explanation only in the vehicle facts given to you - never invent a feature, spec, or
 price the vehicle doesn't have. Plain, factual tone, no marketing language.
 """

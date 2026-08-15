@@ -8,7 +8,7 @@ export interface CarCardProps {
 
 export function CarCard({ car }: CarCardProps) {
   const { t } = useTranslation();
-  const isHighScore = car.score >= 90;
+  const isHighScore = car.score !== null && car.score >= 90;
 
   return (
     <div
@@ -30,17 +30,19 @@ export function CarCard({ car }: CarCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="text-[14.5px] font-bold text-text">
-              {car.make} {car.model}
+              {car.make} {car.model} {car.trim}
             </div>
             <div className="mt-0.5 text-[12.5px] text-subtext">{formatMoney(car.price)}</div>
           </div>
-          <div
-            className={`shrink-0 rounded-full px-2.5 py-1 text-[15px] font-bold ${
-              isHighScore ? 'bg-accent-soft text-accent' : 'text-subtext'
-            }`}
-          >
-            {car.score}%
-          </div>
+          {car.score !== null && (
+            <div
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[15px] font-bold ${
+                isHighScore ? 'bg-accent-soft text-accent' : 'text-subtext'
+              }`}
+            >
+              {car.score}%
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {car.specs.map((spec) => (
@@ -56,6 +58,9 @@ export function CarCard({ car }: CarCardProps) {
           <div className="rounded-control bg-flag-bg px-2.5 py-1.5 text-[11.5px] text-flag">
             {car.flag}
           </div>
+        )}
+        {car.explanation && (
+          <div className="text-[12px] italic leading-relaxed text-subtext">{car.explanation}</div>
         )}
       </div>
     </div>

@@ -1,9 +1,21 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import brands, conversations, models, vehicles
+from app.core.config import CORS_ALLOWED_ORIGINS
 
 app = FastAPI(title="DriveWise AI API")
+
+# The frontend (Vite dev server, a different origin/port) calls this API
+# directly from the browser - no auth/cookies in v1 (see doc/api-contract.md),
+# so a small fixed allowlist is enough; no credentials are sent.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(HTTPException)

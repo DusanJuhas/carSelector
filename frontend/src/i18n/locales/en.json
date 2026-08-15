@@ -7,15 +7,23 @@
   },
   "chat": {
     "typePlaceholder": "Type your reply…",
-    "conversationComplete": "Conversation complete — shortlist finalized."
+    "send": "Send",
+    "sending": "Thinking…",
+    "aiNotConfigured": "The AI layer isn't configured yet (missing Claude API key) — chat works, but without requirement understanding or recommendations.",
+    "genericError": "Something went wrong. Please try again."
   },
   "results": {
     "title_one": "{{count}} match ranked for you",
     "title_other": "{{count}} matches ranked for you",
-    "titleEmpty": "Your shortlist",
-    "updatedAfter": "Updated after: {{stage}}",
-    "startPrompt": "Start the conversation to see cars appear.",
-    "emptyState": "Your shortlist will appear here once you describe how you'll use the car."
+    "browsingTitle_one": "{{count}} car in the catalog",
+    "browsingTitle_other": "{{count}} cars in the catalog",
+    "updated": "Updated based on your last message",
+    "startPrompt": "Start the conversation and the AI will narrow the catalog to your needs.",
+    "emptyState": "Nothing matches your requirements yet — try adjusting them in the conversation.",
+    "loadMore": "Load more",
+    "loadingMore": "Loading more…",
+    "loadingCatalog": "Loading catalog…",
+    "catalogError": "Couldn't load the vehicle catalog."
   },
   "car": {
     "photoPlaceholder": "car photo — {{make}} {{model}}",

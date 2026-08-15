@@ -163,8 +163,7 @@ Start a new conversation. No body required.
 ### `POST /api/conversations/{conversation_id}/messages`
 
 Send a user message; get back the assistant's reply plus the updated structured requirements and
-shortlist. This is the endpoint the chat prototype's `useConversation` hook will call once the mock
-in `frontend/src/api/mock/conversation.ts` is replaced with a real HTTP call.
+shortlist. This is the endpoint `frontend/src/api/conversation.ts`'s `sendMessage` calls.
 
 **Request**
 ```json
@@ -177,9 +176,17 @@ in `frontend/src/api/mock/conversation.ts` is replaced with a real HTTP call.
   "assistant_text": "string",
   "requirements": [ "UserRequirement", "..." ],
   "structured_requirements": "StructuredRequirements",
-  "vehicles": [ "VehicleSummary", "..." ]
+  "vehicles": [ "VehicleSummary", "..." ],
+  "searched": "boolean"
 }
 ```
+
+`searched` is `false` while the AI is still asking follow-up questions (not enough was known to
+search on yet - `vehicles` is always `[]` in that case) and `true` once the recommendation engine
+actually ran this turn (`vehicles` can still legitimately be `[]` there - a real search that found
+nothing). A client falling back to an unfiltered catalog browse before the first real search (see
+`frontend/src/hooks/useCatalog.ts`) needs this to tell "haven't searched yet" apart from "searched,
+found nothing" - both leave `vehicles` empty.
 
 ### `GET /api/vehicles`
 

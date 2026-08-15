@@ -6,8 +6,9 @@ it never filters or ranks the catalog itself.
 NOTE: written without access to a live ANTHROPIC_API_KEY in this
 environment, so it has not been exercised against the real API. Verify
 against a real key before relying on it - in particular, whether Claude
-reliably follows the JSON-only instruction, and whether the defensive
-fallback below is ever actually hit in practice.
+reliably follows the JSON-only instruction, whether the defensive
+fallback below is ever actually hit in practice, and whether
+"follow_up_question" actually comes back in Czech as instructed.
 """
 
 import json
@@ -41,6 +42,10 @@ Rules:
 - If the latest message refines a requirement already established earlier in the conversation
   (e.g. "actually make it cheaper"), merge it with what's already known rather than starting over.
 - Never invent a value the user didn't state or clearly imply.
+- The conversation is in Czech, and the user expects Czech throughout: write "follow_up_question"
+  in Czech. JSON keys and the values of body_type/fuel_type/drivetrain stay in English (they're
+  internal identifiers, not shown to the user as-is) - only "follow_up_question" is free text a
+  person actually reads.
 """
 
 
@@ -144,8 +149,8 @@ class RequirementInterpreter:
         except (json.JSONDecodeError, ValidationError):
             return RequirementExtractionResult(
                 follow_up_question=(
-                    "Could you tell me a bit more about how you'll use the car - who's riding "
-                    "with you, where you mostly drive, and roughly what budget you have in mind?"
+                    "Můžete mi prosím říct trochu více o tom, jak budete auto využívat — kdo s "
+                    "vámi pojede, kde nejčastěji jezdíte a jaký je váš přibližný rozpočet?"
                 )
             )
 

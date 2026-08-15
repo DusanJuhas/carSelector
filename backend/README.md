@@ -58,8 +58,14 @@ need it at all.
 
 **The AI layer (`app/ai/requirement_interpreter.py`, `app/ai/explanation_generator.py`) was
 written without access to a live API key and has not been exercised against the real Claude API.**
-Verify prompt behavior (does it reliably return JSON-only, is the follow-up-question quality
-reasonable) before relying on it.
+Verify prompt behavior before relying on it: does it reliably return JSON-only, is the
+follow-up-question quality reasonable, and — both system prompts explicitly instruct this, but
+it's an instruction, not a guarantee — does the model's free-text output (`follow_up_question`,
+the per-vehicle explanation) actually come back in Czech, matching the rest of the UI (see
+`doc/prompt/CLAUDE.md`'s language convention). Every *hardcoded* string in `app/services/
+conversation.py` and the two AI modules already is Czech — that part went unverified for a while
+since nothing rendered it live until the frontend was wired to this API (`frontend/src/api/`), not
+a scripted mock with its own separately-authored Czech copy.
 
 ## Database
 

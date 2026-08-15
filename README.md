@@ -7,15 +7,20 @@ actually in scope right now.
 
 ## Status
 
-Frontend chat UI, backend catalog/recommendation API, and the scraper each work, but are **not
-fully wired together end to end**:
+The frontend chat UI now talks to the real backend API (`frontend/src/api/`) instead of a scripted
+mock — it shows real catalog data (real brands/models/trims/prices) once populated:
 
-- The frontend chat flow currently runs against a scripted mock, not the real backend.
 - The backend's catalog can be populated two ways: hand-seeded demo data (`python -m app.db.seed`,
   a couple of real price lists in `storage/cars/`) or a real import of everything the scraper has
   found (`python scripts/import_scraper_data.py`) — see that script's docstring for exactly what it
   does and doesn't carry over (e.g. equipment/options aren't imported yet, no surcharge data to
   import). This import is a manual/periodic step, not a live pipeline — re-run it after every scrape.
+- The chat itself (understanding what you typed, ranking, explanations) needs `ANTHROPIC_API_KEY`
+  set on the backend — without it, starting a conversation and seeing the intro message still
+  works, but sending a message returns a graceful "AI not configured" response instead of results
+  (shown as a banner in the UI, not a crash).
+- The scraper populates its own database independently — see `storage/README.md` for how the two
+  connect (or don't, without running the import).
 
 See each subproject's README for specifics, and `doc/api-contract.md` "open items" for known gaps.
 
@@ -37,13 +42,8 @@ requirements.txt, requirements-dev.txt   Python deps for backend/ + scraper/ (on
 
 ## Quickstart
 
-**See the chat UI (no backend needed — runs on a mock):**
-
-```bash
-./scripts/run-ui.sh     # or scripts\run-ui.bat / scripts\run-ui.ps1 on Windows
-```
-
-**Run the full stack:**
+The frontend needs the backend running to do anything (even the intro message comes from a real
+`POST /api/conversations` call) — there's no more mock-only, backend-free mode.
 
 1. Python setup (once, for backend/ and scraper/):
    ```bash
@@ -52,11 +52,12 @@ requirements.txt, requirements-dev.txt   Python deps for backend/ + scraper/ (on
    pip install -r requirements-dev.txt
    ```
 2. Backend — see [`backend/README.md`](backend/README.md) (SQLite by default, no server to
-   install; needs `ANTHROPIC_API_KEY` for the AI layer)
-3. Frontend — see [`frontend/README.md`](frontend/README.md)
-4. Scraper (optional, populates its own DB independently) — see [`scraper/README.md`](scraper/README.md)
-5. To load real scraped data into the backend's catalog instead of (or alongside) the demo seed:
-   `python scripts/import_scraper_data.py` (safe to re-run after each scrape)
+   install; needs `ANTHROPIC_API_KEY` for the AI layer to do more than degrade gracefully)
+3. Load real catalog data: `python scripts/import_scraper_data.py` (or `python -m app.db.seed`
+   from `backend/` for just the small hand-verified demo dataset)
+4. Frontend — see [`frontend/README.md`](frontend/README.md), or `./scripts/run-ui.sh`
+   (`scripts\run-ui.bat` / `scripts\run-ui.ps1` on Windows) once the backend above is running
+5. Scraper (optional, populates its own DB independently) — see [`scraper/README.md`](scraper/README.md)
 
 ## Documentation
 
