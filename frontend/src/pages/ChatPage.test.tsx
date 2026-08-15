@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatPage } from './ChatPage';
@@ -43,6 +43,7 @@ const fabia: Car = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  window.localStorage.clear();
   useConversationStore.setState({
     conversationId: null,
     messages: [],
@@ -203,5 +204,63 @@ describe('ChatPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Zavřít' }));
     expect(screen.queryByText('Nafta')).not.toBeInTheDocument();
+  });
+
+  it('pushes price sorting to the backend in browsing mode, resetting to page 1', async () => {
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
+    expect(mockedListVehicles).toHaveBeenCalledTimes(1);
+
+    mockedListVehicles.mockResolvedValueOnce({ cars: [fabia, octavia], page: 1, pageSize: 20, total: 2 });
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'Cena: od nejnižší');
+
+    await screen.findByText('2 vozy v katalogu');
+    expect(mockedListVehicles).toHaveBeenCalledTimes(2);
+    expect(mockedListVehicles).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, sort: 'price_asc' }),
+    );
+  });
+
+  it('sorts the narrowed shortlist client-side without another backend call', async () => {
+    mockedSend.mockResolvedValue({
+      assistantMessage: { role: 'assistant', text: 'Tady je váš výběr.' },
+      requirements: [],
+      cars: [
+        { ...octavia, score: 90 }, // 700 000 Kč
+        { ...fabia, score: 80 }, // 450 000 Kč
+      ],
+      searched: true,
+    });
+
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
+    await userEvent.type(screen.getByPlaceholderText('Napište odpověď…'), 'Rodinné auto{Enter}');
+    await screen.findByText('2 shody pro vás');
+
+    const callsBeforeSort = mockedListVehicles.mock.calls.length;
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'Cena: od nejnižší');
+
+    const cards = screen.getAllByRole('button', { name: /Škoda/i });
+    expect(cards[0]).toHaveAccessibleName(/Fabia/); // cheaper car now first
+    expect(mockedListVehicles).toHaveBeenCalledTimes(callsBeforeSort); // no extra fetch
+  });
+
+  it('lets the user drag cards into "Moje pořadí" and keeps that order', async () => {
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
+
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'Moje pořadí');
+
+    const [firstWrapper, secondWrapper] = screen
+      .getAllByRole('button', { name: /Škoda/i })
+      .map((btn) => btn.parentElement!);
+    expect(firstWrapper).toHaveAttribute('draggable', 'true');
+
+    fireEvent.dragStart(secondWrapper);
+    fireEvent.dragOver(firstWrapper);
+    fireEvent.drop(firstWrapper);
+
+    const reordered = screen.getAllByRole('button', { name: /Škoda/i });
+    expect(reordered[0]).toHaveAccessibleName(/Fabia/);
   });
 });

@@ -39,6 +39,32 @@ def test_list_vehicles_filters_by_budget_and_currency(client: TestClient):
     assert body["items"][0]["trim"] == "Prime-Line"
 
 
+def test_list_vehicles_sorts_by_price_ascending(client: TestClient):
+    response = client.get("/api/vehicles", params={"sort": "price_asc"})
+    assert response.status_code == 200
+    prices = [item["price"]["amount"] for item in response.json()["items"]]
+    assert prices == sorted(prices)
+
+
+def test_list_vehicles_sorts_by_price_descending(client: TestClient):
+    response = client.get("/api/vehicles", params={"sort": "price_desc"})
+    assert response.status_code == 200
+    prices = [item["price"]["amount"] for item in response.json()["items"]]
+    assert prices == sorted(prices, reverse=True)
+
+
+def test_list_vehicles_sorts_alphabetically(client: TestClient):
+    response = client.get("/api/vehicles", params={"sort": "alpha"})
+    assert response.status_code == 200
+    trims = [item["trim"] for item in response.json()["items"]]
+    assert trims == ["Centre-Line", "Prime-Line"]
+
+
+def test_list_vehicles_rejects_unknown_sort(client: TestClient):
+    response = client.get("/api/vehicles", params={"sort": "bogus"})
+    assert response.status_code == 422
+
+
 def test_get_vehicle_detail(client: TestClient, seeded_session: SeededData):
     response = client.get(f"/api/vehicles/{seeded_session.config_prime_2wd_id}")
     assert response.status_code == 200

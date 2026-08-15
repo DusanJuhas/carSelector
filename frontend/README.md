@@ -65,6 +65,22 @@ show a specific message instead of a generic failure - see `ChatPage`'s error ba
 `Car.score` is `null` in browsing mode (no match to score against) - `CarCard` hides the
 score badge/top-pick ribbon when it's `null` rather than showing a misleading 0%.
 
+### Sorting
+
+`SortControl` (a `results.sort.*`-labelled dropdown next to the results heading) offers
+`Doporučeno` (recommended/default), `Cena` ascending/descending, `Abecedně` (alphabetical), and
+`Moje pořadí` (a user-defined drag order). `ChatPage` decides where each is applied:
+
+- **Price/alphabetical in browsing mode** go to the backend (`GET /vehicles?sort=`, see
+  `hooks/useCatalog.ts`) and reset back to page 1 - sorting only the page(s) already loaded would
+  be wrong once there's more than one page.
+- **Every option in narrowed mode**, and **`'custom'` in either mode**, sorts client-side via
+  `utils/sortCars.ts` against whatever's already loaded - the narrowed shortlist is always fully
+  loaded, and a drag order only ever makes sense against what's on screen.
+- **`'custom'`** drag-reordering is handled by `ResultsGrid` (native HTML5 drag-and-drop, no added
+  dependency) and persisted across reloads via `hooks/useCustomOrder.ts` (`localStorage`, not
+  server state - it's the user's own preference).
+
 ### Vehicle detail
 
 Clicking a `CarCard` (in either browsing or narrowed mode) opens `VehicleDetailModal`, which

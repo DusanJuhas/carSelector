@@ -27,7 +27,16 @@
     "loadMore": "Načíst další",
     "loadingMore": "Načítám další…",
     "loadingCatalog": "Načítám katalog…",
-    "catalogError": "Nepodařilo se načíst katalog vozů."
+    "catalogError": "Nepodařilo se načíst katalog vozů.",
+    "sortBy": "Seřadit podle",
+    "sort": {
+      "recommended": "Doporučeno",
+      "price_asc": "Cena: od nejnižší",
+      "price_desc": "Cena: od nejvyšší",
+      "alpha": "Abecedně",
+      "custom": "Moje pořadí"
+    },
+    "dragHint": "Přetáhněte pro změnu pořadí"
   },
   "car": {
     "photoPlaceholder": "fotka auta — {{make}} {{model}}",

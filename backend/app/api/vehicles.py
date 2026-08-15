@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -10,6 +12,8 @@ from app.services import catalog
 
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 
+SortOption = Literal["price_asc", "price_desc", "alpha"]
+
 
 @router.get("", response_model=Page[VehicleSummary])
 def list_vehicles(
@@ -19,6 +23,7 @@ def list_vehicles(
     fuel_type: FuelType | None = None,
     drivetrain: Drivetrain | None = None,
     market: str = catalog.DEFAULT_MARKET,
+    sort: SortOption | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -31,6 +36,7 @@ def list_vehicles(
         budget_max=budget_max,
         currency=currency,
         market=market,
+        sort=sort,
         page=page,
         page_size=page_size,
     )

@@ -193,7 +193,8 @@ found nothing" - both leave `vehicles` empty.
 Catalog search/browse, independent of the chat flow (results grid without a conversation).
 
 **Query params**: `body_type`, `min_seats`, `budget_max`, `currency`, `fuel_type`, `drivetrain`,
-`market` (default `CZ`), `page`, `page_size`
+`market` (default `CZ`), `sort` (`price_asc` | `price_desc` | `alpha`, default: `configurations.id`
+order), `page`, `page_size`
 
 **Response `200`**: paginated list of `VehicleSummary` (`match_score` and `flag` are null here —
 those only apply inside a recommendation context)

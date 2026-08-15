@@ -1,6 +1,6 @@
 import { apiClient, toApiError } from './client';
 import { toCar } from './vehicleSummary';
-import type { Car } from '../types';
+import type { BackendSortOption, Car } from '../types';
 import type { VehicleSummaryDTO } from './vehicleSummary';
 
 /** Wire shape of `GET /api/vehicles`'s response (doc/api-contract.md's `Page[VehicleSummary]`). */
@@ -16,6 +16,8 @@ export interface ListVehiclesParams {
   page?: number;
   /** Rows per page. Defaults to the backend's own default (20). */
   pageSize?: number;
+  /** Server-side ordering; omit for the default (`configurations.id`) order. */
+  sort?: BackendSortOption;
 }
 
 export interface ListVehiclesResult {
@@ -39,7 +41,7 @@ export interface ListVehiclesResult {
 export async function listVehicles(params: ListVehiclesParams = {}): Promise<ListVehiclesResult> {
   try {
     const { data } = await apiClient.get<VehiclePageDTO>('/vehicles', {
-      params: { page: params.page, page_size: params.pageSize },
+      params: { page: params.page, page_size: params.pageSize, sort: params.sort },
     });
     return {
       cars: data.items.map(toCar),

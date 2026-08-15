@@ -102,6 +102,13 @@ def _build_vehicle_summary(configuration: Configuration, price: Price) -> Vehicl
     )
 
 
+_SORT_ORDER_BY = {
+    "price_asc": (Price.price_incl_vat.asc(),),
+    "price_desc": (Price.price_incl_vat.desc(),),
+    "alpha": (Brand.name.asc(), CarModel.name.asc(), Trim.name.asc()),
+}
+
+
 def list_vehicles(
     db: Session,
     *,
@@ -111,6 +118,7 @@ def list_vehicles(
     budget_max: float | None = None,
     currency: str = "CZK",
     market: str = DEFAULT_MARKET,
+    sort: str | None = None,
     page: int = 1,
     page_size: int = 20,
 ) -> Page[VehicleSummary]:
@@ -133,6 +141,12 @@ def list_vehicles(
             (compared only against rows in `currency`).
         currency: Currency `budget_max` is denominated in.
         market: Market to price and filter against.
+        sort: One of `"price_asc"`, `"price_desc"`, `"alpha"` (brand, then
+            model, then trim), or `None` for the default order
+            (`configurations.id`). Only orderings the frontend's paginated
+            "load more" flow needs live here - anything the client already
+            has the full page for (e.g. the AI-narrowed shortlist) sorts
+            client-side instead, see `frontend/src/utils/sortCars.ts`.
         page: 1-indexed page number.
         page_size: Rows per page.
 
@@ -150,6 +164,7 @@ def list_vehicles(
         select(Configuration, Price)
         .join(Trim, Configuration.trim_id == Trim.id)
         .join(CarModel, Trim.model_id == CarModel.id)
+        .join(Brand, CarModel.brand_id == Brand.id)
         .join(Powertrain, Configuration.powertrain_id == Powertrain.id)
         .join(Price, current_price_join)
         .options(*_SUMMARY_LOAD_OPTIONS)
@@ -165,7 +180,8 @@ def list_vehicles(
 
     total = db.scalar(select(func.count()).select_from(stmt.with_only_columns(Configuration.id).subquery()))
 
-    stmt = stmt.order_by(Configuration.id).offset((page - 1) * page_size).limit(page_size)
+    order_by = _SORT_ORDER_BY.get(sort, (Configuration.id.asc(),))
+    stmt = stmt.order_by(*order_by).offset((page - 1) * page_size).limit(page_size)
     rows = db.execute(stmt).unique().all()
 
     items = [_build_vehicle_summary(configuration, price) for configuration, price in rows]

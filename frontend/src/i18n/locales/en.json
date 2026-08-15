@@ -23,7 +23,16 @@
     "loadMore": "Load more",
     "loadingMore": "Loading more…",
     "loadingCatalog": "Loading catalog…",
-    "catalogError": "Couldn't load the vehicle catalog."
+    "catalogError": "Couldn't load the vehicle catalog.",
+    "sortBy": "Sort by",
+    "sort": {
+      "recommended": "Recommended",
+      "price_asc": "Price: lowest first",
+      "price_desc": "Price: highest first",
+      "alpha": "Alphabetical",
+      "custom": "My order"
+    },
+    "dragHint": "Drag to reorder"
   },
   "car": {
     "photoPlaceholder": "car photo — {{make}} {{model}}",
