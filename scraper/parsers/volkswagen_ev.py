@@ -42,6 +42,17 @@ class VolkswagenEvParser(BaseParser):
     powertrain = "EV"
 
     def parse(self, pdf_path: Path) -> list[ExtractedVariant]:
+        """See module docstring for why the engine/battery description is
+        captured as one right-anchored block rather than parsed field by
+        field.
+
+        Args:
+            pdf_path: Local path to a downloaded VW EV price-list PDF.
+
+        Returns:
+            One `ExtractedVariant` per trim/battery row found, all with
+            `powertrain="EV"`.
+        """
         variants: list[ExtractedVariant] = []
 
         with pdfplumber.open(pdf_path) as pdf:

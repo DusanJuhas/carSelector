@@ -42,6 +42,15 @@ def _strip_marketing_prefix(title: str) -> str:
 
 class KiaDiscoverer(BaseDiscoverer):
     def discover(self, source: Source, *, timeout: int = 30) -> dict[str, str]:
+        """Args:
+            source: Registry entry giving Kia's single listing page URL
+                and the models to look for on it.
+            timeout: HTTP request timeout in seconds.
+
+        Returns:
+            `{model: price_list_url}` for each of `source.models` found
+            on the listing page.
+        """
         response = requests.get(source.source_url, timeout=timeout)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")

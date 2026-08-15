@@ -44,4 +44,21 @@ class BaseParser:
     powertrain: Powertrain
 
     def parse(self, pdf_path: Path) -> list[ExtractedVariant]:
+        """Extracts every vehicle variant (price, trim, engine, equipment
+        where available) from one downloaded price-list PDF.
+
+        Args:
+            pdf_path: Local path to the downloaded PDF, as returned by
+                `downloaders.pdf_downloader.PdfDownloader.download`.
+
+        Returns:
+            One `ExtractedVariant` per vehicle variant/trim/powertrain
+            combination found in the document. Each must carry the
+            `source_page` and `raw_text` it was read from, so it can be
+            verified against the source (see `verification/review_cli.py`).
+
+        Raises:
+            NotImplementedError: Always, on the base class - every
+                concrete parser must override this.
+        """
         raise NotImplementedError

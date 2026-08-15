@@ -13,6 +13,7 @@ fallback below is ever actually hit in practice.
 import json
 import re
 
+import anthropic
 from pydantic import BaseModel, ValidationError
 
 from app.ai.client import get_client
@@ -48,39 +49,108 @@ class RequirementExtractionResult(BaseModel):
     follow_up_question: str | None = None
 
 
-def _strip_code_fences(text: str) -> str:
-    text = text.strip()
-    text = re.sub(r"^```(?:json)?\s*", "", text)
-    text = re.sub(r"\s*```$", "", text)
-    return text.strip()
-
-
-def extract_requirements(history: list[ChatMessage], latest_message: str) -> RequirementExtractionResult:
-    """Defensive about the model not following the JSON-only instruction:
-    strips stray code fences, validates against RequirementExtractionResult,
-    and falls back to a generic follow-up question on any parse/validation
-    failure rather than raising into the request path.
+class RequirementInterpreter:
+    """Wraps one Claude API call that turns free-text conversation into
+    `StructuredRequirements`, per `drivewise-ai-recommendations`'s Code
+    style section. Stateless beyond the injected client - safe to share a
+    single instance across requests (see the module-level `interpreter`
+    singleton at the bottom of this file).
     """
-    client = get_client()
 
-    transcript = "\n".join(f"{m.role}: {m.text}" for m in history)
-    user_content = f"Conversation so far:\n{transcript}\n\nLatest message:\n{latest_message}"
+    def __init__(self, client: anthropic.Anthropic | None = None) -> None:
+        """Args:
+            client: Anthropic SDK client to use. Defaults to `None`, in
+                which case `interpret` lazily resolves the shared client
+                from `app.ai.client.get_client()` on first use - so
+                constructing a `RequirementInterpreter` never fails just
+                because `ANTHROPIC_API_KEY` isn't set; only calling
+                `interpret` does. Pass an explicit client (e.g. a test
+                double) to bypass that shared singleton.
+        """
+        self._client = client
 
-    response = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_content}],
-    )
-    raw_text = "".join(block.text for block in response.content if block.type == "text")
+    def _get_client(self) -> anthropic.Anthropic:
+        """Returns the injected client, or lazily resolves the shared
+        default on first use so constructing a `RequirementInterpreter`
+        never fails just because `ANTHROPIC_API_KEY` isn't set yet (only
+        calling `interpret` does).
 
-    try:
-        payload = json.loads(_strip_code_fences(raw_text))
-        return RequirementExtractionResult.model_validate(payload)
-    except (json.JSONDecodeError, ValidationError):
-        return RequirementExtractionResult(
-            follow_up_question=(
-                "Could you tell me a bit more about how you'll use the car - who's riding "
-                "with you, where you mostly drive, and roughly what budget you have in mind?"
-            )
+        Returns:
+            The Anthropic client this instance uses for API calls.
+        """
+        if self._client is None:
+            self._client = get_client()
+        return self._client
+
+    @staticmethod
+    def _strip_code_fences(text: str) -> str:
+        """Removes a leading/trailing ```` ```json ... ``` ```` fence if
+        the model added one despite the system prompt's "no markdown code
+        fences" instruction.
+
+        Args:
+            text: Raw text content from the Claude API response.
+
+        Returns:
+            `text` with any surrounding code fence markers and outer
+            whitespace stripped; unchanged if there was no fence.
+        """
+        text = text.strip()
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+        return text.strip()
+
+    def interpret(
+        self, history: list[ChatMessage], latest_message: str
+    ) -> RequirementExtractionResult:
+        """Extracts structured requirements from a conversation turn, or
+        produces a follow-up question when there isn't enough to search
+        on yet.
+
+        Defensive about the model not following the JSON-only
+        instruction: strips stray code fences, validates against
+        `RequirementExtractionResult`, and falls back to a generic
+        follow-up question on any parse/validation failure rather than
+        raising into the request path.
+
+        Args:
+            history: Prior turns of the conversation, oldest first. Does
+                not include `latest_message`.
+            latest_message: The user's newest message, extracted (and
+                merged with prior turns) into requirements.
+
+        Returns:
+            A `RequirementExtractionResult` with exactly one of
+            `requirements` or `follow_up_question` set - never both,
+            never neither (enforced by the fallback branch even when the
+            model's own output would have violated it).
+        """
+        client = self._get_client()
+
+        transcript = "\n".join(f"{m.role}: {m.text}" for m in history)
+        user_content = f"Conversation so far:\n{transcript}\n\nLatest message:\n{latest_message}"
+
+        response = client.messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=1024,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_content}],
         )
+        raw_text = "".join(block.text for block in response.content if block.type == "text")
+
+        try:
+            payload = json.loads(self._strip_code_fences(raw_text))
+            return RequirementExtractionResult.model_validate(payload)
+        except (json.JSONDecodeError, ValidationError):
+            return RequirementExtractionResult(
+                follow_up_question=(
+                    "Could you tell me a bit more about how you'll use the car - who's riding "
+                    "with you, where you mostly drive, and roughly what budget you have in mind?"
+                )
+            )
+
+
+# Shared instance for callers that don't need a custom client (e.g. tests
+# injecting a fake) - mirrors get_client()'s cached-singleton shape without
+# needing its own cache, since construction here does no I/O.
+interpreter = RequirementInterpreter()

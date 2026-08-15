@@ -24,4 +24,25 @@ class BaseDiscoverer:
     for the models in `source.models` for which a price list link was found."""
 
     def discover(self, source: Source) -> dict[str, str]:
+        """Finds the current price-list PDF URL for each model this
+        source covers. Deliberately makes its own HTTP request(s) rather
+        than being handed pre-fetched HTML - see this module's docstring
+        for why (each brand's page structure calls for a different fetch
+        strategy).
+
+        Args:
+            source: Registry entry for one OEM/powertrain source (from
+                `config/sources.yaml`), giving the page(s) to fetch and
+                the `source.models` to look for.
+
+        Returns:
+            A `{model: price_list_url}` mapping, one entry per model in
+            `source.models` for which a link was actually found - models
+            with no discoverable link are simply omitted, not mapped to
+            `None`.
+
+        Raises:
+            NotImplementedError: Always, on the base class - every
+                concrete discoverer must override this.
+        """
         raise NotImplementedError

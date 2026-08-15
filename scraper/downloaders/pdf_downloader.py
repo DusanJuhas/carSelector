@@ -17,6 +17,12 @@ STORAGE_ROOT = Path(__file__).resolve().parents[2] / "storage" / "scraper"
 
 
 def sha256_of(content: bytes) -> str:
+    """Args:
+        content: Raw bytes to hash.
+
+    Returns:
+        Hex-encoded SHA-256 digest of `content`.
+    """
     return hashlib.sha256(content).hexdigest()
 
 
@@ -33,9 +39,18 @@ class PdfDownloader:
     def download(self, url: str, brand: str, *, timeout: int = 30) -> tuple[Path, str]:
         """Downloads the PDF and stores it at storage/scraper/<brand>/<year>/<hash>.pdf.
 
-        Returns (file_path, sha256_hash) — the hash is compared in the
-        monitor against the document table so the same content is never
-        processed twice.
+        Args:
+            url: URL of the PDF to download.
+            brand: Brand key this PDF belongs to (used as the storage
+                subdirectory).
+            timeout: HTTP request timeout in seconds.
+
+        Returns:
+            `(file_path, sha256_hash)` - `file_path` is where the PDF now
+            lives on disk (already existed there if this exact content
+            was downloaded before); `sha256_hash` is compared in the
+            monitor against the document table so the same content is
+            never processed twice.
         """
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()

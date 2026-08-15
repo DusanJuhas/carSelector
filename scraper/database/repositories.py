@@ -21,6 +21,12 @@ class DocumentRepository:
         self._session = session
 
     def get(self, document_id: int) -> Document | None:
+        """Args:
+            document_id: Primary key of the `document` row to fetch.
+
+        Returns:
+            The matching `Document`, or `None` if `document_id` doesn't exist.
+        """
         return self._session.get(Document, document_id)
 
 
@@ -35,6 +41,14 @@ class EquipmentRepository:
         self._normalizer = normalizer or EquipmentNormalizer()
 
     def get_or_create(self, raw_name: str) -> Equipment:
+        """Args:
+            raw_name: Equipment name exactly as it appeared in the source
+                PDF, before normalization.
+
+        Returns:
+            The existing `Equipment` row for `raw_name`'s canonical form
+            (see `EquipmentNormalizer.normalize`), or a newly created one.
+        """
         canonical_name = self._normalizer.normalize(raw_name)
         existing = self._session.query(Equipment).filter_by(canonical_name=canonical_name).first()
         if existing:
@@ -61,7 +75,20 @@ class VariantRepository:
     ) -> list[Variant]:
         """Stores each ExtractedVariant as a Variant, (if it has a price) as
         the first record in PriceHistory with `valid_from` = the price
-        list's effective date, and (if any) its equipment as EquipmentAssignment."""
+        list's effective date, and (if any) its equipment as EquipmentAssignment.
+
+        Args:
+            document: The already-persisted `Document` these variants
+                were extracted from (used for `document_id` FKs and to
+                derive `valid_from`).
+            brand: Brand key to stamp onto every `Variant` (denormalized
+                here rather than joined through `document` - see
+                `Variant`'s own docstring in database/models.py).
+            variants: Parser output to persist, one row per variant.
+
+        Returns:
+            The persisted `Variant` rows, in the same order as `variants`.
+        """
         valid_from = document.release_date or document.downloaded_at.date()
 
         saved: list[Variant] = []
@@ -106,7 +133,19 @@ class VariantRepository:
         return saved
 
     def list_for_document(self, document_id: int) -> list[Variant]:
+        """Args:
+            document_id: `document` row to list variants for.
+
+        Returns:
+            Every `Variant` stored for `document_id`, unordered.
+        """
         return self._session.query(Variant).filter_by(document_id=document_id).all()
 
     def list_prices(self, variant_id: int) -> list[PriceHistory]:
+        """Args:
+            variant_id: `variant` row to list price history for.
+
+        Returns:
+            Every `PriceHistory` row stored for `variant_id`, unordered.
+        """
         return self._session.query(PriceHistory).filter_by(variant_id=variant_id).all()

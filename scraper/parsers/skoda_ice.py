@@ -133,6 +133,18 @@ class SkodaIceParser(BaseParser):
     powertrain = "ICE"
 
     def parse(self, pdf_path: Path) -> list[ExtractedVariant]:
+        """See module docstring for the word-position table
+        reconstruction this parser uses (Škoda's ICE price lists have no
+        PDF grid to read cells from directly).
+
+        Args:
+            pdf_path: Local path to a downloaded Škoda ICE price-list PDF.
+
+        Returns:
+            One `ExtractedVariant` per engine/trim combination found,
+            with `equipment` populated from the standalone equipment
+            page where available (see `parse_standalone_equipment`).
+        """
         variants: list[ExtractedVariant] = []
 
         with pdfplumber.open(pdf_path) as pdf:

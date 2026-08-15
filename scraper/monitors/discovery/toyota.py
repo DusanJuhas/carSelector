@@ -77,6 +77,17 @@ def _current_price_list(documents: list[dict]) -> str | None:
 
 class ToyotaDiscoverer(BaseDiscoverer):
     def discover(self, source: Source, *, timeout: int = 30) -> dict[str, str]:
+        """Args:
+            source: Registry entry giving the models to look for (the
+                actual data source is Toyota's JSON API, `_API_URL`, not
+                `source.source_url` - see module docstring).
+            timeout: HTTP request timeout in seconds.
+
+        Returns:
+            `{model: price_list_url}` for each active model found in the
+            API response, with Corolla's body styles handled specially
+            (see module docstring) before the generic pass.
+        """
         response = requests.get(_API_URL, timeout=timeout)
         response.raise_for_status()
         groups = response.json()

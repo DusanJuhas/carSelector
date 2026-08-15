@@ -24,7 +24,16 @@ class SourceMonitor:
         self._downloader = downloader or PdfDownloader()
 
     def check_and_store(self, source: Source, pdf_url: str) -> Document | None:
-        """Downloads the PDF, and if its hash isn't in the DB yet, creates a new Document."""
+        """Downloads the PDF, and if its hash isn't in the DB yet, creates a new Document.
+
+        Args:
+            source: The source this PDF belongs to (for `source.brand`).
+            pdf_url: URL of the PDF to download and check.
+
+        Returns:
+            The newly created `Document`, or `None` if a document with
+            this exact content (same brand + SHA256 hash) already exists.
+        """
         path, file_hash = self._downloader.download(pdf_url, brand=source.brand)
 
         existing = (
@@ -49,7 +58,15 @@ class SourceMonitor:
         """Uses the matching Discoverer to find price list links for the
         models in `source.models` and creates a Document for each new one
         (by SHA256). Returns only newly created records (already-processed
-        PDFs are skipped, see check_and_store)."""
+        PDFs are skipped, see check_and_store).
+
+        Args:
+            source: Source to find and store new documents for.
+
+        Returns:
+            Newly created `Document` rows (empty if none are new, or if
+            `source.parser_key` has no registered discoverer).
+        """
         discoverer_cls = DISCOVERERS.get(source.parser_key)
         if discoverer_cls is None:
             return []

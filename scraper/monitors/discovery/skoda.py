@@ -21,6 +21,17 @@ _PRICE_LIST_LABEL = "Ceník"
 
 class SkodaDiscoverer(BaseDiscoverer):
     def discover(self, source: Source, *, timeout: int = 30) -> dict[str, str]:
+        """Args:
+            source: Registry entry giving Škoda's single listing page URL
+                (this discoverer is registered for both the skoda_ice and
+                skoda_ev parser_keys - see monitors/discovery/registry.py)
+                and the models to look for on it.
+            timeout: HTTP request timeout in seconds.
+
+        Returns:
+            `{model: price_list_url}` for each of `source.models` found
+            on the listing page.
+        """
         response = requests.get(source.source_url, timeout=timeout)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")

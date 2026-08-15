@@ -26,5 +26,14 @@ class EquipmentNormalizer:
         self._aliases = aliases
 
     def normalize(self, raw_name: str) -> str:
+        """Args:
+            raw_name: Equipment name exactly as it appeared in the source
+                PDF (any casing/whitespace).
+
+        Returns:
+            The canonical name from the alias table if `raw_name` (lower-
+            cased, trimmed) is a known alias; otherwise `raw_name`
+            lowercased/trimmed with spaces replaced by underscores.
+        """
         key = raw_name.strip().lower()
         return self._aliases.get(key, key.replace(" ", "_"))

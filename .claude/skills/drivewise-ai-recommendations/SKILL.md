@@ -75,14 +75,20 @@ Flow: AI asks any needed follow-up → extracts `{min_seats, body_type, drivetra
 
 ## Code style
 
-Structure each of the three pieces above as a class with clearly documented methods, per
-`drivewise-architecture`'s Code style section — e.g. a `RequirementInterpreter` class (method:
-`interpret(conversation: list[ChatMessage]) -> StructuredRequirements | FollowUpQuestion`), a
-`RecommendationEngine` class (method: `recommend(requirements: StructuredRequirements, *, limit:
-int = 10) -> list[VehicleSummary]`), an `ExplanationGenerator` class (method: `explain(vehicle:
-VehicleSummary, requirements: StructuredRequirements) -> str`). Every method's docstring documents
-its parameters and return value with `Args:`/`Returns:` sections, not just a one-line summary —
-see the template in `drivewise-architecture`.
+Each of the three pieces above is a class with clearly documented methods, per
+`drivewise-architecture`'s Code style section — this is implemented, not just a proposed shape:
+`app/ai/requirement_interpreter.RequirementInterpreter.interpret(history: list[ChatMessage],
+latest_message: str) -> RequirementExtractionResult`,
+`app/services/recommendation_engine.RecommendationEngine.recommend(db: Session, requirements:
+StructuredRequirements, *, market: str = ..., limit: int = 10) -> list[VehicleSummary]`,
+`app/ai/explanation_generator.ExplanationGenerator.explain(vehicle: VehicleSummary, requirements:
+StructuredRequirements) -> str`. Each accepts its Anthropic client (where applicable) via
+constructor injection, defaulting to a shared module-level singleton
+(`interpreter`/`engine`/`generator`) — `app/services/conversation.ConversationOrchestrator` wires
+the three together and is itself the same pattern (constructor-injected dependencies, a module-
+level `orchestrator` singleton the API layer uses). Every method's docstring documents its
+parameters and return value with `Args:`/`Returns:` sections, not just a one-line summary — see
+the template in `drivewise-architecture`, or any of the four classes above for a real example.
 
 ## Guardrails
 

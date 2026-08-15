@@ -132,6 +132,16 @@ class ToyotaParser(BaseParser):
     powertrain = "HEV"  # nominal default; the actual powertrain is per-row, see _classify_powertrain
 
     def parse(self, pdf_path: Path) -> list[ExtractedVariant]:
+        """See module docstring for Toyota's row format.
+
+        Args:
+            pdf_path: Local path to a downloaded Toyota price-list PDF.
+
+        Returns:
+            One `ExtractedVariant` per trim/engine row found,
+            `powertrain` classified per-row via `_classify_powertrain`
+            (Toyota's lineup here is HEV/PHEV only, never plain ICE).
+        """
         variants: list[ExtractedVariant] = []
 
         with pdfplumber.open(pdf_path) as pdf:

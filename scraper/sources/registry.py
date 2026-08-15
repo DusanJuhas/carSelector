@@ -36,11 +36,25 @@ class SourceRegistry:
         self._config_path = config_path
 
     def load_all(self) -> list[Source]:
+        """Returns:
+            Every source entry in `config/sources.yaml`, active or not.
+        """
         data = yaml.safe_load(self._config_path.read_text(encoding="utf-8"))
         return [Source(**entry) for entry in data["sources"]]
 
     def load_active(self) -> list[Source]:
+        """Returns:
+            Only the sources with `active: true` - the ones
+            `ScraperPipeline.run` actually processes.
+        """
         return [s for s in self.load_all() if s.active]
 
     def get_by_parser_key(self, parser_key: str) -> Source | None:
+        """Args:
+            parser_key: `parser_key` value to look up (matches a key in
+                `parsers/registry.py`'s `PARSERS`).
+
+        Returns:
+            The first source with this `parser_key`, or `None` if none match.
+        """
         return next((s for s in self.load_all() if s.parser_key == parser_key), None)

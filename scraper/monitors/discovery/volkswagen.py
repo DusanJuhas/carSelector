@@ -69,6 +69,18 @@ def _is_main_price_list(anchor_text: str, model: str) -> bool:
 
 class VolkswagenDiscoverer(BaseDiscoverer):
     def discover(self, source: Source, *, timeout: int = 30) -> dict[str, str]:
+        """Args:
+            source: Registry entry giving the models to discover - unlike
+                Škoda/Kia (one shared listing page), VW has a separate
+                price-list page fetched per model (see module docstring).
+            timeout: HTTP request timeout in seconds, applied per model
+                page fetched.
+
+        Returns:
+            `{model: price_list_url}` for each of `source.models` whose
+            page returned a link (a model with no page, or no matching
+            link on it, is simply omitted).
+        """
         found: dict[str, str] = {}
 
         for model in source.models:

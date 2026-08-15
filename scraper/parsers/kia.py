@@ -109,6 +109,17 @@ class KiaParser(BaseParser):
     powertrain = "ICE"  # nominal default; the actual powertrain is per-row, see _classify_powertrain
 
     def parse(self, pdf_path: Path) -> list[ExtractedVariant]:
+        """See module docstring for Kia's row format and why only the
+        list price (not the monthly promotion columns) is extracted.
+
+        Args:
+            pdf_path: Local path to a downloaded Kia price-list PDF.
+
+        Returns:
+            One `ExtractedVariant` per price row found (across all
+            pages with a `_TABLE_HEADER_MARKER` table), `powertrain`
+            classified per-row via `_classify_powertrain`.
+        """
         variants: list[ExtractedVariant] = []
 
         with pdfplumber.open(pdf_path) as pdf:

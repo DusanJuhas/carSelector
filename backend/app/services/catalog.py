@@ -41,6 +41,12 @@ _SUMMARY_LOAD_OPTIONS = (
 
 
 def _build_powertrain_spec(powertrain: Powertrain) -> PowertrainSpec:
+    """Args:
+        powertrain: ORM row to project onto the API's `PowertrainSpec` shape.
+
+    Returns:
+        The subset of `powertrain`'s fields the API contract exposes.
+    """
     return PowertrainSpec(
         fuel_type=powertrain.fuel_type,
         transmission=powertrain.transmission,
@@ -56,10 +62,16 @@ def _build_powertrain_spec(powertrain: Powertrain) -> PowertrainSpec:
 
 
 def _build_specs_tags(powertrain: Powertrain) -> list[str]:
-    # Simplified placeholder: the source price lists never state seat
-    # count (see doc/api-contract.md "open items"), so this can't yet
-    # match the richer ["AWD", "5 seats", "Hybrid"]-style tags from the
-    # original design concept - only powertrain-derived tags for now.
+    """Args:
+        powertrain: ORM row to derive display tags from.
+
+    Returns:
+        Short display tags for a vehicle card, e.g. `["AWD", "Hybrid"]`.
+        Simplified placeholder: the source price lists never state seat
+        count (see doc/api-contract.md "open items"), so this can't yet
+        match the richer ["AWD", "5 seats", "Hybrid"]-style tags from the
+        original design concept - only powertrain-derived tags for now.
+    """
     tags = [powertrain.drivetrain.value.upper()]
     if powertrain.fuel_type != FuelType.petrol:
         tags.append(powertrain.fuel_type.value.replace("_", " ").title())
@@ -67,6 +79,17 @@ def _build_specs_tags(powertrain: Powertrain) -> list[str]:
 
 
 def _build_vehicle_summary(configuration: Configuration, price: Price) -> VehicleSummary:
+    """Args:
+        configuration: ORM row with `trim`/`powertrain` eagerly loaded
+            (via `_SUMMARY_LOAD_OPTIONS`) - accessing them here must not
+            trigger a lazy-load query.
+        price: The configuration's current price row (`valid_to IS NULL`)
+            for the market being queried.
+
+    Returns:
+        The recommendation-card/results-grid shape for this configuration,
+        per doc/api-contract.md's `VehicleSummary`.
+    """
     trim = configuration.trim
     model = trim.model
     return VehicleSummary(
@@ -97,6 +120,25 @@ def list_vehicles(
     here yet: the source data has no seat-count field anywhere in the
     schema, so accepting the param and silently ignoring it would be
     worse than not accepting it at all.
+
+    Args:
+        db: Database session to query through.
+        body_type: Exact-match filter on `models.category`, if given.
+        fuel_type: Hard filter on `powertrains.fuel_type`, if given.
+        drivetrain: Hard filter on `powertrains.drivetrain`, if given -
+            for direct catalog browsing; the recommendation engine treats
+            drivetrain as a soft preference instead, see
+            `drivewise-ai-recommendations`.
+        budget_max: Hard filter, `price_incl_vat <= budget_max`, if given
+            (compared only against rows in `currency`).
+        currency: Currency `budget_max` is denominated in.
+        market: Market to price and filter against.
+        page: 1-indexed page number.
+        page_size: Rows per page.
+
+    Returns:
+        A `Page[VehicleSummary]` with `items` for the requested page and
+        `total` set to the full matching count (not just this page's size).
     """
     current_price_join = and_(
         Price.configuration_id == Configuration.id,
@@ -133,6 +175,19 @@ def list_vehicles(
 def get_vehicle_detail(
     db: Session, configuration_id: int, *, market: str = DEFAULT_MARKET
 ) -> VehicleDetail | None:
+    """Full detail page for one configuration: summary + powertrain spec,
+    colors, standard/optional equipment, and price history.
+
+    Args:
+        db: Database session to query through.
+        configuration_id: Id of the `configurations` row to fetch.
+        market: Market to price against - also determines which price row
+            counts as "current" (`valid_to IS NULL` for this market).
+
+    Returns:
+        The full detail, or `None` if `configuration_id` doesn't exist or
+        has no current price row for `market`.
+    """
     configuration = (
         db.execute(
             select(Configuration)
@@ -225,7 +280,21 @@ def get_vehicle_detail(
 def compare_vehicles(
     db: Session, configuration_ids: list[int], *, market: str = DEFAULT_MARKET
 ) -> tuple[list[VehicleDetail], list[int]]:
-    """Returns (found, missing_ids) - the router decides how to report missing ids."""
+    """Looks up full detail for each id in `configuration_ids`.
+
+    Args:
+        db: Database session to query through.
+        configuration_ids: Configuration ids to fetch detail for, 2-4 per
+            doc/api-contract.md - not enforced here, the router validates
+            the count before calling this.
+        market: Market to price each vehicle against.
+
+    Returns:
+        `(found, missing_ids)` - `found` is full detail for every id that
+        resolved to a priced configuration, `missing_ids` is the ids that
+        didn't (unknown id, or no current price for `market`); the router
+        decides how to report `missing_ids` (a 404).
+    """
     found: list[VehicleDetail] = []
     missing: list[int] = []
     for configuration_id in configuration_ids:
@@ -238,11 +307,30 @@ def compare_vehicles(
 
 
 def list_brands(db: Session) -> list[BrandRead]:
+    """Args:
+        db: Database session to query through.
+
+    Returns:
+        Every brand in the catalog, alphabetical by name.
+    """
     brands = db.execute(select(Brand).order_by(Brand.name)).scalars().all()
     return [BrandRead(id=b.id, name=b.name, slug=b.slug) for b in brands]
 
 
 def get_model_overview(db: Session, model_id: int, *, market: str = DEFAULT_MARKET) -> ModelOverview | None:
+    """One model's trims, each with its available (priced) configurations
+    - the shape a model/vehicle-family landing page would use.
+
+    Args:
+        db: Database session to query through.
+        model_id: Id of the `models` row to fetch.
+        market: Market to price configurations against; a configuration
+            with no current price row for `market` is left out of its
+            trim's `configurations` list.
+
+    Returns:
+        The overview, or `None` if `model_id` doesn't exist.
+    """
     model = (
         db.execute(select(CarModel).where(CarModel.id == model_id).options(joinedload(CarModel.brand)))
         .unique()

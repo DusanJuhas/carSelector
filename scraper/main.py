@@ -34,12 +34,30 @@ class ScraperPipeline:
         monitor: SourceMonitor | None = None,
         variant_repository: VariantRepository | None = None,
     ) -> None:
+        """Args:
+            session: DB session to use. Defaults to a new session from
+                `database.db.get_session()`.
+            source_registry: Provides the sources to process. Defaults to
+                a `SourceRegistry` reading `config/sources.yaml`.
+            monitor: Finds/downloads new documents. Defaults to a
+                `SourceMonitor` bound to `session`.
+            variant_repository: Persists parsed variants/prices/equipment.
+                Defaults to a `VariantRepository` bound to `session`.
+        """
         self._session = session or get_session()
         self._source_registry = source_registry or SourceRegistry()
         self._monitor = monitor or SourceMonitor(self._session)
         self._variants = variant_repository or VariantRepository(self._session)
 
     def _process_document(self, source: Source, document: Document) -> None:
+        """Parses one newly-discovered document and persists its variants.
+
+        Args:
+            source: The source `document` was discovered under (gives
+                `parser_key`/`brand`).
+            document: The document to parse - `document.release_date` is
+                set here from the PDF itself before parsing.
+        """
         parser_cls = PARSERS.get(source.parser_key)
         if parser_cls is None:
             print(f"  skipped (unknown parser_key {source.parser_key!r}): {document.document_url}")
@@ -61,6 +79,11 @@ class ScraperPipeline:
         print(f"  {document.document_url}: saved {len(saved)} variants (valid from {document.release_date})")
 
     def run(self) -> None:
+        """Runs one full pass: for every active source, discovers and
+        downloads new documents, parses each, and persists the result.
+        Prints progress per source/document to stdout; closes the DB
+        session before returning.
+        """
         init_db()
 
         for source in self._source_registry.load_active():

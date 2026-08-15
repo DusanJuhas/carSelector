@@ -59,6 +59,16 @@ class VolkswagenParser(BaseParser):
     powertrain = "ICE"  # nominal default; the actual powertrain is per-row, see _classify_powertrain
 
     def parse(self, pdf_path: Path) -> list[ExtractedVariant]:
+        """See module docstring for Volkswagen ICE/MHEV/PHEV's row format.
+
+        Args:
+            pdf_path: Local path to a downloaded VW price-list PDF.
+
+        Returns:
+            One `ExtractedVariant` per engine/trim row found across pages
+            with a price table, `powertrain` classified per-row via
+            `_classify_powertrain`.
+        """
         variants: list[ExtractedVariant] = []
 
         with pdfplumber.open(pdf_path) as pdf:
