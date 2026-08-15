@@ -1,0 +1,28 @@
+{
+  "header": {
+    "brand": "Rovis",
+    "tagline": "Describe your life. We'll find the car.",
+    "restart": "Restart",
+    "technicalRequirements": "Technical requirements"
+  },
+  "chat": {
+    "typePlaceholder": "Type your reply…",
+    "conversationComplete": "Conversation complete — shortlist finalized."
+  },
+  "results": {
+    "title_one": "{{count}} match ranked for you",
+    "title_other": "{{count}} matches ranked for you",
+    "titleEmpty": "Your shortlist",
+    "updatedAfter": "Updated after: {{stage}}",
+    "startPrompt": "Start the conversation to see cars appear.",
+    "emptyState": "Your shortlist will appear here once you describe how you'll use the car."
+  },
+  "car": {
+    "photoPlaceholder": "car photo — {{make}} {{model}}",
+    "topMatch": "Top match"
+  },
+  "requirements": {
+    "subtitle": "Plain-language input, translated to specs.",
+    "empty": "No requirements captured yet."
+  }
+}

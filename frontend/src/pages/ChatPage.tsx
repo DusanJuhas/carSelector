@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useConversation } from '../hooks/useConversation';
 import { AppHeader } from '../components/AppHeader';
 import { ChatColumn } from '../components/ChatColumn';
@@ -5,6 +6,7 @@ import { ResultsGrid } from '../components/ResultsGrid';
 import { RequirementsDrawer } from '../components/RequirementsDrawer';
 
 export function ChatPage() {
+  const { t } = useTranslation();
   const {
     messages,
     nextSuggestion,
@@ -36,12 +38,12 @@ export function ChatPage() {
         <div className="min-w-0 flex-1 overflow-y-auto px-7 py-6">
           <div className="mb-4.5">
             <div className="text-[19px] font-bold text-text">
-              {hasResults ? `${cars.length} matches ranked for you` : 'Your shortlist'}
+              {hasResults ? t('results.title', { count: cars.length }) : t('results.titleEmpty')}
             </div>
             <div className="mt-0.5 text-[13px] text-subtext">
               {hasResults
-                ? `Updated after: ${stageName}`
-                : 'Start the conversation to see cars appear.'}
+                ? t('results.updatedAfter', { stage: stageName })
+                : t('results.startPrompt')}
             </div>
           </div>
           <ResultsGrid cars={cars} />

@@ -1,0 +1,30 @@
+{
+  "header": {
+    "brand": "Rovis",
+    "tagline": "Popište svůj životní styl. Najdeme vám auto.",
+    "restart": "Restartovat",
+    "technicalRequirements": "Technické požadavky"
+  },
+  "chat": {
+    "typePlaceholder": "Napište odpověď…",
+    "conversationComplete": "Konverzace dokončena — užší výběr je hotový."
+  },
+  "results": {
+    "title_one": "{{count}} shoda pro vás",
+    "title_few": "{{count}} shody pro vás",
+    "title_many": "{{count}} shody pro vás",
+    "title_other": "{{count}} shod pro vás",
+    "titleEmpty": "Váš výběr",
+    "updatedAfter": "Aktualizováno po: {{stage}}",
+    "startPrompt": "Začněte konverzaci a uvidíte auta.",
+    "emptyState": "Váš užší výběr se zobrazí zde, jakmile popíšete, k čemu auto budete používat."
+  },
+  "car": {
+    "photoPlaceholder": "fotka auta — {{make}} {{model}}",
+    "topMatch": "Nejlepší shoda"
+  },
+  "requirements": {
+    "subtitle": "Běžný jazyk, převedený na technické specifikace.",
+    "empty": "Zatím nebyly zachyceny žádné požadavky."
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ChatMessage } from '../types';
 import { ChatMessageBubble } from './ChatMessageBubble';
 
@@ -9,6 +10,7 @@ export interface ChatColumnProps {
 }
 
 export function ChatColumn({ messages, nextSuggestion, onSelectSuggestion }: ChatColumnProps) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,11 +36,11 @@ export function ChatColumn({ messages, nextSuggestion, onSelectSuggestion }: Cha
           </button>
         ) : (
           <div className="py-1.5 text-center text-[12.5px] text-subtext">
-            Conversation complete — shortlist finalized.
+            {t('chat.conversationComplete')}
           </div>
         )}
         <div className="rounded-full border border-border bg-ai-bubble px-4 py-2.5 text-[13px] text-subtext">
-          Type your reply…
+          {t('chat.typePlaceholder')}
         </div>
       </div>
     </div>

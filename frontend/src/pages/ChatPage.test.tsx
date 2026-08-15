@@ -11,25 +11,25 @@ afterEach(() => {
 describe('ChatPage', () => {
   it('shows the empty shortlist state before the conversation starts', () => {
     render(<ChatPage />);
-    expect(screen.getByText('Your shortlist')).toBeInTheDocument();
-    expect(screen.getByText(/start the conversation/i)).toBeInTheDocument();
+    expect(screen.getByText('Váš výběr')).toBeInTheDocument();
+    expect(screen.getByText(/začněte konverzaci/i)).toBeInTheDocument();
   });
 
   it('reveals requirements and a ranked shortlist after picking a suggested reply', async () => {
     render(<ChatPage />);
 
-    await userEvent.click(screen.getByText(/family of 4/i));
+    await userEvent.click(screen.getByText(/čtyřčlenná rodina/i));
 
-    expect(screen.getByText(/matches ranked for you/i)).toBeInTheDocument();
+    expect(screen.getByText(/\d+ shod/i)).toBeInTheDocument();
     expect(screen.getByText('Subaru Outback Wilderness')).toBeInTheDocument();
   });
 
   it('restarts the conversation back to the empty state', async () => {
     render(<ChatPage />);
 
-    await userEvent.click(screen.getByText(/family of 4/i));
-    await userEvent.click(screen.getByRole('button', { name: 'Restart' }));
+    await userEvent.click(screen.getByText(/čtyřčlenná rodina/i));
+    await userEvent.click(screen.getByRole('button', { name: 'Restartovat' }));
 
-    expect(screen.getByText('Your shortlist')).toBeInTheDocument();
+    expect(screen.getByText('Váš výběr')).toBeInTheDocument();
   });
 });

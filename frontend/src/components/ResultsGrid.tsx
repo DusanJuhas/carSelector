@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Car } from '../types';
 import { CarCard } from './CarCard';
 
@@ -6,10 +7,12 @@ export interface ResultsGridProps {
 }
 
 export function ResultsGrid({ cars }: ResultsGridProps) {
+  const { t } = useTranslation();
+
   if (cars.length === 0) {
     return (
       <div className="px-5 py-10 text-center text-[13px] text-subtext">
-        Your shortlist will appear here once you describe how you'll use the car.
+        {t('results.emptyState')}
       </div>
     );
   }

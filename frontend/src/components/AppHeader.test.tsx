@@ -14,10 +14,10 @@ describe('AppHeader', () => {
     const onToggleDrawer = vi.fn();
     render(<AppHeader requirementsCount={0} onRestart={onRestart} onToggleDrawer={onToggleDrawer} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Restart' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Restartovat' }));
     expect(onRestart).toHaveBeenCalledOnce();
 
-    await userEvent.click(screen.getByRole('button', { name: /technical requirements/i }));
+    await userEvent.click(screen.getByRole('button', { name: /technické požadavky/i }));
     expect(onToggleDrawer).toHaveBeenCalledOnce();
   });
 });

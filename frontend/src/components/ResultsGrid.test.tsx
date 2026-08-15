@@ -4,13 +4,13 @@ import { ResultsGrid } from './ResultsGrid';
 import type { Car } from '../types';
 
 const cars: Car[] = [
-  { id: 'a', make: 'Subaru', model: 'Outback', price: '$34,500', score: 93, specs: ['AWD'], flag: null },
+  { id: 'a', make: 'Subaru', model: 'Outback', price: { amount: 811000, currency: 'CZK' }, score: 93, specs: ['4×4'], flag: null },
 ];
 
 describe('ResultsGrid', () => {
   it('shows an empty-state message when there are no cars', () => {
     render(<ResultsGrid cars={[]} />);
-    expect(screen.getByText(/shortlist will appear here/i)).toBeInTheDocument();
+    expect(screen.getByText(/váš užší výběr se zobrazí zde/i)).toBeInTheDocument();
   });
 
   it('renders a card per car', () => {

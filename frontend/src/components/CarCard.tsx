@@ -1,10 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import type { Car } from '../types';
+import { formatMoney } from '../utils/money';
 
 export interface CarCardProps {
   car: Car;
 }
 
 export function CarCard({ car }: CarCardProps) {
+  const { t } = useTranslation();
   const isHighScore = car.score >= 90;
 
   return (
@@ -15,13 +18,13 @@ export function CarCard({ car }: CarCardProps) {
     >
       {car.topPick && (
         <div className="absolute left-2.5 top-2.5 z-10 rounded-full bg-accent px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wide text-accent-text">
-          Top match
+          {t('car.topMatch')}
         </div>
       )}
       <div
         className="flex h-[140px] items-center justify-center bg-[repeating-linear-gradient(45deg,var(--color-panel-2),var(--color-panel-2)_10px,var(--color-border)_10px,var(--color-border)_20px)] px-3 text-center font-mono text-[11px] text-subtext"
       >
-        car photo — {car.make} {car.model}
+        {t('car.photoPlaceholder', { make: car.make, model: car.model })}
       </div>
       <div className="flex flex-col gap-2.5 p-4 pt-3.5">
         <div className="flex items-start justify-between gap-2">
@@ -29,7 +32,7 @@ export function CarCard({ car }: CarCardProps) {
             <div className="text-[14.5px] font-bold text-text">
               {car.make} {car.model}
             </div>
-            <div className="mt-0.5 text-[12.5px] text-subtext">{car.price}</div>
+            <div className="mt-0.5 text-[12.5px] text-subtext">{formatMoney(car.price)}</div>
           </div>
           <div
             className={`shrink-0 rounded-full px-2.5 py-1 text-[15px] font-bold ${

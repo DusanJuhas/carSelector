@@ -8,20 +8,20 @@ describe('ChatColumn', () => {
     const onSelectSuggestion = vi.fn();
     render(
       <ChatColumn
-        messages={[{ role: 'assistant', text: 'Hi!' }]}
-        nextSuggestion="We drive a lot in the mountains"
+        messages={[{ role: 'assistant', text: 'Ahoj!' }]}
+        nextSuggestion="Hodně jezdíme v horách"
         onSelectSuggestion={onSelectSuggestion}
       />,
     );
 
-    await userEvent.click(screen.getByText('We drive a lot in the mountains'));
+    await userEvent.click(screen.getByText('Hodně jezdíme v horách'));
     expect(onSelectSuggestion).toHaveBeenCalledOnce();
   });
 
   it('shows a completion message when there is no next suggestion', () => {
     render(
-      <ChatColumn messages={[{ role: 'assistant', text: 'Hi!' }]} nextSuggestion={null} onSelectSuggestion={vi.fn()} />,
+      <ChatColumn messages={[{ role: 'assistant', text: 'Ahoj!' }]} nextSuggestion={null} onSelectSuggestion={vi.fn()} />,
     );
-    expect(screen.getByText(/conversation complete/i)).toBeInTheDocument();
+    expect(screen.getByText(/konverzace dokončena/i)).toBeInTheDocument();
   });
 });

@@ -35,8 +35,8 @@ na začátku toho souboru).
 
 ## Tech stack (závazně, neměnit bez domluvy)
 
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Zustand (stav), Axios, Vitest + React Testing
-  Library (testy)
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Zustand (stav), Axios, react-i18next (i18n),
+  Vitest + React Testing Library (testy)
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy, Pydantic v2, PostgreSQL
 - **AI:** Claude API (Anthropic SDK) pro extrakci požadavků a generování vysvětlení
 - **Scraping:** Playwright / BeautifulSoup / Scrapy
@@ -51,6 +51,11 @@ na začátku toho souboru).
 - Sdílené typy (např. `Car`, `Recommendation`, `UserRequirements`) žijí v `/src/types` a musí
   odpovídat Pydantic schématům v `/backend/app/schemas`
 - Side-effecty (API volání) jen v `/src/api` nebo custom hooks, nikdy přímo v komponentě
+- UI text uživatele je vždy česky, přes `useTranslation()`/`t()` proti `/src/i18n/locales/cs.json`
+  — žádné natvrdo napsané řetězce v komponentách. `en.json` existuje jako druhá jazyková sada
+  (příprava na vícejazyčnost), ale zatím se nikde nepoužívá (žádný přepínač jazyka)
+- Ceny vždy jako `Money` (`{ amount, currency }`), formátované přes `formatMoney()`
+  (`src/utils/money.ts`) — currency je `'CZK'`, nikdy natvrdo `$`/`Kč` v textu
 
 ### Backend
 - Všechny endpointy typované přes Pydantic, žádné volné dict odpovědi

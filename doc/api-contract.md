@@ -23,6 +23,9 @@ option_availability / prices / source_documents` (see conversation history / fut
 - Errors: `{ "error": { "code": "string", "message": "string", "details": {} } }` with a matching
   HTTP status (400 validation, 404 not found, 422 unprocessable, 500 server error)
 - No auth in v1 (see architecture doc's bonus features) — endpoints are unauthenticated
+- Language: all free-text fields meant for display (`explanation`, `flag`, conversation replies)
+  are Czech, matching the frontend UI language — prompt the Claude integration accordingly. See
+  `doc/prompt/CLAUDE.md`.
 
 ## Shared schemas
 
@@ -50,7 +53,7 @@ a `configuration_id`, not a synthetic slug.
 | price | Money | no | current price (`prices` row with `valid_to IS NULL`) |
 | match_score | integer (0–100) | yes | null outside a recommendation context (e.g. plain catalog browse) |
 | specs | string[] | no | short display tags, e.g. `["AWD", "5 seats", "Hybrid"]` — derived, not a DB column |
-| flag | string | yes | e.g. `"Over budget by ~2,200 Kč"` — reserved for a future graceful over-budget-inclusion feature; the current recommendation engine treats budget as a hard filter, so this is always null for now |
+| flag | string | yes | Czech, matching the UI language (see `doc/prompt/CLAUDE.md`) — e.g. `"Nad rozpočtem o ~2 200 Kč"` — reserved for a future graceful over-budget-inclusion feature; the current recommendation engine treats budget as a hard filter, so this is always null for now |
 | top_pick | boolean | no | default `false` |
 | thumbnail_url | string | yes | no image data exists in the scraped source yet — expect null for the foreseeable future |
 | explanation | string | yes | AI-generated, grounded only in this vehicle's own specs (never invents attributes). Null outside a chat context, or if the AI layer isn't configured |

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { UserRequirement } from '../types';
 
 export interface RequirementsDrawerProps {
@@ -7,6 +8,8 @@ export interface RequirementsDrawerProps {
 }
 
 export function RequirementsDrawer({ requirements, open, onClose }: RequirementsDrawerProps) {
+  const { t } = useTranslation();
+
   return (
     <>
       <div
@@ -20,13 +23,11 @@ export function RequirementsDrawer({ requirements, open, onClose }: Requirements
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="text-[16px] font-bold text-text">Technical requirements</div>
-        <div className="mb-2 text-[12.5px] text-subtext">
-          Plain-language input, translated to specs.
-        </div>
+        <div className="text-[16px] font-bold text-text">{t('header.technicalRequirements')}</div>
+        <div className="mb-2 text-[12.5px] text-subtext">{t('requirements.subtitle')}</div>
         {requirements.length === 0 ? (
           <div className="px-1 py-10 text-center text-[13px] text-subtext">
-            No requirements captured yet.
+            {t('requirements.empty')}
           </div>
         ) : (
           requirements.map((req) => (
