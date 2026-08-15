@@ -2,7 +2,6 @@ from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    BigInteger,
     CHAR,
     CheckConstraint,
     Date,
@@ -11,10 +10,11 @@ from sqlalchemy import (
     Index,
     Numeric,
     String,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, BigIntPK
 
 if TYPE_CHECKING:
     from app.models.configuration import Configuration
@@ -46,11 +46,15 @@ class Price(Base):
             "market",
             unique=True,
             postgresql_where="valid_to IS NULL",
+            # Unlike postgresql_where, SQLite's DDL compiler requires an
+            # actual SQL expression here (a bare string errors with
+            # "'str' object has no attribute '_compiler_dispatch'").
+            sqlite_where=text("valid_to IS NULL"),
         ),
         CheckConstraint("valid_to IS NULL OR valid_to > valid_from", name="valid_to_after_valid_from"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
     configuration_id: Mapped[int] = mapped_column(ForeignKey("configurations.id"), nullable=False)
     source_document_id: Mapped[int] = mapped_column(ForeignKey("source_documents.id"), nullable=False)
     market: Mapped[str] = mapped_column(String(8), nullable=False)

@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, ForeignKey, SmallInteger, String, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, BigIntPK
 
 if TYPE_CHECKING:
     from app.models.brand import Brand
@@ -24,7 +24,7 @@ class CarModel(Base):
     __tablename__ = "models"
     __table_args__ = (UniqueConstraint("brand_id", "slug"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
     brand_id: Mapped[int] = mapped_column(ForeignKey("brands.id"), nullable=False)
     slug: Mapped[str] = mapped_column(String(64), nullable=False)
     name: Mapped[str] = mapped_column(String(128), nullable=False)

@@ -37,7 +37,9 @@ na začátku toho souboru).
 
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, Zustand (stav), Axios, react-i18next (i18n),
   Vitest + React Testing Library (testy)
-- **Backend:** Python 3.11+, FastAPI, SQLAlchemy, Pydantic v2, PostgreSQL
+- **Backend:** Python 3.11+, FastAPI, SQLAlchemy, Pydantic v2, PostgreSQL (target; SQLite is the
+  current default local DB — see `backend/README.md`'s Database section — schema stays
+  dual-dialect, don't add Postgres-only DDL without an SQLite equivalent)
 - **AI:** Claude API (Anthropic SDK) pro extrakci požadavků a generování vysvětlení
 - **Scraping:** Playwright / BeautifulSoup / Scrapy
 

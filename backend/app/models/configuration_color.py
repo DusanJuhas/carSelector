@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, CHAR, ForeignKey, Numeric, UniqueConstraint
+from sqlalchemy import CHAR, ForeignKey, Numeric, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, BigIntPK
 
 if TYPE_CHECKING:
     from app.models.color import Color
@@ -16,7 +16,7 @@ class ConfigurationColor(Base):
     __tablename__ = "configuration_colors"
     __table_args__ = (UniqueConstraint("configuration_id", "color_id"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
     configuration_id: Mapped[int] = mapped_column(ForeignKey("configurations.id"), nullable=False)
     color_id: Mapped[int] = mapped_column(ForeignKey("colors.id"), nullable=False)
     # 0, not null, for included/no-surcharge colors - a color is always

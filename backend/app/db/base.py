@@ -1,4 +1,4 @@
-from sqlalchemy import MetaData
+from sqlalchemy import BigInteger, Integer, MetaData
 from sqlalchemy.orm import DeclarativeBase
 
 # Explicit naming convention so Alembic autogenerate produces stable,
@@ -14,3 +14,12 @@ NAMING_CONVENTION = {
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
+
+
+# Every model's primary key uses this instead of bare BigInteger: SQLite
+# only auto-increments a primary key (aliasing its internal rowid) when the
+# column type is exactly INTEGER - BigInteger's SQLite DDL (BIGINT) does
+# not get that behavior, which would otherwise force every insert to
+# assign an id by hand. Compiles to BIGINT/BIGSERIAL on Postgres (unchanged
+# from before) and INTEGER PRIMARY KEY on SQLite.
+BigIntPK = BigInteger().with_variant(Integer, "sqlite")

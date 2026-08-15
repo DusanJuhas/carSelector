@@ -1,8 +1,9 @@
 # DriveWise AI – backend
 
-FastAPI + SQLAlchemy + PostgreSQL. See `doc/prompt/CLAUDE.md` for repo-wide conventions and
-`doc/api-contract.md` for the endpoint/schema contract (source of truth for request/response
-shapes — keep it in sync with `app/schemas` when either changes).
+FastAPI + SQLAlchemy + PostgreSQL (target) / SQLite (current default, see Database below). See
+`doc/prompt/CLAUDE.md` for repo-wide conventions and `doc/api-contract.md` for the endpoint/schema
+contract (source of truth for request/response shapes — keep it in sync with `app/schemas` when
+either changes).
 
 ## Layout
 
@@ -26,13 +27,14 @@ python -m venv .venv
 pip install -r requirements-dev.txt   # requirements.txt + pytest/httpx for running tests
 ```
 
-Set `DATABASE_URL` (or create a `.env` file) to point at a real PostgreSQL instance:
+`DATABASE_URL` defaults to a SQLite file at `backend/drivewise.db` — no database server to install,
+see Database below. To use PostgreSQL instead, set `DATABASE_URL` (or create a `.env` file):
 
 ```
 DATABASE_URL=postgresql+psycopg://drivewise:drivewise@localhost:5432/drivewise
 ```
 
-Defaults to that same local value if unset. The AI layer additionally needs:
+The AI layer additionally needs:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
@@ -49,13 +51,34 @@ written without access to a live API key and has not been exercised against the 
 Verify prompt behavior (does it reliably return JSON-only, is the follow-up-question quality
 reasonable) before relying on it.
 
+## Database
+
+SQLite (a local file, `backend/drivewise.db`, gitignored) is the default for now, so the app runs
+without installing anything database-related. The schema (`app/models/`, the Alembic migration) is
+written to stay dual-dialect rather than SQLite-only — see `app/db/base.py`'s `BigIntPK` (SQLite
+only auto-increments a PK when the column is literally `INTEGER`, unlike Postgres's `BIGSERIAL`)
+and the `prices` table's partial unique index (`postgresql_where`/`sqlite_where` pair) — so
+switching `DATABASE_URL` to Postgres later needs no model/migration changes.
+
+```bash
+alembic upgrade head      # creates backend/drivewise.db and the schema in it
+python -m app.db.seed     # seeds one real, hand-verified vehicle (Mazda CX-5) - safe to re-run,
+                           # skips if the DB already has data
+```
+
+`python -m app.db.seed` also calls `Base.metadata.create_all()` first, so on a totally fresh
+checkout you can skip straight to it without running `alembic upgrade head` separately — Alembic
+remains the source of truth for schema history either way (`alembic_version` gets stamped once you
+do run it).
+
 ## Run the API
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Interactive docs at `http://localhost:8000/docs`.
+Interactive docs at `http://localhost:8000/docs`. Try `GET /api/brands` or `GET /api/vehicles`
+after seeding to see real data.
 
 ## Tests
 
@@ -64,16 +87,17 @@ pytest
 ```
 
 `tests/conftest.py` spins up a throwaway in-memory SQLite DB per test (via `Base.metadata.create_all`,
-not Alembic), seeds it with real sample data drawn from the Mazda CX-5 price list in
-`storage/cars/`, and drives the FastAPI app through `TestClient` - so the catalog endpoints
-(brands/models/vehicles/compare) are exercised end to end, not just imported. The conversation
-endpoints are tested only up to the point that requires a live Claude API call (they correctly
-503 without a key); the AI layer itself isn't covered by this suite.
+not Alembic), seeds it via `app.db.seed.seed_demo_data()` — the same real sample data drawn from
+the Mazda CX-5 price list in `storage/cars/` that `python -m app.db.seed` writes to the persistent
+dev DB, one source of truth for both — and drives the FastAPI app through `TestClient` - so the
+catalog endpoints (brands/models/vehicles/compare) are exercised end to end, not just imported. The
+conversation endpoints are tested only up to the point that requires a live Claude API call (they
+correctly 503 without a key); the AI layer itself isn't covered by this suite.
 
-One SQLite-only quirk worth knowing if you extend the fixtures: SQLAlchemy's `BigInteger` primary
-key doesn't get SQLite's autoincrement rowid-aliasing (only a literal `Integer` PK does) - the
-fixtures assign every id explicitly rather than relying on autoincrement. This doesn't affect
-Postgres, where the migration renders `BIGSERIAL` (see below).
+`seed_demo_data()` assigns every id explicitly rather than relying on autoincrement - not required
+for correctness (see `BigIntPK` below, which makes autoincrement work on SQLite too), but it keeps
+the seed deterministic and makes cross-referencing ids (e.g. `config_prime_2wd_id`) trivial in
+tests.
 
 ## Migrations
 
@@ -84,14 +108,24 @@ alembic revision --autogenerate -m "message"   # generate a new migration from m
 ```
 
 The first migration (`create catalog schema`) was authored by autogenerating against a throwaway
-scratch SQLite DB (no local Postgres was available at authoring time) and then hand-verified by
-rendering it as real Postgres DDL via `alembic upgrade head --sql` — the emitted `op.create_table`
-calls use the actual model Column/type objects, so they compile correctly for whichever dialect
-`DATABASE_URL` points at; nothing SQLite-specific leaked into the migration itself. One thing
-autogenerate did *not* catch and had to be added by hand: Postgres native enum types it creates
-implicitly aren't dropped again by the generated `downgrade()`, which would break a
-downgrade-then-upgrade round trip — see the `DROP TYPE` loop at the bottom of
-`alembic/versions/6579b05df670_create_catalog_schema.py`.
+scratch SQLite DB and then hand-verified by rendering it as real Postgres DDL via
+`alembic upgrade head --sql` — the emitted `op.create_table` calls use the actual model
+Column/type objects, so they compile correctly for whichever dialect `DATABASE_URL` points at.
+Since SQLite became the actual default (not just an authoring scratch DB), three spots needed
+dialect-aware handling rather than being left Postgres-only, all verified with a real
+`alembic upgrade head` → `downgrade base` → `upgrade head` round trip against SQLite directly (not
+just `--sql` rendering):
+- Every model's primary key uses `app/db/base.py`'s `BigIntPK` instead of bare `BigInteger` -
+  SQLite only auto-increments a PK when the column type is exactly `INTEGER`, so a bare
+  `BigInteger` PK (which is fine on Postgres/`BIGSERIAL`) silently never autoincrements on SQLite.
+- The `prices` table's partial unique index needs both `postgresql_where` and `sqlite_where` - the
+  Postgres dialect happens to accept a plain string for the former, but SQLite's DDL compiler
+  requires an actual `text(...)` expression for the latter.
+- Postgres native enum types (created implicitly, one per `Enum` column) aren't dropped by the
+  generated `downgrade()`, which breaks a downgrade-then-upgrade round trip - fixed with a
+  `DROP TYPE` loop, guarded to run only on `dialect.name == "postgresql"` since SQLite has no such
+  statement (`Enum` renders as `VARCHAR` + `CHECK` there instead) - see the bottom of
+  `alembic/versions/6579b05df670_create_catalog_schema.py`.
 
 ## Known gaps (see doc/api-contract.md "open items" for the full list)
 

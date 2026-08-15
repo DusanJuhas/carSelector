@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
+from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, BigIntPK
 
 if TYPE_CHECKING:
     from app.models.configuration_color import ConfigurationColor
@@ -24,7 +24,7 @@ class Configuration(Base):
     __tablename__ = "configurations"
     __table_args__ = (UniqueConstraint("trim_id", "powertrain_id"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
     trim_id: Mapped[int] = mapped_column(ForeignKey("trims.id"), nullable=False)
     powertrain_id: Mapped[int] = mapped_column(ForeignKey("powertrains.id"), nullable=False)
     # Populated for VW; null for Mazda, which exposes no order code in the

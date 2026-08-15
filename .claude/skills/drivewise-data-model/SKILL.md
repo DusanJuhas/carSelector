@@ -70,11 +70,22 @@ adding one.
 - The recommendation engine reads candidate vehicles through query helpers that filter by the AI layer's structured parameters (budget, body_type, fuel_type, drivetrain, etc.) — see `drivewise-ai-recommendations`.
 - Join eagerly (trim, powertrain, current price) when returning a full vehicle detail; keep list/search queries lean.
 
+## Database: SQLite by default, Postgres is the target
+
+`DATABASE_URL` defaults to a local SQLite file (`backend/drivewise.db`) so the backend runs without
+installing Postgres — see `backend/README.md`'s Database section. The schema/migration is kept
+dual-dialect on purpose (`app/db/base.py`'s `BigIntPK`, the `prices` partial index's
+`postgresql_where`/`sqlite_where` pair, the Postgres-only `DROP TYPE` downgrade guard) — don't add
+Postgres-only DDL to a model or migration without a SQLite equivalent, and don't assume Postgres
+when writing raw SQL (stick to the SQLAlchemy query layer, which is already dialect-agnostic).
+
 ## How the catalog actually gets populated today
 
 There is **no live pipeline yet** from the `scraper/` service into this schema — they're two
-separate databases with two separate schemas. `backend/tests/conftest.py` seeds this schema by
-hand from real Mazda CX-5 price-list data in `storage/cars/`; the `scraper/` service writes into
-its own SQLite DB (`scraper/storage/scraper.db`) using a different, document-centric schema
+separate databases with two separate schemas. `backend/app/db/seed.py`'s `seed_demo_data()` is the
+one source of truth for the demo dataset (real Mazda CX-5 price-list data from `storage/cars/`),
+shared by `backend/tests/conftest.py` (in-memory SQLite, per test) and `python -m app.db.seed`
+(the persistent dev SQLite file); the `scraper/` service writes into its own SQLite DB
+(`scraper/storage/scraper.db`) using a different, document-centric schema
 (`document`/`variant`/`price_history`/`equipment`) — see `drivewise-scraper`. Building the
 ETL/import step between the two is not done; don't assume it exists.

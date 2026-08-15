@@ -2,6 +2,11 @@
 
 Concrete table structure following the decisions in [brainstorm1.md](./brainstorm1.md): PostgreSQL, relational core + JSONB specs column, object storage (MinIO/S3-compatible) for original source documents with only a reference stored in Postgres.
 
+**Current implementation status:** the schema below is implemented in `backend/app/models/` and
+`backend/alembic/`, running on **SQLite by default** (`backend/drivewise.db`) so the app doesn't
+need a local Postgres install yet — see `backend/README.md`'s Database section. The schema is kept
+dual-dialect (Postgres remains the target), not SQLite-only.
+
 Two parts:
 1. **MVP schema** — the only tables needed to ship the MVP described in [MVP.md](../po/MVP.md). Hand-seeded catalog, no ingestion pipeline, no source documents yet.
 2. **Object storage / ingestion schema** — the [Version2.md](../po/Version2.md) tables that reference MinIO/S3. Documented now so the MVP schema doesn't need reshaping when this lands.

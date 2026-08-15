@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, BigIntPK
 from app.models.enums import OptionCategory
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ class OptionItem(Base):
 
     __tablename__ = "option_items"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
     model_id: Mapped[int] = mapped_column(ForeignKey("models.id"), nullable=False)
     category: Mapped[OptionCategory] = mapped_column(
         SAEnum(OptionCategory, name="option_category"), nullable=False
