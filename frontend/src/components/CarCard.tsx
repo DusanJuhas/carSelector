@@ -4,17 +4,32 @@ import { formatMoney } from '../utils/money';
 
 export interface CarCardProps {
   car: Car;
+  /** When provided, the card becomes clickable/keyboard-activatable and calls this with the car. */
+  onSelect?: (car: Car) => void;
 }
 
-export function CarCard({ car }: CarCardProps) {
+export function CarCard({ car, onSelect }: CarCardProps) {
   const { t } = useTranslation();
   const isHighScore = car.score !== null && car.score >= 90;
 
   return (
     <div
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onClick={onSelect ? () => onSelect(car) : undefined}
+      onKeyDown={
+        onSelect
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect(car);
+              }
+            }
+          : undefined
+      }
       className={`relative flex flex-col overflow-hidden rounded-card border bg-panel shadow-card animate-fade-in ${
         car.topPick ? 'border-accent' : 'border-border'
-      }`}
+      } ${onSelect ? 'cursor-pointer' : ''}`}
     >
       {car.topPick && (
         <div className="absolute left-2.5 top-2.5 z-10 rounded-full bg-accent px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wide text-accent-text">

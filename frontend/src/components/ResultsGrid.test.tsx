@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import { ResultsGrid } from './ResultsGrid';
 import type { Car } from '../types';
 
@@ -16,5 +17,12 @@ describe('ResultsGrid', () => {
   it('renders a card per car', () => {
     render(<ResultsGrid cars={cars} />);
     expect(screen.getByText('Subaru Outback Wilderness')).toBeInTheDocument();
+  });
+
+  it('passes onSelectCar through to each card', async () => {
+    const onSelectCar = vi.fn();
+    render(<ResultsGrid cars={cars} onSelectCar={onSelectCar} />);
+    await userEvent.click(screen.getByRole('button'));
+    expect(onSelectCar).toHaveBeenCalledWith(cars[0]);
   });
 });

@@ -32,5 +32,62 @@
   "requirements": {
     "subtitle": "Plain-language input, translated to specs.",
     "empty": "No requirements captured yet."
+  },
+  "vehicleDetail": {
+    "close": "Close",
+    "loading": "Loading vehicle detail…",
+    "error": "Couldn't load vehicle detail.",
+    "sections": {
+      "powertrain": "Engine & drivetrain",
+      "colors": "Colors",
+      "standardEquipment": "Standard equipment",
+      "optionalEquipment": "Optional equipment",
+      "priceHistory": "Price history"
+    },
+    "fields": {
+      "fuelType": "Fuel",
+      "transmission": "Transmission",
+      "drivetrain": "Drivetrain",
+      "power": "Power",
+      "consumption": "Consumption",
+      "co2": "CO₂ emissions",
+      "noData": "Not available"
+    },
+    "priceHistory": {
+      "current": "current",
+      "lowestPrice30d": "lowest price in last 30 days: {{price}}"
+    },
+    "noColors": "No color options available.",
+    "noOptionalEquipment": "No optional equipment available.",
+    "enums": {
+      "fuelType": {
+        "petrol": "Petrol",
+        "diesel": "Diesel",
+        "hybrid": "Hybrid",
+        "mild_hybrid": "Mild hybrid",
+        "phev": "Plug-in hybrid",
+        "electric": "Electric"
+      },
+      "drivetrain": {
+        "fwd": "Front-wheel drive",
+        "rwd": "Rear-wheel drive",
+        "awd": "All-wheel drive (4×4)"
+      },
+      "consumptionUnit": {
+        "l_100km": "l/100 km",
+        "kwh_100km": "kWh/100 km"
+      },
+      "colorFinish": {
+        "solid": "Solid",
+        "metallic": "Metallic",
+        "pearlescent": "Pearlescent"
+      },
+      "optionCategory": {
+        "equipment": "Equipment",
+        "package": "Package",
+        "warranty": "Warranty",
+        "service": "Service"
+      }
+    }
   }
 }

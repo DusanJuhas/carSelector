@@ -4,9 +4,10 @@ import { CarCard } from './CarCard';
 
 export interface ResultsGridProps {
   cars: Car[];
+  onSelectCar?: (car: Car) => void;
 }
 
-export function ResultsGrid({ cars }: ResultsGridProps) {
+export function ResultsGrid({ cars, onSelectCar }: ResultsGridProps) {
   const { t } = useTranslation();
 
   if (cars.length === 0) {
@@ -20,7 +21,7 @@ export function ResultsGrid({ cars }: ResultsGridProps) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
       {cars.map((car) => (
-        <CarCard key={car.id} car={car} />
+        <CarCard key={car.id} car={car} onSelect={onSelectCar} />
       ))}
     </div>
   );

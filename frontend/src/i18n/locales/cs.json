@@ -36,5 +36,62 @@
   "requirements": {
     "subtitle": "Běžný jazyk, převedený na technické specifikace.",
     "empty": "Zatím nebyly zachyceny žádné požadavky."
+  },
+  "vehicleDetail": {
+    "close": "Zavřít",
+    "loading": "Načítám detail vozu…",
+    "error": "Nepodařilo se načíst detail vozu.",
+    "sections": {
+      "powertrain": "Motor a pohon",
+      "colors": "Barvy",
+      "standardEquipment": "Standardní výbava",
+      "optionalEquipment": "Volitelná výbava",
+      "priceHistory": "Historie ceny"
+    },
+    "fields": {
+      "fuelType": "Palivo",
+      "transmission": "Převodovka",
+      "drivetrain": "Pohon",
+      "power": "Výkon",
+      "consumption": "Spotřeba",
+      "co2": "Emise CO₂",
+      "noData": "Údaj není k dispozici"
+    },
+    "priceHistory": {
+      "current": "aktuální",
+      "lowestPrice30d": "nejnižší cena za 30 dní: {{price}}"
+    },
+    "noColors": "Žádné barevné varianty nejsou k dispozici.",
+    "noOptionalEquipment": "Žádná volitelná výbava není k dispozici.",
+    "enums": {
+      "fuelType": {
+        "petrol": "Benzín",
+        "diesel": "Nafta",
+        "hybrid": "Hybrid",
+        "mild_hybrid": "Mild hybrid",
+        "phev": "Plug-in hybrid",
+        "electric": "Elektromobil"
+      },
+      "drivetrain": {
+        "fwd": "Pohon předních kol",
+        "rwd": "Pohon zadních kol",
+        "awd": "Pohon všech kol (4×4)"
+      },
+      "consumptionUnit": {
+        "l_100km": "l/100 km",
+        "kwh_100km": "kWh/100 km"
+      },
+      "colorFinish": {
+        "solid": "Uni",
+        "metallic": "Metalíza",
+        "pearlescent": "Perleťová"
+      },
+      "optionCategory": {
+        "equipment": "Výbava",
+        "package": "Balíček",
+        "warranty": "Záruka",
+        "service": "Servis"
+      }
+    }
   }
 }

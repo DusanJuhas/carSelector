@@ -5,16 +5,19 @@ import { ChatPage } from './ChatPage';
 import { ApiError } from '../api/client';
 import * as conversationApi from '../api/conversation';
 import * as catalogApi from '../api/catalog';
+import * as vehicleDetailApi from '../api/vehicleDetail';
 import { useConversationStore } from '../store/conversationStore';
 import { useCatalogStore } from '../store/catalogStore';
 import type { Car } from '../types';
 
 vi.mock('../api/conversation');
 vi.mock('../api/catalog');
+vi.mock('../api/vehicleDetail');
 
 const mockedStart = vi.mocked(conversationApi.startConversation);
 const mockedSend = vi.mocked(conversationApi.sendMessage);
 const mockedListVehicles = vi.mocked(catalogApi.listVehicles);
+const mockedGetVehicleDetail = vi.mocked(vehicleDetailApi.getVehicleDetail);
 
 const octavia: Car = {
   id: '1',
@@ -167,5 +170,38 @@ describe('ChatPage', () => {
 
     expect(await screen.findByText('2 vozy v katalogu')).toBeInTheDocument();
     expect(mockedStart).toHaveBeenCalledTimes(2);
+  });
+
+  it('opens the vehicle detail modal when a car card is clicked', async () => {
+    mockedGetVehicleDetail.mockResolvedValue({
+      ...octavia,
+      powertrain: {
+        fuelType: 'diesel',
+        transmission: null,
+        drivetrain: 'fwd',
+        powerKw: null,
+        powerHp: null,
+        consumptionMin: null,
+        consumptionMax: null,
+        consumptionUnit: null,
+        co2MinGKm: null,
+        co2MaxGKm: null,
+      },
+      colors: [],
+      standardEquipment: [],
+      optionalEquipment: [],
+      priceHistory: [],
+    });
+
+    render(<ChatPage />);
+    await screen.findByText('Škoda Octavia Selection');
+
+    await userEvent.click(screen.getAllByRole('button', { name: /Škoda Octavia Selection/i })[0]);
+
+    expect(mockedGetVehicleDetail).toHaveBeenCalledWith('1');
+    expect(await screen.findByText('Nafta')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Zavřít' }));
+    expect(screen.queryByText('Nafta')).not.toBeInTheDocument();
   });
 });

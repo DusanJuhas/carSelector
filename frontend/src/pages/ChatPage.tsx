@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConversation } from '../hooks/useConversation';
 import { useCatalog } from '../hooks/useCatalog';
@@ -5,6 +6,8 @@ import { AppHeader } from '../components/AppHeader';
 import { ChatColumn } from '../components/ChatColumn';
 import { ResultsGrid } from '../components/ResultsGrid';
 import { RequirementsDrawer } from '../components/RequirementsDrawer';
+import { VehicleDetailModal } from '../components/VehicleDetailModal';
+import type { Car } from '../types';
 
 export function ChatPage() {
   const { t } = useTranslation();
@@ -22,6 +25,9 @@ export function ChatPage() {
     closeDrawer,
   } = useConversation();
   const catalog = useCatalog();
+  // Page-local, ephemeral UI state - not global (Zustand) state, since it
+  // never needs to survive a restart or be shared outside this page.
+  const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
 
   // Browsing mode (the full catalog, paginated) until the AI has actually
   // searched at least once - then stay on its narrowed results even
@@ -68,7 +74,10 @@ export function ChatPage() {
             </div>
           ) : (
             <>
-              <ResultsGrid cars={displayedCars} />
+              <ResultsGrid
+                cars={displayedCars}
+                onSelectCar={(car: Car) => setSelectedCarId(car.id)}
+              />
               {!hasNarrowed && catalog.hasMore && (
                 <div className="mt-4 flex justify-center">
                   <button
@@ -86,6 +95,12 @@ export function ChatPage() {
         </div>
         <RequirementsDrawer requirements={requirements} open={drawerOpen} onClose={closeDrawer} />
       </div>
+      {selectedCarId !== null && (
+        <VehicleDetailModal
+          configurationId={selectedCarId}
+          onClose={() => setSelectedCarId(null)}
+        />
+      )}
     </div>
   );
 }

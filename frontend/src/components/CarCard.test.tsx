@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import { CarCard } from './CarCard';
 import type { Car } from '../types';
 import { formatMoney } from '../utils/money';
@@ -51,5 +52,25 @@ describe('CarCard', () => {
     expect(screen.queryByText(/%$/)).not.toBeInTheDocument();
     // Everything else still renders.
     expect(screen.getByText('Toyota Corolla Cross Hybrid AWD')).toBeInTheDocument();
+  });
+
+  it('calls onSelect with the car when clicked', async () => {
+    const onSelect = vi.fn();
+    render(<CarCard car={car} onSelect={onSelect} />);
+    await userEvent.click(screen.getByRole('button'));
+    expect(onSelect).toHaveBeenCalledWith(car);
+  });
+
+  it('calls onSelect when activated with the keyboard', async () => {
+    const onSelect = vi.fn();
+    render(<CarCard car={car} onSelect={onSelect} />);
+    screen.getByRole('button').focus();
+    await userEvent.keyboard('{Enter}');
+    expect(onSelect).toHaveBeenCalledWith(car);
+  });
+
+  it('is not a button when onSelect is not provided', () => {
+    render(<CarCard car={car} />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

@@ -10,9 +10,10 @@ must match.
 src/
   components/  reusable UI components — one component = one file + one *.test.tsx
   pages/       routed screens (currently: ChatPage)
-  hooks/       custom React hooks (useConversation, useCatalog)
+  hooks/       custom React hooks (useConversation, useCatalog, useVehicleDetail)
   api/         typed backend calls — client.ts (Axios instance + ApiError), conversation.ts,
-               catalog.ts, vehicleSummary.ts (shared VehicleSummary DTO + Car adapter)
+               catalog.ts, vehicleSummary.ts (shared VehicleSummary DTO + Car adapter),
+               vehicleDetail.ts (VehicleDetail DTO + adapter)
   types/       shared TS types, mirroring backend/app/schemas per doc/api-contract.md
   store/       global state (Zustand) — conversationStore, catalogStore
   i18n/        i18next config + locale resource bundles (see Language below)
@@ -63,6 +64,15 @@ show a specific message instead of a generic failure - see `ChatPage`'s error ba
 
 `Car.score` is `null` in browsing mode (no match to score against) - `CarCard` hides the
 score badge/top-pick ribbon when it's `null` rather than showing a misleading 0%.
+
+### Vehicle detail
+
+Clicking a `CarCard` (in either browsing or narrowed mode) opens `VehicleDetailModal`, which
+fetches the full `VehicleDetail` (powertrain, color options, standard/optional equipment, price
+history) for that configuration via `hooks/useVehicleDetail.ts` → `api/vehicleDetail.ts`'s
+`getVehicleDetail` (`GET /vehicles/{configuration_id}`). The selected configuration id is
+page-local `useState` in `ChatPage`, not Zustand state - it's ephemeral UI state that doesn't need
+to survive a restart. The modal closes on backdrop click, its close button, or Escape.
 
 ## Setup
 
