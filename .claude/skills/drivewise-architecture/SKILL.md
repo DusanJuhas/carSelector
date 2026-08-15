@@ -54,6 +54,50 @@ Locked per `doc/prompt/CLAUDE.md` — do not swap these without discussion.
 - **Scraping:** the standalone `scraper/` service — requests/BeautifulSoup/pdfplumber today, see `doc/arch/webScraping/` for the target/phased stack
 - **DevOps:** Docker, GitHub Actions, unit tests (aspirational — not yet set up)
 
+## Code style: OOP + fully-documented methods
+
+Applies to backend, AI layer, and scraper Python code — frontend is the deliberate exception, see
+below.
+
+- **Prefer classes for anything with real behavior grouped around state or a clear
+  responsibility** — a service, an engine, a parser, a repository, a client wrapper. This is
+  already how the data layer (SQLAlchemy/Pydantic classes, see `drivewise-data-model`) and the
+  scraper (`BaseParser`/`BaseDiscoverer` plugin classes, see `drivewise-scraper`) work — extend
+  that pattern rather than adding free-floating functions next to it (see
+  `drivewise-ai-recommendations`'s Code style section for how this applies to the requirement
+  interpreter, recommendation engine, and explanation generator). Small, stateless,
+  single-purpose helpers (a pure formatting function, a regex extractor) don't need a class just
+  to have one.
+- **Every method and function gets a docstring that documents its parameters and return value**,
+  not just a one-line summary. Google-style `Args:`/`Returns:`/`Raises:` sections, e.g.:
+
+  ```python
+  def recommend(self, requirements: StructuredRequirements, *, limit: int = 10) -> list[VehicleSummary]:
+      """Filters the catalog on hard constraints, then scores and ranks the rest.
+
+      Hard constraints (body_type, budget, fuel_type) are pushed down to the catalog query;
+      soft preferences (drivetrain, priorities, budget headroom) are scored here - see the
+      module docstring for why drivetrain is soft, not hard.
+
+      Args:
+          requirements: Structured output of the AI requirement interpreter.
+          limit: Maximum number of ranked results to return.
+
+      Returns:
+          Vehicles ranked best-first, each with `match_score` set and the top result flagged
+          `top_pick=True`.
+      """
+  ```
+
+  Keep the project's existing "explain the WHY, not the WHAT" habit for any prose above the
+  `Args:`/`Returns:` block — identifiers already say what a parameter is called; the docstring
+  earns its place by adding what a signature can't (a non-obvious constraint, why a default is
+  what it is, a design tradeoff), not by restating the type.
+- **Frontend is the deliberate exception**: functional components + hooks only, per
+  `doc/prompt/CLAUDE.md` — never convert to class components, and don't apply "prefer classes"
+  there. Document exported functions, hooks, and component props with TSDoc/JSDoc instead, same
+  "document every parameter" spirit.
+
 ## Design principles to preserve
 
 - Clean separation between frontend and backend — the frontend is a thin client.

@@ -64,6 +64,14 @@ adding one.
 - Pydantic schema shapes must match `doc/api-contract.md`. If you change a catalog field, update the contract in the same change.
 - Money: `list_price`/`price_incl_vat`/`price_excl_vat` + `currency` always travel together — never assume CZK, never derive excl-VAT from an assumed rate when the source doesn't state one.
 - `prices` is append-only — a price change is a new row (`valid_from` = today) after closing the previous row (`valid_to` = today), never an in-place update.
+- Every method — ORM helper methods, query functions, custom Pydantic validators — gets a
+  docstring documenting its parameters and return value (Google-style `Args:`/`Returns:`), per
+  `drivewise-architecture`'s Code style section. Prefer grouping related query functions into a
+  class (e.g. a `CatalogRepository`) as the query layer grows past a handful of shapes;
+  `app/services/catalog.py`'s current flat-function design was a deliberate call for its current
+  size ("only 5 read shapes... not worth hiding behind an interface yet") — extend that reasoning
+  when deciding whether a new module needs a class, rather than restructuring existing code just
+  for the sake of having one.
 
 ## Query guidance
 

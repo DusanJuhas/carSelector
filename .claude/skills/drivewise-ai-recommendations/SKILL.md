@@ -73,6 +73,17 @@ User: *"We are a family with three children and often travel to our cottage on g
 
 Flow: AI asks any needed follow-up → extracts `{min_seats, body_type, drivetrain: AWD, large_trunk: true, budget: 35000, currency: EUR}` → engine filters + ranks → AI explains. Expected shortlist shape: Skoda Kodiaq, VW Tiguan Allspace, Toyota RAV4, Hyundai Santa Fe.
 
+## Code style
+
+Structure each of the three pieces above as a class with clearly documented methods, per
+`drivewise-architecture`'s Code style section — e.g. a `RequirementInterpreter` class (method:
+`interpret(conversation: list[ChatMessage]) -> StructuredRequirements | FollowUpQuestion`), a
+`RecommendationEngine` class (method: `recommend(requirements: StructuredRequirements, *, limit:
+int = 10) -> list[VehicleSummary]`), an `ExplanationGenerator` class (method: `explain(vehicle:
+VehicleSummary, requirements: StructuredRequirements) -> str`). Every method's docstring documents
+its parameters and return value with `Args:`/`Returns:` sections, not just a one-line summary —
+see the template in `drivewise-architecture`.
+
 ## Guardrails
 
 - All Claude API calls run server-side; never expose keys to the frontend.

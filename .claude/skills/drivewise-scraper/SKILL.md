@@ -57,6 +57,15 @@ implementations; see `doc/arch/webScraping/IMPLEMENTATION_PLAN.md` for current s
 "vertical slice, then generalize" rollout order, and `doc/arch/webScraping/Car_Price_List_Architecture.md`
 for the longer-term target (10 OEMs, Postgres, OCR fallback, LLM-assisted parsing).
 
+## Code style
+
+The plugin classes (`BaseParser`, `BaseDiscoverer`) already set the pattern — keep following it.
+A new brand's parser/discoverer is exactly the kind of "real behavior grouped around state" that
+belongs in a class, never a bag of loose functions (per `drivewise-architecture`'s Code style
+section). Every `parse()`/`discover()` override, and every other method on a parser, discoverer,
+or repository class, gets a docstring documenting its parameters and return value (Google-style
+`Args:`/`Returns:`) — not just a one-line summary.
+
 ## Cleaning conventions
 
 - `EquipmentNormalizer` (`scraper/normalization/`) unifies equipment names across brands into one canonical set — map source-specific aliases onto it rather than storing brand-specific strings.
