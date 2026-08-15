@@ -82,11 +82,20 @@ when writing raw SQL (stick to the SQLAlchemy query layer, which is already dial
 
 ## How the catalog actually gets populated today
 
-There is **no live pipeline yet** from the `scraper/` service into this schema — they're two
-separate databases with two separate schemas. `backend/app/db/seed.py`'s `seed_demo_data()` is the
-one source of truth for the demo dataset (real Mazda CX-5 price-list data from `storage/cars/`),
-shared by `backend/tests/conftest.py` (in-memory SQLite, per test) and `python -m app.db.seed`
-(the persistent dev SQLite file); the `scraper/` service writes into its own SQLite DB
-(`storage/scraper.db`) using a different, document-centric schema
-(`document`/`variant`/`price_history`/`equipment`) — see `drivewise-scraper`. Building the
-ETL/import step between the two is not done; don't assume it exists.
+Two independent paths, no live pipeline between the two databases:
+
+1. **Demo seed** — `backend/app/db/seed.py`'s `seed_demo_data()` is the one source of truth for a
+   small hand-verified dataset (real Mazda CX-5 price-list data from `storage/cars/`), shared by
+   `backend/tests/conftest.py` (in-memory SQLite, per test) and `python -m app.db.seed` (the
+   persistent dev SQLite file).
+2. **Scraper import** — the `scraper/` service writes into its own SQLite DB (`storage/scraper.db`)
+   using a different, document-centric schema (`document`/`variant`/`price_history`/`equipment`,
+   see `drivewise-scraper`). `scripts/import_scraper_data.py` (repo root) is a manual/periodic batch
+   import from there into this schema — not a live pipeline (nothing triggers it automatically; run
+   it again after every scrape), and not a complete mapping: fuel_type/drivetrain are inferred from
+   free-text variant names (heuristic, can be wrong on unusual naming), and equipment/options are
+   skipped entirely because the source has no surcharge amount to satisfy
+   `option_availability`'s CHECK constraint. Read that script's module docstring before extending
+   or relying on it.
+
+Both paths can populate the same DB side by side (they use disjoint brands/models today).

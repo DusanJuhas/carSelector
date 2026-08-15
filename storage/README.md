@@ -32,3 +32,13 @@ about coupling the services. Both `backend/app/core/config.py`'s `DATABASE_URL` 
 `scraper/database/db.py`'s `DEFAULT_SQLITE_PATH` / `scraper/downloaders/pdf_downloader.py`'s
 `STORAGE_ROOT` point here relative to the repo root, so this is the one place to look for (or
 delete, to reset) any local Python-side data file.
+
+## scraper.db → drivewise.db
+
+The two databases still have no *live* pipeline between them (see `drivewise-data-model`), but
+`scripts/import_scraper_data.py` (repo root) is a manual/periodic import step that reads
+`scraper.db` and writes into `drivewise.db`'s normalized catalog — safe to re-run after each
+scrape (natural-key lookups, append-only price history, no duplicate rows). Read that script's
+module docstring before relying on it: some fields (fuel_type, drivetrain) are inferred from
+free-text variant names rather than parsed from a structured field, and equipment/options aren't
+imported at all yet (the source data has no surcharge amount to satisfy the schema's constraint).

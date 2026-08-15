@@ -109,8 +109,14 @@ Mercedes-Benz/Ford/Renault/BMW. Details and the reasoning for scaling one
 piece at a time (vertical slice, verify on real data, then generalize)
 are in the phases above.
 
-Also remaining, per `drivewise-data-model`: there is no import/ETL step
-from this scraper's database (`storage/scraper.db`, repo root — see
-`storage/README.md`) into the backend's normalized catalog schema
-(`backend/app/models/`) yet — they are two separate databases with two
-separate schemas today.
+There's now a manual/periodic import step from this scraper's database
+(`storage/scraper.db`, repo root — see `storage/README.md`) into the
+backend's normalized catalog schema (`backend/app/models/`):
+`scripts/import_scraper_data.py`. It's not a live pipeline (nothing
+triggers it automatically after a scrape) and not a complete mapping -
+equipment/options aren't imported (no surcharge data in the source to
+satisfy the schema's constraint), and fuel_type/drivetrain are inferred
+from free-text variant names rather than a structured field. See that
+script's module docstring for the full list of what it does and doesn't
+carry over, and `drivewise-data-model` for how it fits the rest of the
+data model.

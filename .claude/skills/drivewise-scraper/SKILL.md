@@ -12,8 +12,11 @@ its own database — `storage/scraper.db` (SQLite by default; swappable via
 `SCRAPER_DATABASE_URL`). Entry point: `python -m scraper.main` (`ScraperPipeline`).
 
 **This is a different schema from `backend`'s catalog** (see `drivewise-data-model`) — there is no
-live import step between them yet. Don't assume scraped data automatically appears in the backend
-API; verify against `storage/scraper.db` (e.g. via Datasette) instead.
+*live* import step between them. Don't assume scraped data automatically appears in the backend
+API; verify against `storage/scraper.db` (e.g. via Datasette) instead. A manual/periodic batch
+import does exist (`scripts/import_scraper_data.py`, repo root) - after a scrape, run it to load
+new/changed data into the backend's catalog; it's not triggered automatically by `python -m
+scraper.main`.
 
 ## Pipeline
 

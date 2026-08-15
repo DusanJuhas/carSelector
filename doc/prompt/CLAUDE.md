@@ -33,6 +33,8 @@ na začátku toho souboru).
 /doc             architektura, API kontrakty, poznámky (viz doc/README.md pro přehled)
 /storage         všechny lokální DB soubory + PDF kopie pro /backend a /scraper (viz storage/README.md) —
                  ne uvnitř backend/ nebo scraper/
+/scripts         průřezové skripty (spouští se z rootu) — např. import_scraper_data.py
+                 (storage/scraper.db → storage/drivewise.db, viz storage/README.md)
 requirements.txt, requirements-dev.txt   Python závislosti pro /backend + /scraper (jeden sdílený
                  venv v rootu; /frontend má vlastní package.json)
 ```

@@ -75,7 +75,7 @@ Extends `VehicleSummary` for a single configuration's detail page.
 
 | field | type | null? |
 |---|---|---|
-| fuel_type | enum(petrol, diesel, mild_hybrid, phev, electric) | no |
+| fuel_type | enum(petrol, diesel, hybrid, mild_hybrid, phev, electric) | no |
 | transmission | string | yes |
 | drivetrain | enum(fwd, rwd, awd) | no |
 | power_kw | integer | yes |

@@ -81,6 +81,11 @@ checkout you can skip straight to it without running `alembic upgrade head` sepa
 remains the source of truth for schema history either way (`alembic_version` gets stamped once you
 do run it).
 
+For real (not hand-seeded) catalog data, `python scripts/import_scraper_data.py` (repo root) loads
+whatever `scraper/` has found in `storage/scraper.db` — see that script's docstring and
+`storage/README.md` for what it does and doesn't carry over. Both can populate the same DB; run
+either or both.
+
 ## Run the API
 
 ```bash
@@ -133,9 +138,13 @@ just `--sql` rendering):
   requires an actual `text(...)` expression for the latter.
 - Postgres native enum types (created implicitly, one per `Enum` column) aren't dropped by the
   generated `downgrade()`, which breaks a downgrade-then-upgrade round trip - fixed with a
-  `DROP TYPE` loop, guarded to run only on `dialect.name == "postgresql"` since SQLite has no such
-  statement (`Enum` renders as `VARCHAR` + `CHECK` there instead) - see the bottom of
-  `alembic/versions/6579b05df670_create_catalog_schema.py`.
+  `DROP TYPE` loop, guarded to run only on `dialect.name == "postgresql"` since SQLite has no
+  native enum type at all (`Enum` renders as plain `VARCHAR`, with no DB-level CHECK either -
+  SQLAlchemy's `Enum` defaults to `create_constraint=False` - so validity is enforced by
+  Pydantic/the ORM layer, not the DB, on SQLite) - see the bottom of
+  `alembic/versions/6579b05df670_create_catalog_schema.py`. `alembic/versions/e49d32df7bd1_*.py`
+  (adding the `hybrid` fuel type) is a second example of the same postgres/sqlite split, this time
+  via `batch_alter_table` on the SQLite side (SQLite can't redefine a column's type in place).
 
 ## Known gaps (see doc/api-contract.md "open items" for the full list)
 
@@ -145,3 +154,6 @@ just `--sql` rendering):
   isn't actually filterable - no source document states seat count.
 - The recommendation engine's budget handling is a hard filter; the design concept's "include a
   slightly-over-budget car with a warning flag" behavior isn't implemented (`flag` is always null).
+- `scripts/import_scraper_data.py` never populates `option_items`/`option_availability` (equipment)
+  - the scraper's source data has no surcharge amount, which the schema requires for `optional`
+    rows - so `standard_equipment`/`optional_equipment` are empty for every scraper-imported vehicle.

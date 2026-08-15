@@ -4,6 +4,12 @@ import enum
 class FuelType(str, enum.Enum):
     petrol = "petrol"
     diesel = "diesel"
+    # Full (non-plug-in) hybrid, e.g. Toyota's "HEV" - distinct from
+    # mild_hybrid (48V assist only, can't drive electric-only) and from
+    # phev (plug-in, larger battery). Keep these three separate rather
+    # than collapsing "hybrid" into mild_hybrid - they're materially
+    # different vehicles, not just labeling variants.
+    hybrid = "hybrid"
     mild_hybrid = "mild_hybrid"
     phev = "phev"
     electric = "electric"
