@@ -1,0 +1,33 @@
+# Python dependencies for backend/ and scraper/ (frontend/ is Node — see
+# frontend/package.json). Consolidated into one file at the repo root so
+# there's a single place to install from; both services otherwise stay
+# independently deployable (see doc/arch/webScraping/ for the scraper's own
+# container/job model) - this file just also happens to satisfy both.
+#
+# Install: pip install -r requirements.txt  (add -r requirements-dev.txt for
+# tests). See backend/README.md and scraper/README.md for how each service
+# is actually run.
+
+# --- shared (backend/ + scraper/) ---
+sqlalchemy>=2.0,<3.0
+
+# --- backend/ (FastAPI app) ---
+alembic>=1.13,<2.0
+psycopg[binary]>=3.2,<4.0
+python-dotenv>=1.0,<2.0
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.32,<1.0
+pydantic>=2.9,<3.0
+anthropic>=0.39,<1.0
+
+# --- scraper/ (standalone price-list scraper) ---
+# Skutečně používané závislosti (ověřeno grepem přes scraper/ 19.7.2026).
+# Cílový tech stack z doc/arch/webScraping/Car_Price_List_Architecture.md
+# (Playwright pro JS-rendered OEM weby, Camelot/PyMuPDF pro table extraction,
+# Postgres/Alembic, FastAPI, APScheduler) se doplní až se pro ně najde
+# reálné využití — viz IMPLEMENTATION_PLAN.md.
+requests>=2.31
+beautifulsoup4>=4.12
+pdfplumber>=0.11
+pyyaml>=6.0
+click>=8.1

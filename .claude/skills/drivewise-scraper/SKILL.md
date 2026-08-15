@@ -69,4 +69,4 @@ for the longer-term target (10 OEMs, Postgres, OCR fallback, LLM-assisted parsin
 ## Operational notes
 
 - Runs are idempotent/re-runnable by design (hash-based dedup on `document`, not blind-insert).
-- Kept free of `backend/` imports — it's a fully standalone service with its own dependencies (`scraper/requirements.txt`).
+- Kept free of `backend/` imports — it's a fully standalone service, importable and runnable on its own even though its Python dependencies now live in the repo-root `requirements.txt` alongside `backend/`'s (see `scraper/README.md`).

@@ -21,11 +21,20 @@ app/
 
 ## Setup
 
+Python dependencies are consolidated in one `requirements.txt`/`requirements-dev.txt` pair at the
+**repo root** (shared with `scraper/` — see there for why), so the venv lives at the repo root too,
+not here:
+
 ```bash
+cd ..                          # repo root, if you're in backend/
 python -m venv .venv
-.venv/Scripts/activate        # Windows; `source .venv/bin/activate` elsewhere
+.venv/Scripts/activate         # Windows; `source .venv/bin/activate` elsewhere
 pip install -r requirements-dev.txt   # requirements.txt + pytest/httpx for running tests
+cd backend
 ```
+
+Commands below (`uvicorn`, `alembic`, `pytest`) still need to run with `backend/` as the working
+directory (that's where `app/`, `alembic.ini`, etc. live) — only dependency installation moved.
 
 `DATABASE_URL` defaults to a SQLite file at `backend/drivewise.db` — no database server to install,
 see Database below. To use PostgreSQL instead, set `DATABASE_URL` (or create a `.env` file):

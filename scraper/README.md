@@ -16,16 +16,18 @@ is currently no import step from `scraper/storage/scraper.db` into it; see
 
 ## Installation
 
-Requires **Python 3.10+**.
+Requires **Python 3.10+**. Dependencies are consolidated in one `requirements.txt`/
+`requirements-dev.txt` pair at the **repo root** (shared with `backend/`, which is a separate
+FastAPI service — this file being shared doesn't couple them), so run this from the repo root:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r scraper/requirements.txt
+pip install -r requirements-dev.txt   # requirements.txt + pytest, for running scraper/tests/
 ```
 
-The dependencies in `scraper/requirements.txt` are what's actually used
-today (requests, beautifulsoup4, pdfplumber, sqlalchemy, pyyaml, click,
+The scraper-relevant dependencies in `requirements.txt` are what's actually
+used today (requests, beautifulsoup4, pdfplumber, sqlalchemy, pyyaml, click,
 pytest) — not the full target tech stack from the architecture doc (see
 `doc/arch/webScraping/Car_Price_List_Architecture.md`), which also plans
 for Playwright/Camelot/PyMuPDF/Postgres/FastAPI in later phases.
