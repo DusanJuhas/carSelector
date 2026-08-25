@@ -1,7 +1,8 @@
 # Design tokens — Rovis (AI Car Finder)
 
 Zdroj: `doc/gui/AI Car Finder Concepts2.html`, varianta **1a — Friendly, warm-light**.
-Tyto tokeny se používají ve frontendu přes Tailwind v4 `@theme` blok v `src/index.css`.
+Tyto tokeny se používají v UI vrstvě (`backend/app/ui/styles.py`) — vloženy jako Tailwind v4
+`@theme` blok přes `ui.add_head_html`.
 
 ## Barvy (OKLCH)
 

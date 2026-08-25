@@ -1,9 +1,13 @@
 # API Contract – DriveWise AI
 
-Source of truth for backend endpoint signatures and shared request/response shapes, per
-`doc/prompt/CLAUDE.md`. Frontend TS types in `frontend/src/types` and backend Pydantic schemas in
-`backend/app/schemas` must both match this document; when one changes, update this file in the same
-change.
+Source of truth for the backend's `/api/*` endpoint signatures and shared request/response shapes,
+per `doc/prompt/CLAUDE.md`. Backend Pydantic schemas in `backend/app/schemas` must match this
+document; when one changes, update this file in the same change.
+
+(The UI, `backend/app/ui/`, consumes these same Pydantic models directly in-process rather than
+over HTTP - see `backend/README.md`'s UI section - so it has no separate wire-format types to keep
+in sync with this doc the way a browser-based client would. This contract still describes the real,
+unchanged `/api/*` behavior for any other client.)
 
 This is drafted (not yet implemented) against the normalized catalog schema proposed for
 `brands / models / trims / powertrains / configurations / colors / option_items /
@@ -39,10 +43,9 @@ option_availability / prices / source_documents` (see conversation history / fut
 ### VehicleSummary
 
 The recommendation‑card / results‑grid shape — one row per `configuration`, flattened for display.
-This is the schema the frontend's chat prototype currently mocks as `Car`
-(`frontend/src/types/car.ts`); that mock will need to be updated to match this once the real API
-lands — notably `price` becomes a `Money` object instead of a formatted string, and `id` refers to
-a `configuration_id`, not a synthetic slug.
+Implemented as `backend/app/schemas/vehicle.py`'s `VehicleSummary`; the UI (`backend/app/ui/`)
+renders it directly, field names as-is (`price` is a real `Money` object, `id` is the numeric
+`configuration_id`).
 
 | field | type | null? | notes |
 |---|---|---|---|
@@ -128,10 +131,9 @@ input to the recommendation engine's filter/rank step.
 
 ### UserRequirement
 
-The human‑readable "requirements drawer" card — already implemented in
-`frontend/src/types/requirement.ts` and matches this contract as‑is, no changes needed. One
-`UserRequirement` is produced per populated field in `StructuredRequirements` (backend maps
-structured → display, not the frontend).
+The human‑readable "requirements drawer" card. One `UserRequirement` is produced per populated
+field in `StructuredRequirements` (`app/services/conversation.py`'s `_to_user_requirements` maps
+structured → display; the UI just renders the result).
 
 | field | type | null? |
 |---|---|---|
@@ -141,8 +143,6 @@ structured → display, not the frontend).
 | changed | boolean | no |
 
 ### ChatMessage / ConversationTurn
-
-Match `frontend/src/types/conversation.ts` as‑is:
 
 ```
 ChatMessage        { role: "user" | "assistant", text: string }
@@ -163,7 +163,9 @@ Start a new conversation. No body required.
 ### `POST /api/conversations/{conversation_id}/messages`
 
 Send a user message; get back the assistant's reply plus the updated structured requirements and
-shortlist. This is the endpoint `frontend/src/api/conversation.ts`'s `sendMessage` calls.
+shortlist. `app/services/conversation.py`'s `orchestrator.handle_message` implements this; the UI
+calls that method directly rather than this HTTP endpoint (see `backend/README.md`'s UI section) -
+this route exists for any other client.
 
 **Request**
 ```json
@@ -185,8 +187,8 @@ shortlist. This is the endpoint `frontend/src/api/conversation.ts`'s `sendMessag
 search on yet - `vehicles` is always `[]` in that case) and `true` once the recommendation engine
 actually ran this turn (`vehicles` can still legitimately be `[]` there - a real search that found
 nothing). A client falling back to an unfiltered catalog browse before the first real search (see
-`frontend/src/hooks/useCatalog.ts`) needs this to tell "haven't searched yet" apart from "searched,
-found nothing" - both leave `vehicles` empty.
+`backend/app/ui/state.py`'s `ConversationState.has_narrowed`) needs this to tell "haven't searched
+yet" apart from "searched, found nothing" - both leave `vehicles` empty.
 
 ### `GET /api/vehicles`
 

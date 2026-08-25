@@ -20,7 +20,7 @@ If you change a layer boundary or add a component, update this skill so it stays
 
 Keep responsibilities on the correct side of the frontend/backend boundary. When unsure where logic belongs, match it to the owning layer below.
 
-**Frontend** — presentation only. Car-selection wizard, chat interface, search/filtering, recommendation and comparison display, vehicle detail pages. Talks to the backend over REST/HTTPS. No business logic, no ranking, no direct DB or AI calls.
+**UI** (`backend/app/ui/`) — presentation only. Car-selection chat interface, search/filtering, recommendation display, vehicle detail pages. NiceGUI, mounted directly onto the same FastAPI process (`ui.run_with`, see `app/main.py`) — calls the service layer in-process rather than over HTTP, but the responsibility boundary is the same as if it were a separate client: no business logic, no ranking, no direct AI calls (DB access is via the service layer's own functions, not raw queries in the UI layer).
 
 **Backend (FastAPI)** — the brain. Exposes REST endpoints, validates requests, runs business logic and the recommendation engine, orchestrates calls to the AI layer and the database. All ranking and filtering lives here.
 
@@ -33,7 +33,7 @@ Keep responsibilities on the correct side of the frontend/backend boundary. When
 ## End-to-end flow
 
 ```
-User → Frontend (React) → FastAPI backend
+User → UI (NiceGUI, same process as the FastAPI backend) → service layer (in-process calls)
                               ├─→ AI layer      (extract structured requirements, explain results)
                               └─→ PostgreSQL     (fetch candidate vehicles)
                                      ↑
@@ -42,6 +42,10 @@ User → Frontend (React) → FastAPI backend
                               Scraper (populates the catalog, offline)
 ```
 
+The REST API (`app/api/*`, prefix `/api`) still exists on the same FastAPI app for any external
+client (see `doc/api-contract.md`) - the UI just doesn't have to go through it, since it's not a
+separate process anymore.
+
 The scraper runs independently of the request path — it populates the catalog ahead of time, so user requests never wait on scraping.
 
 ## Technology stack
@@ -49,15 +53,18 @@ The scraper runs independently of the request path — it populates the catalog 
 Locked per `doc/prompt/CLAUDE.md` — do not swap these without discussion.
 
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy, Pydantic v2, PostgreSQL (Alembic for migrations)
-- **Frontend:** React + TypeScript, Vite, Tailwind CSS, Zustand (state), Axios, Vitest + React Testing Library
+- **UI:** NiceGUI (Python), mounted onto the same FastAPI app - no Node.js/npm anywhere in the
+  repo. Styled with Tailwind utility classes (NiceGUI ships Tailwind support built in). Tested with
+  pytest (`backend/tests/ui/`), not a browser-based JS test runner.
 - **AI:** Claude API (Anthropic SDK) only, called exclusively from `backend/app/ai`
 - **Scraping:** the standalone `scraper/` service — requests/BeautifulSoup/pdfplumber today, see `doc/arch/webScraping/` for the target/phased stack
 - **DevOps:** Docker, GitHub Actions, unit tests (aspirational — not yet set up)
 
 ## Code style: OOP + fully-documented methods
 
-Applies to backend, AI layer, and scraper Python code — frontend is the deliberate exception, see
-below.
+Applies uniformly across the whole Python codebase - backend, AI layer, scraper, and the UI layer
+(`app/ui/`, formerly a React frontend with its own JS-specific conventions; now that it's Python
+too, there's no separate carve-out for it).
 
 - **Prefer classes for anything with real behavior grouped around state or a clear
   responsibility** — a service, an engine, a parser, a repository, a client wrapper. This is
@@ -93,14 +100,17 @@ below.
   `Args:`/`Returns:` block — identifiers already say what a parameter is called; the docstring
   earns its place by adding what a signature can't (a non-obvious constraint, why a default is
   what it is, a design tradeoff), not by restating the type.
-- **Frontend is the deliberate exception**: functional components + hooks only, per
-  `doc/prompt/CLAUDE.md` — never convert to class components, and don't apply "prefer classes"
-  there. Document exported functions, hooks, and component props with TSDoc/JSDoc instead, same
-  "document every parameter" spirit.
+- This doesn't mean forcing classes onto the UI layer's small render functions (`app/ui/components/
+  *.py`'s `header()`, `car_card()`, etc.) - those are exactly the "small, stateless, single-purpose
+  helpers" the bullet above already exempts, same as `sort_cars`/`format_money`. What does need a
+  class there is anything with real per-connection state: `ConversationState`/`CatalogState`
+  (`app/ui/state.py`) are dataclasses with behavior, the same pattern as `_ConversationState` in
+  `app/services/conversation.py`.
 
 ## Design principles to preserve
 
-- Clean separation between frontend and backend — the frontend is a thin client.
+- Clean separation between the UI layer and the service layer it calls — the UI is a thin
+  presentation layer, even though it's no longer a separate process.
 - Microservice-ready: the scraper is decoupled and can scale independently.
 - AI assists requirement gathering; it does not own ranking decisions.
 - Centralized PostgreSQL storage; deployable to Azure, AWS, or Kubernetes.

@@ -1,8 +1,9 @@
-# Python dependencies for backend/ and scraper/ (frontend/ is Node — see
-# frontend/package.json). Consolidated into one file at the repo root so
-# there's a single place to install from; both services otherwise stay
-# independently deployable (see doc/arch/webScraping/ for the scraper's own
-# container/job model) - this file just also happens to satisfy both.
+# Python dependencies for backend/ (including its bundled UI, see
+# backend/app/ui/) and scraper/. Consolidated into one file at the repo
+# root so there's a single place to install from; both services otherwise
+# stay independently deployable (see doc/arch/webScraping/ for the
+# scraper's own container/job model) - this file just also happens to
+# satisfy both.
 #
 # Install: pip install -r requirements.txt  (add -r requirements-dev.txt for
 # tests). See backend/README.md and scraper/README.md for how each service
@@ -11,7 +12,7 @@
 # --- shared (backend/ + scraper/) ---
 sqlalchemy>=2.0,<3.0
 
-# --- backend/ (FastAPI app) ---
+# --- backend/ (FastAPI app + UI) ---
 alembic>=1.13,<2.0
 psycopg[binary]>=3.2,<4.0
 python-dotenv>=1.0,<2.0
@@ -19,6 +20,8 @@ fastapi>=0.115,<1.0
 uvicorn[standard]>=0.32,<1.0
 pydantic>=2.9,<3.0
 anthropic>=0.39,<1.0
+nicegui>=3.16,<4.0
+babel>=2.14,<3.0
 
 # --- scraper/ (standalone price-list scraper) ---
 # Skutečně používané závislosti (ověřeno grepem přes scraper/ 19.7.2026).
