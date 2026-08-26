@@ -18,7 +18,7 @@ STRINGS: dict = {
         "send": "Odeslat",
         "sending": "Přemýšlím…",
         "aiNotConfigured": (
-            "AI vrstva zatím není nastavená (chybí klíč k Claude API) — konverzace funguje, "
+            "AI vrstva zatím není nastavená (chybí API klíč) — konverzace funguje, "
             "ale bez rozpoznávání požadavků a doporučení."
         ),
         "genericError": "Něco se nepovedlo. Zkuste to prosím znovu.",
