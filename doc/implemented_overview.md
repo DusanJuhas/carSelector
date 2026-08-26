@@ -20,7 +20,8 @@ Two independent services, one shared SQLite dev database for backend + scraper (
 
 | Layer | Stack |
 |---|---|
-| Backend | Python, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic v2, SQLite (dev) / PostgreSQL (target, dual-dialect schema), Anthropic Claude API (`anthropic` SDK) |
+| Backend | Python, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic v2, SQLite (dev) / PostgreSQL (target, dual-dialect schema) |
+| AI | Anthropic Claude (default) or Groq, selected via `AI_PROVIDER` - both behind one `LlmClient` interface (`app/ai/llm.py`) |
 | UI | NiceGUI (Python), mounted onto the same FastAPI app - no Node.js/npm anywhere in the repo |
 | Scraper | Python, requests, BeautifulSoup, pdfplumber, SQLAlchemy, Click, PyYAML |
 
@@ -38,14 +39,16 @@ Two independent services, one shared SQLite dev database for backend + scraper (
 
 **AI-driven conversation (backend `app/ai/`, `app/services/conversation.py`)**
 - `POST /api/conversations` starts a chat; `POST /api/conversations/{id}/messages` sends a turn.
-- Flow per turn: Claude extracts `StructuredRequirements` from free text → a deterministic
+- Flow per turn: the LLM extracts `StructuredRequirements` from free text → a deterministic
   `RecommendationEngine` filters the catalog on hard constraints (body type, budget, fuel type) and
-  scores the rest (drivetrain match, priority match, budget headroom) → Claude generates a
+  scores the rest (drivetrain match, priority match, budget headroom) → the LLM generates a
   per-vehicle explanation. The AI never queries or ranks the database directly.
+- Provider is Anthropic Claude by default, or Groq (`AI_PROVIDER=groq`) - see `app/ai/client.py`/
+  `app/ai/llm.py` and `backend/README.md`'s Setup section.
 - Conversation state is in-memory only (no persistence yet, no multi-process support).
-- Degrades to a graceful "AI not configured" state if `ANTHROPIC_API_KEY` isn't set (still
-  `ai_not_configured` as the underlying error code - see `app/services/conversation.py`); catalog
-  browsing still works without it.
+- Degrades to a graceful "AI not configured" state if the selected provider's API key isn't set
+  (still `ai_not_configured` as the underlying error code - see `app/services/conversation.py`);
+  catalog browsing still works without it.
 
 **UI (`backend/app/ui/`, NiceGUI)**
 - Mounted directly onto the FastAPI app (`ui.run_with`, see `app/main.py`) - one process, calls the

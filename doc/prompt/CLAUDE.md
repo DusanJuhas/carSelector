@@ -47,7 +47,8 @@ requirements.txt, requirements-dev.txt   Python závislosti pro /backend (včetn
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy, Pydantic v2, PostgreSQL (target; SQLite is the
   current default local DB — see `backend/README.md`'s Database section — schema stays
   dual-dialect, don't add Postgres-only DDL without an SQLite equivalent)
-- **AI:** Claude API (Anthropic SDK) pro extrakci požadavků a generování vysvětlení
+- **AI:** Claude API (Anthropic SDK, výchozí) nebo Groq, volitelné přes `AI_PROVIDER` - obojí za
+  jedním rozhraním `LlmClient` (`app/ai/llm.py`) - pro extrakci požadavků a generování vysvětlení
 - **Scraping:** Playwright / BeautifulSoup / Scrapy
 - **Testy:** pytest (backend i UI — UI testy v `backend/tests/ui/`, viz `backend/README.md`)
 

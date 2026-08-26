@@ -45,18 +45,30 @@ instead, set `DATABASE_URL` (or create a `.env` file):
 DATABASE_URL=postgresql+psycopg://drivewise:drivewise@localhost:5432/drivewise
 ```
 
-The AI layer additionally needs:
+The AI layer supports two providers, chosen via `AI_PROVIDER` (default `anthropic`) - both are
+called through the same `app/ai/llm.py` interface (`LlmClient.complete()`), so nothing outside
+`app/ai/client.py` needs to know which one is active:
 
 ```
+AI_PROVIDER=anthropic          # or "groq" - default is anthropic
 ANTHROPIC_API_KEY=sk-ant-...
 CLAUDE_MODEL=claude-sonnet-5   # optional, this is the default
+
+# only needed if AI_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=llama-3.3-70b-versatile   # optional, this is the default
 ```
 
-There is no default for `ANTHROPIC_API_KEY` — `app/ai/client.py` raises loudly if it's missing
-rather than running the AI layer silently disabled. The conversation flow degrades to a graceful
-"AI not configured" message without it (see the UI section below - `ai_not_configured` is still
-the underlying error code, only now surfaced by the UI directly rather than as an HTTP 503); the
-catalog data (brands/models/vehicles) don't need it at all.
+Groq (https://console.groq.com) has a free, no-credit-card developer tier - useful for dev/testing
+without spending Anthropic credits, at the cost of a different (generally less instruction-precise)
+model family; see the verification note below, which applies per-provider, not just to Claude.
+
+There is no default for either provider's API key — `app/ai/client.py` raises loudly if the
+*selected* provider's key is missing, rather than running the AI layer silently disabled. The
+conversation flow degrades to a graceful "AI not configured" message without it (see the UI section
+below - `ai_not_configured` is still the underlying error code, only now surfaced by the UI
+directly rather than as an HTTP 503); the catalog data (brands/models/vehicles) don't need it at
+all, regardless of provider.
 
 The UI additionally uses:
 
@@ -66,7 +78,7 @@ NICEGUI_STORAGE_SECRET=...   # optional locally - see app/core/config.py; set a 
 ```
 
 **The AI layer (`app/ai/requirement_interpreter.py`, `app/ai/explanation_generator.py`) was
-written without access to a live API key and has not been exercised against the real Claude API.**
+written without access to a live API key and has not been exercised against either real provider.**
 Verify prompt behavior before relying on it: does it reliably return JSON-only, is the
 follow-up-question quality reasonable, and — both system prompts explicitly instruct this, but
 it's an instruction, not a guarantee — does the model's free-text output (`follow_up_question`,

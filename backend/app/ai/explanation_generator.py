@@ -6,10 +6,8 @@ matched attributes; never invents specs.
 NOTE: untested against a live API - see requirement_interpreter.py.
 """
 
-import anthropic
-
 from app.ai.client import get_client
-from app.core.config import CLAUDE_MODEL
+from app.ai.llm import LlmClient
 from app.schemas.requirement import StructuredRequirements
 from app.schemas.vehicle import VehicleSummary
 
@@ -22,32 +20,32 @@ price the vehicle doesn't have. Plain, factual tone, no marketing language.
 
 
 class ExplanationGenerator:
-    """Wraps one Claude API call that turns a ranked vehicle + the
-    requirements it matched into a short, fact-grounded sentence, per
+    """Wraps one LLM call that turns a ranked vehicle + the requirements
+    it matched into a short, fact-grounded sentence, per
     `drivewise-ai-recommendations`'s Code style section. Stateless beyond
     the injected client - safe to share a single instance across requests
     (see the module-level `generator` singleton at the bottom of this
     file).
     """
 
-    def __init__(self, client: anthropic.Anthropic | None = None) -> None:
+    def __init__(self, client: LlmClient | None = None) -> None:
         """Args:
-            client: Anthropic SDK client to use. Defaults to `None`, in
-                which case `explain` lazily resolves the shared client
-                from `app.ai.client.get_client()` on first use - so
+            client: `LlmClient` to use. Defaults to `None`, in which case
+                `explain` lazily resolves the shared client from
+                `app.ai.client.get_client()` on first use - so
                 constructing an `ExplanationGenerator` never fails just
-                because `ANTHROPIC_API_KEY` isn't set; only calling
-                `explain` does. Pass an explicit client (e.g. a test
-                double) to bypass that shared singleton.
+                because the selected provider's API key isn't set; only
+                calling `explain` does. Pass an explicit client (e.g. a
+                test double) to bypass that shared singleton.
         """
         self._client = client
 
-    def _get_client(self) -> anthropic.Anthropic:
+    def _get_client(self) -> LlmClient:
         """Returns the injected client, or lazily resolves the shared
         default on first use.
 
         Returns:
-            The Anthropic client this instance uses for API calls.
+            The `LlmClient` this instance uses for API calls.
         """
         if self._client is None:
             self._client = get_client()
@@ -77,13 +75,7 @@ class ExplanationGenerator:
             f"Specs: {', '.join(vehicle.specs)}\n"
             f"User priorities: {', '.join(requirements.priorities) or 'none stated'}\n"
         )
-        response = client.messages.create(
-            model=CLAUDE_MODEL,
-            max_tokens=100,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": facts}],
-        )
-        return "".join(block.text for block in response.content if block.type == "text").strip()
+        return client.complete(system=SYSTEM_PROMPT, user_content=facts, max_tokens=100).strip()
 
 
 # Shared instance for callers that don't need a custom client (e.g. tests

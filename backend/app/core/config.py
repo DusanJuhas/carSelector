@@ -18,10 +18,28 @@ load_dotenv()
 _DEFAULT_SQLITE_PATH = Path(__file__).resolve().parents[3] / "storage" / "drivewise.db"
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{_DEFAULT_SQLITE_PATH}")
 
+# Which LLM provider app/ai/client.py builds - "anthropic" (default) or
+# "groq". Both are exposed behind the same LlmClient.complete() interface
+# (app/ai/llm.py), so nothing outside app/ai/client.py needs to know which
+# one is active. Only the selected provider's API key is required - see
+# app/ai/client.py for the "fail loudly, but only if actually selected"
+# behavior.
+AI_PROVIDER = os.getenv("AI_PROVIDER", "anthropic").strip().lower()
+
 # No default - the AI layer must fail loudly (see app/ai/client.py) rather
 # than silently run without a key.
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5")
+
+# Groq (https://console.groq.com) - an alternative provider with a free,
+# no-credit-card developer tier (rate-limited, not credit-limited), useful
+# for dev/testing without spending Anthropic credits. llama-3.3-70b-versatile
+# is Groq's strongest general-purpose model as of this writing - a
+# reasonable default for structured JSON extraction + Czech generation,
+# but prompt behavior against it is unverified (same caveat backend/README.md
+# already documents for Claude - see there).
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 # Origins an external client (not the bundled UI, which is served from this
 # same origin - see app/ui/ - and never needs CORS) can call this API from.

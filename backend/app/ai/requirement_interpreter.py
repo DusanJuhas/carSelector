@@ -3,22 +3,23 @@ question when the request is underspecified - see the
 drivewise-ai-recommendations skill. This module only produces parameters;
 it never filters or ranks the catalog itself.
 
-NOTE: written without access to a live ANTHROPIC_API_KEY in this
-environment, so it has not been exercised against the real API. Verify
-against a real key before relying on it - in particular, whether Claude
-reliably follows the JSON-only instruction, whether the defensive
-fallback below is ever actually hit in practice, and whether
-"follow_up_question" actually comes back in Czech as instructed.
+NOTE: written without access to a live API key in this environment, so it
+has not been exercised against a real provider. Verify against a real key
+before relying on it - in particular, whether the model reliably follows
+the JSON-only instruction, whether the defensive fallback below is ever
+actually hit in practice, and whether "follow_up_question" actually comes
+back in Czech as instructed. This applies independently to each supported
+provider (see `AI_PROVIDER`) - a prompt verified against Claude is not
+thereby verified against Groq, or vice versa.
 """
 
 import json
 import re
 
-import anthropic
 from pydantic import BaseModel, ValidationError
 
 from app.ai.client import get_client
-from app.core.config import CLAUDE_MODEL
+from app.ai.llm import LlmClient
 from app.schemas.conversation import ChatMessage
 from app.schemas.requirement import StructuredRequirements
 
@@ -55,33 +56,33 @@ class RequirementExtractionResult(BaseModel):
 
 
 class RequirementInterpreter:
-    """Wraps one Claude API call that turns free-text conversation into
+    """Wraps one LLM call that turns free-text conversation into
     `StructuredRequirements`, per `drivewise-ai-recommendations`'s Code
     style section. Stateless beyond the injected client - safe to share a
     single instance across requests (see the module-level `interpreter`
     singleton at the bottom of this file).
     """
 
-    def __init__(self, client: anthropic.Anthropic | None = None) -> None:
+    def __init__(self, client: LlmClient | None = None) -> None:
         """Args:
-            client: Anthropic SDK client to use. Defaults to `None`, in
-                which case `interpret` lazily resolves the shared client
-                from `app.ai.client.get_client()` on first use - so
+            client: `LlmClient` to use. Defaults to `None`, in which case
+                `interpret` lazily resolves the shared client from
+                `app.ai.client.get_client()` on first use - so
                 constructing a `RequirementInterpreter` never fails just
-                because `ANTHROPIC_API_KEY` isn't set; only calling
-                `interpret` does. Pass an explicit client (e.g. a test
-                double) to bypass that shared singleton.
+                because the selected provider's API key isn't set; only
+                calling `interpret` does. Pass an explicit client (e.g. a
+                test double) to bypass that shared singleton.
         """
         self._client = client
 
-    def _get_client(self) -> anthropic.Anthropic:
+    def _get_client(self) -> LlmClient:
         """Returns the injected client, or lazily resolves the shared
         default on first use so constructing a `RequirementInterpreter`
-        never fails just because `ANTHROPIC_API_KEY` isn't set yet (only
-        calling `interpret` does).
+        never fails just because the selected provider's API key isn't
+        set yet (only calling `interpret` does).
 
         Returns:
-            The Anthropic client this instance uses for API calls.
+            The `LlmClient` this instance uses for API calls.
         """
         if self._client is None:
             self._client = get_client()
@@ -135,13 +136,7 @@ class RequirementInterpreter:
         transcript = "\n".join(f"{m.role}: {m.text}" for m in history)
         user_content = f"Conversation so far:\n{transcript}\n\nLatest message:\n{latest_message}"
 
-        response = client.messages.create(
-            model=CLAUDE_MODEL,
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_content}],
-        )
-        raw_text = "".join(block.text for block in response.content if block.type == "text")
+        raw_text = client.complete(system=SYSTEM_PROMPT, user_content=user_content, max_tokens=1024)
 
         try:
             payload = json.loads(self._strip_code_fences(raw_text))

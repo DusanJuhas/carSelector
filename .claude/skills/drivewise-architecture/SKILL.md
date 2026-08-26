@@ -56,7 +56,8 @@ Locked per `doc/prompt/CLAUDE.md` — do not swap these without discussion.
 - **UI:** NiceGUI (Python), mounted onto the same FastAPI app - no Node.js/npm anywhere in the
   repo. Styled with Tailwind utility classes (NiceGUI ships Tailwind support built in). Tested with
   pytest (`backend/tests/ui/`), not a browser-based JS test runner.
-- **AI:** Claude API (Anthropic SDK) only, called exclusively from `backend/app/ai`
+- **AI:** Claude API (Anthropic SDK, default) or Groq, selected via `AI_PROVIDER` - both behind one
+  `LlmClient` interface (`app/ai/llm.py`); called exclusively from `backend/app/ai`
 - **Scraping:** the standalone `scraper/` service — requests/BeautifulSoup/pdfplumber today, see `doc/arch/webScraping/` for the target/phased stack
 - **DevOps:** Docker, GitHub Actions, unit tests (aspirational — not yet set up)
 
