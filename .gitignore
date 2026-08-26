@@ -223,3 +223,8 @@ __marimo__/
 # purpose (a reproducible scraped-data baseline) - don't broaden this pattern.
 /storage/drivewise.db
 
+# app.storage.user's per-browser JSON files (the UI's "custom sort order"
+# persistence - see backend/app/ui/state.py and NICEGUI_STORAGE_PATH in
+# backend/app/core/config.py). Local session data, not a data baseline.
+/storage/nicegui/
+

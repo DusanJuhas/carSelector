@@ -1,0 +1,10 @@
+# asyncio_mode=auto lets async test functions (backend/tests/ui/) run
+# without an explicit @pytest.mark.asyncio on each one; harmless to the
+# existing sync backend/tests/*.py (this only changes how `async def
+# test_...` functions are collected). The nicegui.testing.user_plugin
+# activates the `user` fixture (see backend/tests/ui/conftest.py) used to
+# drive the UI without a real browser - see backend/README.md's Tests
+# section.
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-p nicegui.testing.user_plugin"

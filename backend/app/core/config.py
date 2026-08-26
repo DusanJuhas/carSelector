@@ -23,11 +23,12 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{_DEFAULT_SQLITE_PATH}")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5")
 
-# Origins the frontend can call this API from (see app/main.py's
-# CORSMiddleware). Vite's dev server defaults to port 5173 on both
-# localhost and 127.0.0.1 - both are listed since browsers treat them as
-# different origins. Override/extend via CORS_ALLOWED_ORIGINS (comma-
-# separated) once there's a real deployed frontend origin to allow.
+# Origins an external client (not the bundled UI, which is served from this
+# same origin - see app/ui/ - and never needs CORS) can call this API from.
+# Kept, unchanged, for anything that hits /api/* directly (tooling, a
+# future separate client). The localhost:5173 default predates the bundled
+# UI (it was Vite's dev server origin); left as-is since changing a public
+# API's CORS default isn't part of a frontend-only migration.
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
@@ -35,3 +36,22 @@ CORS_ALLOWED_ORIGINS = [
     ).split(",")
     if origin.strip()
 ]
+
+# Signs NiceGUI's session cookie and is required for app.storage.user (used
+# to persist the "custom sort order" drag result across reloads - see
+# app/ui/state.py). The fallback is fine for local dev (nothing sensitive
+# is stored - just a drag order); set a real secret before any shared/public
+# deployment.
+NICEGUI_STORAGE_SECRET = os.getenv("NICEGUI_STORAGE_SECRET", "dev-insecure-storage-secret")
+
+# Where app.storage.user writes its per-browser JSON files - kept under
+# storage/ with the rest of this project's local data files (see
+# storage/README.md) rather than NiceGUI's own default (.nicegui/ next to
+# the working directory). NiceGUI reads this from the environment itself
+# (not a ui.run_with(...) argument), and must see it before its storage
+# module first initializes - setdefault here so it's set as early as
+# possible (this module loads before app.ui.pages ever imports nicegui)
+# without overriding an operator-supplied value.
+NICEGUI_STORAGE_PATH = os.environ.setdefault(
+    "NICEGUI_STORAGE_PATH", str(Path(__file__).resolve().parents[3] / "storage" / "nicegui")
+)

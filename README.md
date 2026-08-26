@@ -7,8 +7,9 @@ actually in scope right now.
 
 ## Status
 
-The frontend chat UI now talks to the real backend API (`frontend/src/api/`) instead of a scripted
-mock — it shows real catalog data (real brands/models/trims/prices) once populated:
+The chat UI (NiceGUI, `backend/app/ui/` — one process with the backend, no separate frontend, no
+Node.js) calls the service layer directly and shows real catalog data (real brands/models/trims/
+prices) once populated:
 
 - The backend's catalog can be populated two ways: hand-seeded demo data (`python -m app.db.seed`,
   a couple of real price lists in `storage/cars/`) or a real import of everything the scraper has
@@ -28,22 +29,20 @@ See each subproject's README for specifics, and `doc/api-contract.md` "open item
 
 ```
 backend/    FastAPI + SQLAlchemy + SQLite (dev default) / PostgreSQL (target) — REST API,
-            recommendation engine, Claude integration
-frontend/   React + TypeScript + Vite + Tailwind — chat UI, results/comparison views
+            recommendation engine, Claude integration, and the UI (app/ui/, NiceGUI) — one process
 scraper/    Standalone Python service — downloads & parses manufacturer PDF price lists
 doc/        Architecture, API contract, DB schema, scope decisions — see doc/README.md for the index
-scripts/    Cross-cutting glue — frontend launchers (run-ui.sh/.bat/.ps1) and
-            import_scraper_data.py (scraper.db → drivewise.db)
+scripts/    Cross-cutting glue — import_scraper_data.py (scraper.db → drivewise.db)
 storage/    All local DB files + PDF copies for backend/ and scraper/ — see storage/README.md
 .claude/    Claude Code project config: skills (doc/prompt/CLAUDE.md is the main conventions file)
-requirements.txt, requirements-dev.txt   Python deps for backend/ + scraper/ (one shared venv;
-            frontend/ is Node, see frontend/package.json)
+requirements.txt, requirements-dev.txt   Python deps for backend/ (including its UI) + scraper/ —
+            one shared venv, no Node.js/npm anywhere in this repo
 ```
 
 ## Quickstart
 
-The frontend needs the backend running to do anything (even the intro message comes from a real
-`POST /api/conversations` call) — there's no more mock-only, backend-free mode.
+The UI is served by the backend process itself - starting the backend starts the UI too, there's
+no separate frontend step.
 
 1. Python setup (once, for backend/ and scraper/):
    ```bash
@@ -51,13 +50,11 @@ The frontend needs the backend running to do anything (even the intro message co
    .venv/Scripts/activate    # Windows; `source .venv/bin/activate` elsewhere
    pip install -r requirements-dev.txt
    ```
-2. Backend — see [`backend/README.md`](backend/README.md) (SQLite by default, no server to
+2. Backend + UI — see [`backend/README.md`](backend/README.md) (SQLite by default, no server to
    install; needs `ANTHROPIC_API_KEY` for the AI layer to do more than degrade gracefully)
 3. Load real catalog data: `python scripts/import_scraper_data.py` (or `python -m app.db.seed`
    from `backend/` for just the small hand-verified demo dataset)
-4. Frontend — see [`frontend/README.md`](frontend/README.md), or `./scripts/run-ui.sh`
-   (`scripts\run-ui.bat` / `scripts\run-ui.ps1` on Windows) once the backend above is running
-5. Scraper (optional, populates its own DB independently) — see [`scraper/README.md`](scraper/README.md)
+4. Scraper (optional, populates its own DB independently) — see [`scraper/README.md`](scraper/README.md)
 
 ## Documentation
 

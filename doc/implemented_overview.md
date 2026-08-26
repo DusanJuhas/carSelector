@@ -8,11 +8,10 @@ catalog. This doc is a snapshot of what's actually built, not the target archite
 
 ## Architecture
 
-Three independent services, one shared SQLite dev database for backend + scraper (`storage/`):
+Two independent services, one shared SQLite dev database for backend + scraper (`storage/`):
 
-- **`backend/`** — FastAPI REST API: catalog data, the recommendation engine, and the AI
-  conversation flow.
-- **`frontend/`** — React SPA that talks to the backend over HTTP.
+- **`backend/`** — FastAPI: REST API, the recommendation engine, the AI conversation flow, and the
+  chat UI (`app/ui/`, NiceGUI) — all one process, no separate frontend.
 - **`scraper/`** — standalone pipeline that downloads OEM PDF price lists and extracts
   vehicles/prices/equipment into its own database. Not wired to the backend automatically; a script
   imports its data into the backend's catalog on demand.
@@ -22,12 +21,12 @@ Three independent services, one shared SQLite dev database for backend + scraper
 | Layer | Stack |
 |---|---|
 | Backend | Python, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic v2, SQLite (dev) / PostgreSQL (target, dual-dialect schema), Anthropic Claude API (`anthropic` SDK) |
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, Zustand (state), axios, react-i18next, Vitest + Testing Library |
+| UI | NiceGUI (Python), mounted onto the same FastAPI app - no Node.js/npm anywhere in the repo |
 | Scraper | Python, requests, BeautifulSoup, pdfplumber, SQLAlchemy, Click, PyYAML |
 
 ## Implemented features
 
-**Catalog (backend + frontend)**
+**Catalog (backend + UI)**
 - `GET /api/brands`, `GET /api/models/{id}`, `GET /api/vehicles` (paginated, sortable by
   price/alpha), `GET /api/vehicles/{configuration_id}` (full detail), `GET /api/vehicles/compare`.
 - Schema: brand → model → {trims, powertrains, colors, option items, source documents} →
@@ -44,19 +43,24 @@ Three independent services, one shared SQLite dev database for backend + scraper
   scores the rest (drivetrain match, priority match, budget headroom) → Claude generates a
   per-vehicle explanation. The AI never queries or ranks the database directly.
 - Conversation state is in-memory only (no persistence yet, no multi-process support).
-- Degrades to `503 ai_not_configured` if `ANTHROPIC_API_KEY` isn't set; catalog browsing still
-  works without it.
+- Degrades to a graceful "AI not configured" state if `ANTHROPIC_API_KEY` isn't set (still
+  `ai_not_configured` as the underlying error code - see `app/services/conversation.py`); catalog
+  browsing still works without it.
 
-**Frontend UI (`frontend/src/`)**
+**UI (`backend/app/ui/`, NiceGUI)**
+- Mounted directly onto the FastAPI app (`ui.run_with`, see `app/main.py`) - one process, calls the
+  service layer in-process rather than over HTTP.
 - Two-column chat layout: conversation on the left, results grid on the right.
 - **Browsing mode** (default, before the AI has narrowed anything): paginated catalog with
   server-side sort (price asc/desc, alphabetical) or client-side drag-to-reorder ("custom").
 - **Narrowed mode** (after the AI returns matches): shortlist with match scores/flags, sorted
   client-side.
 - Requirements drawer showing the requirements extracted so far; vehicle detail modal; car cards.
-- All user-facing copy is Czech (`i18n/locales/cs.json`); `en.json` exists but Czech is the
-  authored/verified language per project convention.
-- Component tests with Vitest + Testing Library for the major components/hooks.
+- All user-facing copy is Czech (`app/ui/i18n.py`'s `STRINGS` dict) per project convention.
+- pytest coverage in `backend/tests/ui/` - the state layer (`ConversationState`/`CatalogState`)
+  against the real seeded database, plus the pure-function helpers (`sort_cars`, `format_money`,
+  i18n pluralization). See `backend/README.md`'s Tests section for why this doesn't use NiceGUI's
+  `User`-fixture DOM simulation.
 
 **Scraper (`scraper/`)**
 - Per-brand discoverer + parser plugins find and download PDF price lists
@@ -69,7 +73,7 @@ Three independent services, one shared SQLite dev database for backend + scraper
 
 ## Running locally
 
-**Backend** (from repo root):
+**Backend + UI** (from repo root) — one process serves both:
 ```bash
 python -m venv .venv
 .venv\Scripts\activate            # Windows; source .venv/bin/activate elsewhere
@@ -77,21 +81,12 @@ pip install -r requirements-dev.txt
 cd backend
 alembic upgrade head               # creates storage/drivewise.db + schema
 python -m app.db.seed              # seeds one hand-verified vehicle (safe to re-run)
-python -m uvicorn app.main:app --reload   # http://localhost:8000, docs at /docs
+python -m uvicorn app.main:app --reload   # http://localhost:8000/ is the UI, docs at /docs
 ```
 Optional: `python scripts/import_scraper_data.py` (repo root) to load real scraped vehicles instead
-of just the one seed vehicle. `ANTHROPIC_API_KEY` env var is required for the chat endpoints
-(catalog endpoints work without it). Note: on some setups the bare `uvicorn` command isn't on
-`PATH` — use `python -m uvicorn` as above.
-
-**Frontend** (from `frontend/`):
-```bash
-npm install
-npm run dev        # http://localhost:5173, expects the backend at http://localhost:8000/api
-npm run test       # Vitest
-npm run build      # type-check + production build
-```
-Override the backend URL with `VITE_API_BASE_URL` if needed.
+of just the one seed vehicle. `ANTHROPIC_API_KEY` env var is required for the chat to do more than
+degrade gracefully (catalog browsing works without it). Note: on some setups the bare `uvicorn`
+command isn't on `PATH` — use `python -m uvicorn` as above.
 
 **Scraper** (from repo root, same venv as backend):
 ```bash

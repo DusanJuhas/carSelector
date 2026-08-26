@@ -14,58 +14,61 @@ na začátku toho souboru).
 ## Struktura repozitáře
 
 ```
-/frontend        React + TypeScript aplikace
-  /src
-    /components  znovupoužitelné UI komponenty (jedna komponenta = jeden soubor + test)
-    /pages       routované obrazovky (wizard, chat, výsledky)
-    /hooks       vlastní React hooks
-    /api         volání backendu (typované, přes Axios klienta v api/client.ts)
-    /types       sdílené TS typy (odpovídají Pydantic modelům backendu)
-    /store       globální stav (Zustand)
-/backend         FastAPI aplikace
+/backend         FastAPI aplikace + UI (jeden proces, jeden Python balíček)
   /app
     /api         REST endpointy
     /services    business logika, recommendation engine
     /ai          integrace Claude API (extrakce požadavků, vysvětlení doporučení)
     /models      SQLAlchemy modely
     /schemas     Pydantic schémata (request/response)
+    /ui          UI vrstva (NiceGUI, mountnutá na stejnou FastAPI app v app/main.py) — volá
+                 service vrstvu přímo (in-process), ne přes HTTP
+      /components  jedna obrazovková sekce = jeden soubor + jedna funkce (žádný routing,
+                   jedna stránka — viz pages.py)
+      state.py     per-connection stav (ConversationState/CatalogState dataclasses) — NiceGUI dává
+                   každému browser připojení vlastní volání pages.index(), takže lokální
+                   proměnné/uzávěry jsou už samy o sobě per-connection, žádný globální store netřeba
+      i18n.py, money.py, sort.py, styles.py   pomocné moduly (viz jejich docstringy)
 /scraper         samostatná Python služba pro sběr dat o vozidlech
 /doc             architektura, API kontrakty, poznámky (viz doc/README.md pro přehled)
 /storage         všechny lokální DB soubory + PDF kopie pro /backend a /scraper (viz storage/README.md) —
                  ne uvnitř backend/ nebo scraper/
 /scripts         průřezové skripty (spouští se z rootu) — např. import_scraper_data.py
                  (storage/scraper.db → storage/drivewise.db, viz storage/README.md)
-requirements.txt, requirements-dev.txt   Python závislosti pro /backend + /scraper (jeden sdílený
-                 venv v rootu; /frontend má vlastní package.json)
+requirements.txt, requirements-dev.txt   Python závislosti pro /backend (včetně UI) + /scraper —
+                 jeden sdílený venv v rootu, žádný Node.js/npm v repozitáři
 ```
 
 ## Tech stack (závazně, neměnit bez domluvy)
 
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Zustand (stav), Axios, react-i18next (i18n),
-  Vitest + React Testing Library (testy)
+- **UI:** NiceGUI (Python), mountnutá přímo na FastAPI app (`ui.run_with`) — žádný samostatný
+  frontend proces, žádný Node.js/npm. Stylování přes Tailwind utility třídy (NiceGUI je má
+  vestavěné), design tokeny viz `doc/design-tokens.md`
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy, Pydantic v2, PostgreSQL (target; SQLite is the
   current default local DB — see `backend/README.md`'s Database section — schema stays
   dual-dialect, don't add Postgres-only DDL without an SQLite equivalent)
 - **AI:** Claude API (Anthropic SDK) pro extrakci požadavků a generování vysvětlení
 - **Scraping:** Playwright / BeautifulSoup / Scrapy
+- **Testy:** pytest (backend i UI — UI testy v `backend/tests/ui/`, viz `backend/README.md`)
 
 ## Konvence kódu
 
-### Frontend
-- Funkční komponenty, žádné class komponenty
-- Jeden export na soubor, název souboru = název komponenty (`CarCard.tsx`)
-- Props vždy přes explicitní TS interface (`CarCardProps`), žádné `any`
-- Styling výhradně přes Tailwind utility třídy, žádné inline styly ani CSS-in-JS
-- Sdílené typy (např. `Car`, `Recommendation`, `UserRequirements`) žijí v `/src/types` a musí
-  odpovídat Pydantic schématům v `/backend/app/schemas`
-- Side-effecty (API volání) jen v `/src/api` nebo custom hooks, nikdy přímo v komponentě
-- UI text uživatele je vždy česky, přes `useTranslation()`/`t()` proti `/src/i18n/locales/cs.json`
-  — žádné natvrdo napsané řetězce v komponentách. `en.json` existuje jako druhá jazyková sada
-  (příprava na vícejazyčnost), ale zatím se nikde nepoužívá (žádný přepínač jazyka)
-- Ceny vždy jako `Money` (`{ amount, currency }`), formátované přes `formatMoney()`
-  (`src/utils/money.ts`) — currency je `'CZK'`, nikdy natvrdo `$`/`Kč` v textu
+Platí jednotně pro celý `/backend` (API, services, AI vrstva, i UI) — viz
+`.claude/skills/drivewise-architecture/SKILL.md`'s "Code style" sekci pro OOP/docstring konvenci.
+UI vrstva se řídí stejnými pravidly jako zbytek Pythonu níže, ne zvláštní výjimkou (dokud šlo o
+React, měla frontend vrstva vlastní konvence — ty teď odpadají, protože UI je Python jako všechno
+ostatní):
 
-### Backend
+- Sdílené typy jsou Pydantic modely v `/backend/app/schemas` — UI vrstva je konzumuje přímo
+  (žádný zvláštní DTO/wire-format překlad, na rozdíl od bývalého `frontend/src/types`)
+- Side-effecty (DB/service volání) v UI vrstvě jdou přes `app/ui/db.py`'s `get_session()` +
+  `nicegui.run.io_bound`, nikdy přímo synchronně v event handleru (viz `app/ui/state.py`)
+- UI text uživatele je vždy česky, přes `t()`/`t_count()` proti `app/ui/i18n.py`'s `STRINGS`
+  slovníku — žádné natvrdo napsané řetězce v komponentách
+- Ceny vždy jako `Money` (`{ amount, currency }`), formátované přes `format_money()`
+  (`app/ui/money.py`) — currency je `'CZK'`, nikdy natvrdo `$`/`Kč` v textu
+
+### Backend (API, services, AI vrstva)
 - Všechny endpointy typované přes Pydantic, žádné volné dict odpovědi
 - Business logika mimo route handlery – handler jen volá service vrstvu
 - Přístup k Claude API pouze přes `/app/ai` modul, nikde jinde v kódu
@@ -86,8 +89,10 @@ requirements.txt, requirements-dev.txt   Python závislosti pro /backend + /scra
 
 ## API kontrakt (zdroj pravdy)
 
-Aktuální request/response tvary jsou v `/doc/api-contract.md` — toto je zdroj pravdy, existuje a
-je aktuální; `frontend/src/types` a `backend/app/schemas` mu musí odpovídat.
+Aktuální request/response tvary jsou v `/doc/api-contract.md` — toto je zdroj pravdy pro REST API
+`/api/*` (existuje a je aktuální, zůstává v platnosti pro budoucí klienty mimo tuto appku);
+`backend/app/schemas` mu musí odpovídat. UI vrstva (`app/ui/`) konzumuje tyto Pydantic modely přímo
+in-process, ne přes `/api/*`, takže na ni se tato "musí odpovídat" věta nevztahuje.
 
 ## Design tokeny
 
@@ -95,6 +100,6 @@ Barvy, typografie a spacing viz `/doc/design-tokens.md`.
 
 ## Co agent nemá dělat bez domluvy
 
-- Neměnit zvolený tech stack (např. nepřidávat Redux vedle Zustand, nepřepisovat na Vue)
-- Nezasahovat do `/scraper` při práci na frontendu a naopak
-- Negenerovat mock data přímo do produkčního kódu – mock vrstva patří do `/frontend/src/api/mock`
+- Neměnit zvolený tech stack (např. nepřepisovat UI vrstvu na jiný framework, nepřidávat Node.js)
+- Nezasahovat do `/scraper` při práci na UI/backendu a naopak
+- Negenerovat mock data přímo do produkčního kódu

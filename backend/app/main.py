@@ -38,3 +38,19 @@ app.include_router(brands.router, prefix="/api")
 app.include_router(models.router, prefix="/api")
 app.include_router(vehicles.router, prefix="/api")
 app.include_router(conversations.router, prefix="/api")
+
+# The UI (see app/ui/) is mounted last and at "/" on purpose: ui.run_with
+# mounts NiceGUI's own sub-app as a catch-all at mount_path, so mounting it
+# before the /api/* routers above would swallow every request meant for
+# them. The import (not just the ui.run_with call) is required: @ui.page
+# only registers a route as a side effect of the decorator running, and
+# nothing above this line has imported app.ui.pages yet. Imported via
+# `from ... import` (not `import app.ui.pages`) deliberately - the latter
+# would bind the name `app` in this module's namespace to the top-level
+# `app` package, clobbering the `app = FastAPI(...)` instance above.
+from nicegui import ui  # noqa: E402
+
+from app.core.config import NICEGUI_STORAGE_SECRET  # noqa: E402
+from app.ui import pages as _ui_pages  # noqa: E402, F401
+
+ui.run_with(app, mount_path="/", storage_secret=NICEGUI_STORAGE_SECRET, title="Rovis")
