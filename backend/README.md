@@ -168,6 +168,19 @@ equivalent of `localStorage` for a Python-only UI, see `state.py`/`pages.py`).
 open via `app/ui/state.py`'s `fetch_vehicle_detail`. Closes on backdrop click, Escape, or its close
 button - all for free from NiceGUI's `ui.dialog` default (non-`persistent`) behavior.
 
+**Admin console (`/admin`, `app/ui/admin.py`):** lets you trigger the scraper and the scraper →
+catalog import from the browser - a "Spustit" (run) button per job, with the subprocess's live
+output streamed into a scrollable log and a "Hotovo"/"Chyba" (done/error) status once it exits.
+Also lists every configured OEM source (`config/sources.yaml`) with its active/inactive status.
+Both jobs run as real subprocesses (`sys.executable -m scraper.main` /
+`sys.executable scripts/import_scraper_data.py`), not in-process imports of `scraper`/`scripts`
+code - keeps that boundary a real process boundary, so a scraper crash can't take the app down.
+Running the scraper alone does **not** update the catalog the chat UI shows - run the import step
+afterward for that (see the on-page description of each). No authentication (matches this app's
+"no auth in v1" posture, see `doc/api-contract.md`) - fine locally, but don't expose this route on
+a shared/public deployment as-is, since it lets a visitor trigger outbound network requests and DB
+writes.
+
 ## Tests
 
 ```bash

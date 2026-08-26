@@ -21,6 +21,7 @@ def app_header(requirements_count: int, on_restart: Callable[[], None], on_toggl
             ui.label(t("header.tagline")).classes("text-[12.5px] text-subtext")
 
         with ui.row().classes("items-center gap-2.5"):
+            ui.link("Admin", "/admin").classes("text-[12.5px] text-subtext underline-offset-2 hover:underline")
             ui.button(t("header.restart"), on_click=on_restart).props("flat no-caps").classes(
                 "rounded-control border border-border px-3.5 py-2 text-[13px] text-subtext"
             )

@@ -56,6 +56,8 @@ Two independent services, one shared SQLite dev database for backend + scraper (
 - **Narrowed mode** (after the AI returns matches): shortlist with match scores/flags, sorted
   client-side.
 - Requirements drawer showing the requirements extracted so far; vehicle detail modal; car cards.
+- Admin console at `/admin` (`app/ui/admin.py`): run the scraper and the scraper → catalog import
+  as subprocesses from the browser, with live streamed output. No auth (local/dev tool).
 - All user-facing copy is Czech (`app/ui/i18n.py`'s `STRINGS` dict) per project convention.
 - pytest coverage in `backend/tests/ui/` - the state layer (`ConversationState`/`CatalogState`)
   against the real seeded database, plus the pure-function helpers (`sort_cars`, `format_money`,

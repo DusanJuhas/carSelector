@@ -52,5 +52,7 @@ from nicegui import ui  # noqa: E402
 
 from app.core.config import NICEGUI_STORAGE_SECRET  # noqa: E402
 from app.ui import pages as _ui_pages  # noqa: E402, F401
+from app.ui.admin import register_admin_page  # noqa: E402
 
+register_admin_page()
 ui.run_with(app, mount_path="/", storage_secret=NICEGUI_STORAGE_SECRET, title="Rovis")
