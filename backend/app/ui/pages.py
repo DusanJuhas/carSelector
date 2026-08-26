@@ -120,7 +120,7 @@ async def index() -> None:
         with ui.row().classes("relative flex min-h-0 flex-1 w-full gap-0"):
             chat_refresh = chat_column(conv, send)
 
-            with ui.column().classes("min-w-0 flex-1 overflow-y-auto px-7 py-6 gap-0"):
+            with ui.column().classes("min-w-0 h-full flex-1 overflow-y-auto px-7 py-6 gap-0"):
 
                 @ui.refreshable
                 def results() -> None:
