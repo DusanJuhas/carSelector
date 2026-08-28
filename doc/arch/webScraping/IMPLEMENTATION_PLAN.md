@@ -75,6 +75,7 @@ next steps; update it in the same change as any parser/discoverer addition.
 | Volkswagen | ID.3 Neo, ID.4, ID.7, ID.7 Tourer, ID. Polo | EV |
 | Kia | Ceed SW, Niro, Sportage | ICE / MHEV / HEV / PHEV |
 | Toyota | Yaris, Yaris Cross, Corolla Sedan, Corolla Hatchback, Corolla Touring Sports, C-HR, RAV4 | HEV / PHEV |
+| Hyundai | i20, i30, Kona, Tucson, Santa Fe | ICE / MHEV / HEV / PHEV |
 
 Every variant has a price, a trim level, and a link back to the page/exact
 text in the source PDF (`raw_text`), so it can always be verified against
@@ -86,10 +87,17 @@ both have more than one source document per model (Sportage: ICE vs.
 HEV/PHEV; Corolla: Sedan/Hatchback/Touring Sports body styles) — all are
 discovered and parsed the same way, see `parsers/kia.py`/
 `monitors/discovery/kia.py` and `parsers/toyota.py`/
-`monitors/discovery/toyota.py`. Kia and Toyota price lists don't carry a
-release date `extract_release_date` understands (Kia: a closed monthly
-validity range; Toyota: "Ceník platí od", not "Platnost od" — neither
-matches Škoda/VW's open-ended "Platnost od D. M. RRRR"), so their
+`monitors/discovery/toyota.py`. Hyundai's Tucson likewise has two source
+documents (ICE/MHEV vs. HEV/PHEV, a separate PDF each), and its Santa Fe
+has HEV and PHEV tables on different pages of the SAME document — both
+handled by one `parsers/hyundai.py`/`monitors/discovery/hyundai.py` pair,
+see that parser's module docstring for its word-position technique
+(Hyundai's price table has 3-4 numeric columns per row, more than Škoda's
+positional reconstruction needed to handle). Kia, Toyota, and Hyundai
+price lists don't carry a release date `extract_release_date` understands
+(Kia: a closed monthly validity range; Toyota: "Ceník platí od"; Hyundai:
+"Ceník osobních vozů platný od D. <written-out month> RRRR" — none match
+Škoda/VW's open-ended, numeric-month "Platnost od D. M. RRRR"), so their
 variants currently have `valid_from` = download date rather than the
 price list's own effective date.
 
@@ -98,16 +106,20 @@ price list's own effective date.
 Done: OOP architecture (class + plugin registry for both parsers and
 discoverers), Škoda and VW complete (both ICE and EV), Kia price lists
 (Ceed SW/Niro/Sportage, ICE/MHEV/HEV/PHEV), Toyota price lists (Yaris,
-Yaris Cross, Corolla x3 body styles, C-HR, RAV4, HEV/PHEV), optional
+Yaris Cross, Corolla x3 body styles, C-HR, RAV4, HEV/PHEV), Hyundai price
+lists (i20, i30, Kona, Tucson, Santa Fe, ICE/MHEV/HEV/PHEV), optional
 equipment for Škoda (one of three formats — "Samostatné prvky výbavy" /
 standalone equipment items).
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
-(the other two equipment formats), VW/Kia/Toyota equipment, Kia/Toyota
-release-date extraction (see Data coverage above), Hyundai/Dacia/
-Mercedes-Benz/Ford/Renault/BMW. Details and the reasoning for scaling one
-piece at a time (vertical slice, verify on real data, then generalize)
-are in the phases above.
+(the other two equipment formats), VW/Kia/Toyota/Hyundai equipment,
+Kia/Toyota/Hyundai release-date extraction (see Data coverage above),
+Dacia/Mercedes-Benz/Ford/Renault/BMW, and the rest of `doc/carVendors.md`'s
+"Mainstream brands" list beyond the original top-10-by-CZ-market-share
+scope (Peugeot, BMW, MG, Cupra, Opel, Citroën, Audi, Seat, Volvo, Suzuki,
+Mazda, Nissan, Honda, Mitsubishi, Fiat, ...). Details and the reasoning for
+scaling one piece at a time (vertical slice, verify on real data, then
+generalize) are in the phases above.
 
 There's now a manual/periodic import step from this scraper's database
 (`storage/scraper.db`, repo root — see `storage/README.md`) into the
