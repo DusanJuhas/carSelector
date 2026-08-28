@@ -31,6 +31,28 @@ def test_list_vehicles_filters_by_drivetrain(client: TestClient):
     assert body["items"][0]["trim"] == "Centre-Line"
 
 
+def test_list_vehicles_filters_by_brand(client: TestClient):
+    response = client.get("/api/vehicles", params={"brand_id": 1})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 2
+
+
+def test_list_vehicles_filters_by_unknown_brand_returns_empty(client: TestClient):
+    response = client.get("/api/vehicles", params={"brand_id": 999999})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 0
+    assert body["items"] == []
+
+
+def test_list_vehicles_filters_by_fuel_type(client: TestClient):
+    response = client.get("/api/vehicles", params={"fuel_type": "petrol"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 2
+
+
 def test_list_vehicles_filters_by_budget_and_currency(client: TestClient):
     response = client.get("/api/vehicles", params={"budget_max": 900_000, "currency": "CZK"})
     assert response.status_code == 200

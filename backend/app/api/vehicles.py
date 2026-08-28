@@ -17,6 +17,7 @@ SortOption = Literal["price_asc", "price_desc", "alpha"]
 
 @router.get("", response_model=Page[VehicleSummary])
 def list_vehicles(
+    brand_id: int | None = None,
     body_type: str | None = None,
     budget_max: float | None = None,
     currency: str = "CZK",
@@ -30,6 +31,7 @@ def list_vehicles(
 ) -> Page[VehicleSummary]:
     return catalog.list_vehicles(
         db,
+        brand_id=brand_id,
         body_type=body_type,
         fuel_type=fuel_type,
         drivetrain=drivetrain,

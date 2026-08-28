@@ -112,6 +112,7 @@ _SORT_ORDER_BY = {
 def list_vehicles(
     db: Session,
     *,
+    brand_id: int | None = None,
     body_type: str | None = None,
     fuel_type: FuelType | None = None,
     drivetrain: Drivetrain | None = None,
@@ -131,6 +132,7 @@ def list_vehicles(
 
     Args:
         db: Database session to query through.
+        brand_id: Hard filter on `brands.id`, if given.
         body_type: Exact-match filter on `models.category`, if given.
         fuel_type: Hard filter on `powertrains.fuel_type`, if given.
         drivetrain: Hard filter on `powertrains.drivetrain`, if given -
@@ -169,6 +171,8 @@ def list_vehicles(
         .join(Price, current_price_join)
         .options(*_SUMMARY_LOAD_OPTIONS)
     )
+    if brand_id is not None:
+        stmt = stmt.where(Brand.id == brand_id)
     if body_type:
         stmt = stmt.where(CarModel.category == body_type)
     if fuel_type:

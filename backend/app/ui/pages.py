@@ -7,8 +7,10 @@ from dataclasses import dataclass
 
 from nicegui import app, ui
 
+from app.models.enums import Drivetrain, FuelType
 from app.schemas.vehicle import VehicleSummary
 from app.ui.components.chat_column import chat_column
+from app.ui.components.filter_bar import filter_bar
 from app.ui.components.header import app_header
 from app.ui.components.requirements_drawer import requirements_drawer
 from app.ui.components.results_grid import results_grid, sort_control
@@ -105,6 +107,21 @@ async def index() -> None:
         await catalog_state.load_more(backend_sort())
         results.refresh()
 
+    async def change_brand(brand_id: int | None) -> None:
+        catalog_state.brand_id = brand_id
+        await catalog_state.load_first_page(backend_sort())
+        results.refresh()
+
+    async def change_fuel_type(fuel_type: FuelType | None) -> None:
+        catalog_state.fuel_type = fuel_type
+        await catalog_state.load_first_page(backend_sort())
+        results.refresh()
+
+    async def change_drivetrain(drivetrain: Drivetrain | None) -> None:
+        catalog_state.drivetrain = drivetrain
+        await catalog_state.load_first_page(backend_sort())
+        results.refresh()
+
     def reorder(order: list[int]) -> None:
         app.storage.user[CUSTOM_ORDER_KEY] = order
         results.refresh()
@@ -141,6 +158,17 @@ async def index() -> None:
                                 "mt-0.5 text-[13px] text-subtext"
                             )
                         sort_control(sort_state.option, change_sort)
+
+                    if not conv.has_narrowed:
+                        filter_bar(
+                            catalog_state.brands,
+                            catalog_state.brand_id,
+                            catalog_state.fuel_type,
+                            catalog_state.drivetrain,
+                            change_brand,
+                            change_fuel_type,
+                            change_drivetrain,
+                        )
 
                     if conv.error is not None:
                         message = t("chat.aiNotConfigured") if conv.error == "ai_not_configured" else t("chat.genericError")
@@ -183,5 +211,6 @@ async def index() -> None:
             drawer()
 
     await conv.begin()
+    await catalog_state.load_brands()
     await catalog_state.load_first_page(backend_sort())
     refresh_all()

@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 
 from nicegui import run
 
+from app.models.enums import Drivetrain, FuelType
+from app.schemas.catalog import BrandRead
 from app.schemas.requirement import UserRequirement
 from app.schemas.vehicle import VehicleDetail, VehicleSummary
 from app.services import catalog
@@ -139,6 +141,14 @@ class CatalogState:
     is_loading: bool = False
     is_loading_more: bool = False
     error: bool = False
+    # Catalog-browsing filters (see `app/ui/components/filter_bar.py`) -
+    # pushed straight to the backend query rather than applied client-side,
+    # the same way `price_asc`/`price_desc`/`alpha` sort does, so `total`
+    # and pagination stay correct against the filtered set.
+    brand_id: int | None = None
+    fuel_type: FuelType | None = None
+    drivetrain: Drivetrain | None = None
+    brands: list[BrandRead] = field(default_factory=list)
 
     @property
     def has_more(self) -> bool:
@@ -147,9 +157,24 @@ class CatalogState:
         """
         return len(self.cars) < self.total
 
+    async def load_brands(self) -> None:
+        """Loads the brand list once, for the manufacturer filter dropdown.
+        Leaves `brands` empty (rather than raising) if the query fails -
+        the filter bar just shows no brand options in that case.
+        """
+
+        def _load() -> object:
+            with ui_db.get_session() as db:
+                return catalog.list_brands(db)
+
+        try:
+            self.brands = await run.io_bound(_load)
+        except Exception:
+            self.brands = []
+
     async def load_first_page(self, sort: str | None) -> None:
         """(Re)loads page 1, replacing whatever's currently loaded -
-        called on first mount and whenever `sort` changes.
+        called on first mount and whenever `sort` or a filter changes.
 
         Args:
             sort: Backend sort option (`"price_asc"` | `"price_desc"` |
@@ -160,7 +185,15 @@ class CatalogState:
 
         def _load() -> object:
             with ui_db.get_session() as db:
-                return catalog.list_vehicles(db, sort=sort, page=1, page_size=self.page_size)
+                return catalog.list_vehicles(
+                    db,
+                    brand_id=self.brand_id,
+                    fuel_type=self.fuel_type,
+                    drivetrain=self.drivetrain,
+                    sort=sort,
+                    page=1,
+                    page_size=self.page_size,
+                )
 
         try:
             result = await run.io_bound(_load)
@@ -187,7 +220,15 @@ class CatalogState:
 
         def _load() -> object:
             with ui_db.get_session() as db:
-                return catalog.list_vehicles(db, sort=sort, page=next_page, page_size=self.page_size)
+                return catalog.list_vehicles(
+                    db,
+                    brand_id=self.brand_id,
+                    fuel_type=self.fuel_type,
+                    drivetrain=self.drivetrain,
+                    sort=sort,
+                    page=next_page,
+                    page_size=self.page_size,
+                )
 
         try:
             result = await run.io_bound(_load)

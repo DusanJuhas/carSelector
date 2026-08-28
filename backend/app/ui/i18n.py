@@ -50,6 +50,12 @@ STRINGS: dict = {
             "custom": "Moje pořadí",
         },
         "dragHint": "Přetáhněte pro změnu pořadí",
+        "filters": {
+            "all": "Vše",
+            "brand": "Výrobce",
+            "fuelType": "Druh motoru",
+            "drivetrain": "Pohon",
+        },
     },
     "car": {
         "photoPlaceholder": "fotka auta — {make} {model}",

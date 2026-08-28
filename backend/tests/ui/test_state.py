@@ -11,8 +11,29 @@ talks to the database/orchestrator and carries the real risk, independent
 of how the DOM ends up rendering it.
 """
 
+from app.models.enums import Drivetrain
 from app.ui.state import CatalogState, ConversationState
 from tests.conftest import SeededData
+
+
+async def test_catalog_state_loads_brands(patch_ui_session, seeded_session: SeededData) -> None:
+    state = CatalogState()
+    await state.load_brands()
+    assert [b.name for b in state.brands] == ["Mazda"]
+
+
+async def test_catalog_state_filters_by_drivetrain(patch_ui_session, seeded_session: SeededData) -> None:
+    state = CatalogState(drivetrain=Drivetrain.awd)
+    await state.load_first_page(sort=None)
+    assert state.total == 1
+    assert state.cars[0].configuration_id == seeded_session.config_centre_awd_id
+
+
+async def test_catalog_state_filters_by_brand_id(patch_ui_session, seeded_session: SeededData) -> None:
+    state = CatalogState(brand_id=999999)
+    await state.load_first_page(sort=None)
+    assert state.total == 0
+    assert state.cars == []
 
 
 async def test_catalog_state_loads_seeded_vehicles(patch_ui_session, seeded_session: SeededData) -> None:
