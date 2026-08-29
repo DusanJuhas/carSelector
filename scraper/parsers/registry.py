@@ -6,6 +6,7 @@ in main.py needs to change.
 from __future__ import annotations
 
 from .base import BaseParser
+from .bmw import BmwParser
 from .hyundai import HyundaiParser
 from .kia import KiaParser
 from .mazda import MazdaParser
@@ -26,4 +27,5 @@ PARSERS: dict[str, type[BaseParser]] = {
     "hyundai": HyundaiParser,
     "mercedes-benz": MercedesBenzParser,
     "mazda": MazdaParser,
+    "bmw": BmwParser,
 }

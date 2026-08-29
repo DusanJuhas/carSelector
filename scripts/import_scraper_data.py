@@ -92,6 +92,7 @@ BRAND_NAMES = {
     "hyundai": "Hyundai",
     "mercedes-benz": "Mercedes-Benz",
     "mazda": "Mazda",
+    "bmw": "BMW",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {
@@ -103,8 +104,12 @@ _SCRAPER_TO_FUEL_TYPE = {
 }
 
 _KW_RE = re.compile(r"(\d+)\s*kW", re.IGNORECASE)
-_AWD_RE = re.compile(r"4x4|4motion|awd|quattro|4matic", re.IGNORECASE)
-_DIESEL_RE = re.compile(r"\bTDI\b|\bCRDI\b|diesel", re.IGNORECASE)
+_AWD_RE = re.compile(r"4x4|4motion|awd|quattro|4matic|xdrive", re.IGNORECASE)
+# \d{2,3}d\b: BMW's own diesel suffix ("118d", "320d", "M340d" - fused
+# directly onto the trim's number with no space, unlike Mercedes-Benz's
+# "220 d" - see bmw.py's module docstring). Doesn't need a leading \b
+# since "M340d" has no word-boundary between "M" and "3".
+_DIESEL_RE = re.compile(r"\bTDI\b|\bCRDI\b|diesel|\d{2,3}d\b", re.IGNORECASE)
 
 
 def slugify(text: str) -> str:
@@ -134,7 +139,8 @@ def infer_fuel_type(scraper_powertrain: str, variant_name: str) -> FuelType:
         The drivewise `FuelType` this variant most likely is. Every value
         except `"ICE"` maps 1:1 via `_SCRAPER_TO_FUEL_TYPE`; `"ICE"`
         resolves to `diesel` if `variant_name` contains a diesel marker
-        (TDI/CRDI/"diesel"), else `petrol`.
+        (TDI/CRDI/"diesel", or BMW's own fused "NNNd" suffix), else
+        `petrol`.
     """
     if scraper_powertrain in _SCRAPER_TO_FUEL_TYPE:
         return _SCRAPER_TO_FUEL_TYPE[scraper_powertrain]
@@ -145,13 +151,20 @@ def infer_fuel_type(scraper_powertrain: str, variant_name: str) -> FuelType:
 def infer_drivetrain(variant_name: str) -> Drivetrain:
     """Args:
         variant_name: The variant's display name to scan for an
-            AWD/4x4-style marker (4x4, 4Motion, AWD, quattro, 4MATIC).
+            AWD/4x4-style marker (4x4, 4Motion, AWD, quattro, 4MATIC, xDrive).
 
     Returns:
         `Drivetrain.awd` if a marker was found, else `Drivetrain.fwd`.
-        RWD isn't distinguishable from the naming these brands use for
-        these segments (no rear-drive models in this data) - default to
-        fwd, the overwhelming majority, rather than guess at rwd.
+        RWD isn't distinguishable from the naming most brands here use for
+        these segments, so defaulting the rest to fwd was accurate for
+        them - BMW is the exception (plenty of genuinely rear-wheel-drive
+        trims, e.g. plain "320i"/"M4" with no xDrive/sDrive marker at
+        all), but telling those apart from BMW's front-wheel-drive-
+        platform models (1 Series, X1/X2 without xDrive) would need
+        knowing which model FAMILY a row belongs to, not just scanning
+        its own text - out of scope for this brand-agnostic heuristic, so
+        BMW's non-xDrive trims fall into the same accepted fwd-default gap
+        as everyone else's for now.
     """
     return Drivetrain.awd if _AWD_RE.search(variant_name) else Drivetrain.fwd
 

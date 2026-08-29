@@ -235,11 +235,25 @@ sources:
     active: false
     models: [Clio, Captur]
 
+  # Verified 2026-08-29 - the page is reachable now (the "not fetch-
+  # verified" note above predates this). Unlike Mercedes-Benz/Mazda's
+  # combined documents, this one is a plain, simple price table (closer to
+  # Škoda in spirit) - one section per model (heading like "BMW řady 3
+  # Sedan (G20) / M3 Sedan (G80)" or "BMW X1 (U11)"), one row per
+  # trim/engine. BmwParser reads every section generically rather than
+  # matching a fixed list of names (see that parser's module docstring),
+  # so `models` below is descriptive of what's covered, not something the
+  # parser filters against - the source's parser_key applies to the WHOLE
+  # document, all 29 sections in it (electric "iN"/"iX*" models and
+  # plug-in hybrid rows mixed into their combustion model's section are
+  # both classified automatically, not just the combustion lineup).
   - brand: bmw
     country: cz
-    # Not fetch-verified — see note above.
     source_url: "https://www.bmw.cz/cs/topics/details/katalogy-ceniky-ke-stazeni.html"
     pdf_pattern: null
     parser_key: bmw
-    active: false
-    models: [X1]
+    active: true
+    models: [1 Series, 2 Series Coupé, M2 Coupé, 2 Series Gran Coupé, 2 Series Active Tourer,
+      3 Series Sedan, i3 Sedan, 3 Series Touring, 4 Series Coupé, 4 Series Cabrio,
+      4 Series Gran Coupé, i4 Gran Coupé, 5 Series Sedan, i5 Sedan, 5 Series Touring,
+      i5 Touring, 7 Series, i7, X1, iX1, X2, iX2, X3, iX3, X5, X6, X7, XM, iX]

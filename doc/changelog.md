@@ -21,6 +21,32 @@ to one or more related commits.
 
 ---
 
+## 0.2.10 — 2026-08-29
+
+### Added
+- BMW support in the scraper: discovery + parser for the brand's entire
+  current lineup (29 model sections — combustion, electric, and plug-in
+  hybrid — read generically from one combined price list rather than a
+  hardcoded model list), with a PDF test fixture and parser tests
+  (`scraper/monitors/discovery/bmw.py`, `scraper/parsers/bmw.py`).
+- Wired BMW data into `scripts/import_scraper_data.py` so scraped results
+  reach the catalog database.
+
+### Fixed
+- `scripts/import_scraper_data.py`'s `infer_drivetrain`/`infer_fuel_type`
+  didn't recognize BMW's own AWD marker ("xDrive") or diesel suffix
+  ("320d", fused onto the trim with no space, unlike other brands) —
+  every BMW variant was defaulting to FWD/petrol regardless of its real
+  drivetrain or fuel type.
+- `powertrain_signature()` dedups "the same engine across trims" by
+  stripping the trim label out of a variant's display name; for BMW the
+  trim label already IS the row's entire distinguishing text (e.g.
+  "320d"), so every row in a model collapsed onto one shared (and
+  arbitrarily-classified) powertrain. `BmwParser` now folds
+  displacement/power (and an explicit AWD marker for the few pairs that
+  share an identical spec and differ only by xDrive) into the variant
+  name so each row survives the stripping with its own distinct engine.
+
 ## 0.2.9 — 2026-08-29
 
 ### Added
