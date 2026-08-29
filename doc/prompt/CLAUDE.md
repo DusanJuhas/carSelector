@@ -82,6 +82,17 @@ ostatní):
 - Commit messages v angličtině, konvence `feat:`, `fix:`, `refactor:`, `test:`, `docs:`
 - Malé, tematické commity – ne jeden commit na celou feature
 
+## Changelog
+
+- Každá nová feature (nový endpoint, nová UI komponenta/obrazovka, nový scraper brand/parser, nová
+  AI schopnost, ...) vyžaduje nový záznam v `doc/CHANGELOG.md` – bez něj úkol není hotový (stejné
+  pravidlo jako "testy musí projít" výše)
+- Záznam patří do stejného commitu/PR jako feature samotná, ne do samostatného pozdějšího "docs" commitu
+- Formát a verzovací schéma (`0.y.z`) je popsané v hlavičce `doc/CHANGELOG.md`. Skoro vždy jde o
+  inkrement `z` (nová funkce, oprava, refaktor, dokumentace). `y` se zvyšuje jen při zásadní změně
+  technologie (viz `0.2.0` – přechod na NiceGUI, Node.js pryč) – to navrhne agent, ale potvrzuje člověk
+- Drobné interní změny bez dopadu na uživatele/API (typo, komentář, formátování, CI) záznam nepotřebují
+
 ## Jak zadávat úkoly agentovi (doporučený postup)
 
 1. Jeden úkol = jedna komponenta / jeden endpoint / jeden logický celek
