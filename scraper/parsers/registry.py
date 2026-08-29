@@ -8,6 +8,7 @@ from __future__ import annotations
 from .base import BaseParser
 from .hyundai import HyundaiParser
 from .kia import KiaParser
+from .mazda import MazdaParser
 from .mercedes_benz import MercedesBenzParser
 from .skoda_ev import SkodaEvParser
 from .skoda_ice import SkodaIceParser
@@ -24,4 +25,5 @@ PARSERS: dict[str, type[BaseParser]] = {
     "toyota": ToyotaParser,
     "hyundai": HyundaiParser,
     "mercedes-benz": MercedesBenzParser,
+    "mazda": MazdaParser,
 }

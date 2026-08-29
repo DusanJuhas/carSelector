@@ -21,6 +21,30 @@ to one or more related commits.
 
 ---
 
+## 0.2.9 — 2026-08-29
+
+### Added
+- Mazda support in the scraper: discovery + parser for CX-5, 3 (hatchback
+  and sedan), and CX-30, with PDF test fixtures and parser tests
+  (`scraper/monitors/discovery/mazda.py`, `scraper/parsers/mazda.py`).
+  Mazda's official price-list PDFs are an interactive-brochure export with
+  duplicated/overlapping text layers, unlike any other brand's plain price
+  tables — the parser's module docstring documents the extraction
+  technique this needed (font-size filtering, off-page-content filtering,
+  exact-position row grouping, and strict per-row column validation that
+  silently drops a malformed row rather than risk extracting a wrong
+  price).
+- Wired Mazda data into `scripts/import_scraper_data.py` so scraped
+  results reach the catalog database.
+
+### Fixed
+- The Mazda entry in `scraper/config/sources.yaml` listed model `3`
+  unquoted, so YAML parsed it as the integer `3` instead of the string
+  `"3"` — silently breaking the discoverer's model-matching for that one
+  model (it compared against string captions and never matched an int).
+  Caught by cross-checking the discoverer's live output against the
+  configured model list before considering the source done.
+
 ## 0.2.8 — 2026-08-29
 
 ### Fixed

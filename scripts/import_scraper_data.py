@@ -91,6 +91,7 @@ BRAND_NAMES = {
     "toyota": "Toyota",
     "hyundai": "Hyundai",
     "mercedes-benz": "Mercedes-Benz",
+    "mazda": "Mazda",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {

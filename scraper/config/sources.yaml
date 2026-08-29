@@ -197,6 +197,27 @@ sources:
     active: true
     models: [C-Class, E-Class]
 
+  # Not one of the top-10-by-CZ-market-share brands above - added because
+  # backend/app/db/seed.py's hand-verified demo vehicle is a Mazda CX-5,
+  # and until this source existed that was the ONLY Mazda data in the
+  # catalog (2 configurations). Verified 2026-08-29: a single listing page
+  # (like Škoda), but client-rendered - the PDF links are read out of an
+  # inline JSON payload the same way as Mercedes-Benz's, see
+  # monitors/discovery/mazda.py. Mazda's price-list PDFs are themselves
+  # unlike any other brand's here (a 25-38 page interactive-brochure
+  # export, not a plain price table) - see parsers/mazda.py's module
+  # docstring for the extraction technique this needed. "3" (hatchback,
+  # the default nameplate) and "3 Sedan" both come from the "3" entry
+  # below, same principle as Mercedes-Benz's sedan/estate split - a
+  # separate models entry isn't needed for the Sedan variant.
+  - brand: mazda
+    country: cz
+    source_url: "https://www.mazda.cz/formulae/cenik/"
+    pdf_pattern: null
+    parser_key: mazda
+    active: true
+    models: [CX-5, "3", CX-30]
+
   - brand: ford
     country: cz
     # Not fetch-verified — see note above.
