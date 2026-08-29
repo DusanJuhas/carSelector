@@ -21,6 +21,17 @@ to one or more related commits.
 
 ---
 
+## 0.2.11 — 2026-08-29
+
+### Changed
+- Catalog browsing now uses infinite scroll instead of a "Load more"
+  button: scrolling the results column near its bottom fetches the next
+  page automatically (`backend/app/ui/pages.py`'s `on_results_scroll`),
+  with a small spinner shown while a page is in flight. The scroll
+  container keeps using the browser's own `overflow-y-auto` scrollbar
+  (not a virtualized list), so its thumb/track size stays accurate on its
+  own as more cards are appended - no manual height bookkeeping needed.
+
 ## 0.2.10 — 2026-08-29
 
 ### Added

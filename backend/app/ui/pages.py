@@ -3,9 +3,11 @@
 routed screens).
 """
 
+import asyncio
 from dataclasses import dataclass
 
 from nicegui import app, ui
+from nicegui.events import GenericEventArguments
 
 from app.models.enums import Drivetrain, FuelType
 from app.schemas.vehicle import VehicleSummary
@@ -103,8 +105,40 @@ async def index() -> None:
             await catalog_state.load_first_page(value)
         results.refresh()
 
-    async def load_more() -> None:
-        await catalog_state.load_more(backend_sort())
+    # How close to the bottom (px) of the scrollable results column
+    # triggers the next page - far enough that the fetch has a chance to
+    # land before the user actually hits the end (cards are ~350px tall,
+    # so this is roughly two rows of lead time).
+    _LOAD_MORE_THRESHOLD_PX = 600
+
+    async def on_results_scroll(event: GenericEventArguments) -> None:
+        """Infinite scroll: replaces the old "Load more" button - fires
+        on every scroll of the results column (throttled, see `.on(...)`
+        below) and loads the next page once the user nears the bottom.
+
+        `catalog_state.load_more`'s own `is_loading_more`/`has_more` guard
+        (see app/ui/state.py) is what actually prevents duplicate/
+        overlapping fetches - scroll events arrive as a burst of separate
+        async tasks, but each one's guard check runs synchronously before
+        any `await`, so only the first of a burst ever gets past it.
+        """
+        if conv.has_narrowed or not catalog_state.has_more or catalog_state.is_loading_more:
+            return
+        metrics = event.args or {}
+        distance_to_bottom = metrics.get("scrollHeight", 0) - metrics.get("scrollTop", 0) - metrics.get(
+            "clientHeight", 0
+        )
+        if distance_to_bottom > _LOAD_MORE_THRESHOLD_PX:
+            return
+
+        # Kick the load off as its own task and yield once so its
+        # synchronous prefix (setting `is_loading_more = True`) actually
+        # runs before this function's own `results.refresh()` - otherwise
+        # the spinner below would never get a chance to render.
+        load_task = asyncio.ensure_future(catalog_state.load_more(backend_sort()))
+        await asyncio.sleep(0)
+        results.refresh()
+        await load_task
         results.refresh()
 
     async def change_brand(brand_id: int | None) -> None:
@@ -137,7 +171,18 @@ async def index() -> None:
         with ui.row().classes("relative flex min-h-0 flex-1 w-full gap-0"):
             chat_refresh = chat_column(conv, send)
 
-            with ui.column().classes("min-w-0 h-full flex-1 overflow-y-auto px-7 py-6 gap-0"):
+            with ui.column().classes("min-w-0 h-full flex-1 overflow-y-auto px-7 py-6 gap-0").on(
+                "scroll",
+                on_results_scroll,
+                throttle=0.2,
+                js_handler=(
+                    "(event) => emit({"
+                    "scrollTop: event.target.scrollTop, "
+                    "scrollHeight: event.target.scrollHeight, "
+                    "clientHeight: event.target.clientHeight"
+                    "})"
+                ),
+            ):
 
                 @ui.refreshable
                 def results() -> None:
@@ -192,15 +237,13 @@ async def index() -> None:
                             reorderable,
                             reorder if reorderable else None,
                         )
-                        if not conv.has_narrowed and catalog_state.has_more:
-                            with ui.row().classes("mt-4 w-full justify-center"):
-                                ui.button(
-                                    t("results.loadingMore") if catalog_state.is_loading_more else t("results.loadMore"),
-                                    on_click=load_more,
-                                ).props("flat no-caps").classes(
-                                    "rounded-control border border-border bg-panel-2 px-4 py-2 text-[13px] "
-                                    "font-semibold text-text"
-                                )
+                        # Infinite scroll (see on_results_scroll) replaces the
+                        # old "Load more" button - this is just the in-flight
+                        # indicator for the fetch it triggers.
+                        if not conv.has_narrowed and catalog_state.is_loading_more:
+                            with ui.row().classes("mt-4 w-full items-center justify-center gap-2"):
+                                ui.spinner(size="1.25rem")
+                                ui.label(t("results.loadingMore")).classes("text-[13px] text-subtext")
 
                 results()
 

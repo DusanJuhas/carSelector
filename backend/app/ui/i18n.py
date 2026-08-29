@@ -37,7 +37,6 @@ STRINGS: dict = {
         "updated": "Aktualizováno podle vaší poslední zprávy",
         "startPrompt": "Začněte konverzaci a AI vám katalog zúží podle vašich potřeb.",
         "emptyState": "Zatím nic nevyhovuje vašim požadavkům — zkuste je v konverzaci upravit.",
-        "loadMore": "Načíst další",
         "loadingMore": "Načítám další…",
         "loadingCatalog": "Načítám katalog…",
         "catalogError": "Nepodařilo se načíst katalog vozů.",
