@@ -21,6 +21,16 @@ to one or more related commits.
 
 ---
 
+## 0.2.8 — 2026-08-29
+
+### Fixed
+- The catalog-browsing header ("N vozů v katalogu") was built from
+  `len(cars)` — the currently loaded page of results (capped at
+  `page_size`, 20 by default) — rather than the real total, so it never
+  read as more than the first page's size regardless of how many vehicles
+  actually matched. Now uses `catalog_state.total`, the real count already
+  returned by the backend on every page load (`backend/app/ui/pages.py`).
+
 ## 0.2.7 — 2026-08-29
 
 ### Added

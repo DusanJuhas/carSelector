@@ -151,7 +151,7 @@ async def index() -> None:
                             title = (
                                 t_count("results.title", len(cars))
                                 if conv.has_narrowed
-                                else t_count("results.browsingTitle", len(cars))
+                                else t_count("results.browsingTitle", catalog_state.total)
                             )
                             ui.label(title).classes("text-[19px] font-bold text-text")
                             ui.label(t("results.updated") if conv.has_narrowed else t("results.startPrompt")).classes(
