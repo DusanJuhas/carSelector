@@ -90,6 +90,7 @@ BRAND_NAMES = {
     "kia": "Kia",
     "toyota": "Toyota",
     "hyundai": "Hyundai",
+    "mercedes-benz": "Mercedes-Benz",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {
@@ -251,7 +252,7 @@ class ScraperDataImporter:
         self._trim_cache: dict[tuple[int, str], Trim] = {}
         self._powertrain_cache: dict[tuple[int, str], Powertrain] = {}
         self._configuration_cache: dict[tuple[int, int], Configuration] = {}
-        self._source_document_cache: dict[str, SourceDocument] = {}
+        self._source_document_cache: dict[tuple[str, int], SourceDocument] = {}
 
     def get_or_create_brand(self, slug: str) -> Brand:
         """Args:
@@ -403,25 +404,30 @@ class ScraperDataImporter:
         downloaded_at: str,
     ) -> SourceDocument:
         """Args:
-            model: The document's model - verified 1:1 against the
-                current dataset (see `run`'s docstring).
-            file_path: scraper's `document.file_path` - used as this
-                document's natural key, since it's unique per download.
+            model: The document's model - one `document.file_path` can
+                cover several models (Mercedes-Benz's combined price list
+                does, see `run`'s docstring), so the natural key here is
+                `(file_path, model)`, not `file_path` alone - one
+                `SourceDocument` row per model sharing that file.
+            file_path: scraper's `document.file_path`.
             release_date: scraper's `document.release_date`
-                (`YYYY-MM-DD`), or `None` (Kia/Toyota don't always have
-                one - see `drivewise-scraper`).
+                (`YYYY-MM-DD`), or `None` (Kia/Toyota/Mercedes-Benz don't
+                always have one - see `drivewise-scraper`).
             downloaded_at: scraper's `document.downloaded_at` timestamp,
                 used as `effective_date`'s fallback when `release_date`
                 is `None`, and always as `retrieved_at`.
 
         Returns:
-            The existing `SourceDocument` row for `file_path`, or a newly
-            created one.
+            The existing `SourceDocument` row for `(file_path, model)`, or
+            a newly created one.
         """
-        if file_path in self._source_document_cache:
-            return self._source_document_cache[file_path]
+        key = (file_path, model.id)
+        if key in self._source_document_cache:
+            return self._source_document_cache[key]
         source_document = self._db.scalar(
-            select(SourceDocument).where(SourceDocument.file_path == file_path)
+            select(SourceDocument).where(
+                SourceDocument.file_path == file_path, SourceDocument.model_id == model.id
+            )
         )
         if source_document is None:
             effective_date = (
@@ -440,7 +446,7 @@ class ScraperDataImporter:
             )
             self._db.add(source_document)
             self._db.flush()
-        self._source_document_cache[file_path] = source_document
+        self._source_document_cache[key] = source_document
         return source_document
 
     def upsert_price(
@@ -539,35 +545,46 @@ class ScraperDataImporter:
                 continue
 
             brand = self.get_or_create_brand(source_brand)
-            # Verified against the current dataset: every scraper document
-            # covers exactly one model (see the ETL design notes this script
-            # was built from) - all variants under a document share the same
-            # `model` value, so the first one determines it.
-            model = self.get_or_create_model(brand, variants[0][1])
-            source_document = self.get_or_create_source_document(
-                model, file_path, release_date, downloaded_at
-            )
 
-            for variant_id, _model_name, trim_name, scraper_powertrain, variant_name in variants:
-                trim = self.get_or_create_trim(model, trim_name)
+            # Most scraper documents cover exactly one model, but not all -
+            # Mercedes-Benz's combined price list covers several
+            # (C-Class/C-Class Estate/E-Class/E-Class Estate all come out
+            # of the same PDF, see parsers/mercedes_benz.py) - so variants
+            # are grouped by their own `model` value rather than assuming
+            # the whole document shares `variants[0][1]`. Each group gets
+            # its own `SourceDocument` row sharing the same `file_path`
+            # (see get_or_create_source_document's `(file_path, model)`
+            # natural key).
+            variants_by_model: dict[str, list] = {}
+            for variant_row in variants:
+                variants_by_model.setdefault(variant_row[1], []).append(variant_row)
 
-                fuel_type = infer_fuel_type(scraper_powertrain, variant_name)
-                drivetrain = infer_drivetrain(variant_name)
-                power_kw = extract_power_kw(variant_name)
-                signature = powertrain_signature(variant_name, trim_name)
-                powertrain = self.get_or_create_powertrain(
-                    model, signature, fuel_type, drivetrain, power_kw
+            for model_name, model_variants in variants_by_model.items():
+                model = self.get_or_create_model(brand, model_name)
+                source_document = self.get_or_create_source_document(
+                    model, file_path, release_date, downloaded_at
                 )
-                configuration = self.get_or_create_configuration(trim, powertrain)
 
-                price_row = self._scraper_con.execute(
-                    "SELECT price, currency, valid_from FROM price_history "
-                    "WHERE variant_id = ? ORDER BY valid_from DESC LIMIT 1",
-                    (variant_id,),
-                ).fetchone()
-                if price_row is not None:
-                    amount, currency, valid_from = price_row
-                    self.upsert_price(configuration, source_document, amount, currency, valid_from)
+                for variant_id, _model_name, trim_name, scraper_powertrain, variant_name in model_variants:
+                    trim = self.get_or_create_trim(model, trim_name)
+
+                    fuel_type = infer_fuel_type(scraper_powertrain, variant_name)
+                    drivetrain = infer_drivetrain(variant_name)
+                    power_kw = extract_power_kw(variant_name)
+                    signature = powertrain_signature(variant_name, trim_name)
+                    powertrain = self.get_or_create_powertrain(
+                        model, signature, fuel_type, drivetrain, power_kw
+                    )
+                    configuration = self.get_or_create_configuration(trim, powertrain)
+
+                    price_row = self._scraper_con.execute(
+                        "SELECT price, currency, valid_from FROM price_history "
+                        "WHERE variant_id = ? ORDER BY valid_from DESC LIMIT 1",
+                        (variant_id,),
+                    ).fetchone()
+                    if price_row is not None:
+                        amount, currency, valid_from = price_row
+                        self.upsert_price(configuration, source_document, amount, currency, valid_from)
 
         self.stats.brands = len(self._brand_cache)
         self.stats.models = len(self._model_cache)

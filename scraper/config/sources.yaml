@@ -147,9 +147,10 @@ sources:
   # new-passenger-car registration data (SDA figures via Cebia.cz/Auto.cz,
   # checked 2026-08-13): Škoda 33.73%, Hyundai 8.31% (now active, see
   # above), Toyota 7.49% (now active, see above), Volkswagen 6.67%, Dacia
-  # 4.70%, Kia 4.37% (now active, see above), Mercedes-Benz 3.36%, Ford
-  # 3.15%, Renault 2.97%, BMW 2.32%. `models` lists each brand's current
-  # core CZ lineup (~proportional to sales share) so the registry already
+  # 4.70%, Kia 4.37% (now active, see above), Mercedes-Benz 3.36% (now
+  # active, see above), Ford 3.15%, Renault 2.97%, BMW 2.32%. `models`
+  # lists each brand's current core CZ lineup (~proportional to sales
+  # share) so the registry already
   # reflects the target model set once a discoverer/parser is written for
   # that brand — activating one is then just flipping `active: true` and
   # filling in `pdf_pattern` (regex or null, depending on whether the
@@ -163,10 +164,7 @@ sources:
   # titles matching "price lists/catalogs for download" but could not be
   # fetched from this environment (TLS/network timeout on ford.cz and
   # bmw.cz specifically) — URL not independently verified, re-check before
-  # building a discoverer against it. Mercedes-Benz has no single ceníky
-  # hub — price lists live on per-model, per-body-style pages with
-  # generation-code URLs (e.g. .../models/gle/suv-v167/...); left null
-  # pending a proper investigation of that structure.
+  # building a discoverer against it.
 
   - brand: dacia
     country: cz
@@ -176,12 +174,27 @@ sources:
     active: false
     models: [Sandero, Duster, Jogger]
 
+  # Verified 2026-08-29. Unlike every other brand above, Mercedes-Benz
+  # doesn't publish a PDF per model at all - the ceniky.html page below
+  # links ONE combined "Souhrnný ceník" covering the entire current
+  # lineup (74 pages, all body styles), so MercedesBenzDiscoverer doesn't
+  # do per-model discovery like Volkswagen/Hyundai, it just finds that
+  # one document (see monitors/discovery/mercedes_benz.py - the link
+  # isn't in the rendered HTML as a plain <a href>, it's read out of an
+  # inline JSON payload instead). MercedesBenzParser then picks the
+  # models below out of the combined PDF by their own chapter heading and
+  # ignores the rest (A-Class, GLA, GLC, S-Class, EQ*, AMG, ...) - see
+  # that parser's module docstring. Sedan and estate ("kombi") are
+  # separate chapters in the source and come out as "C-Class"/"C-Class
+  # Estate" and "E-Class"/"E-Class Estate" respectively - the Estate
+  # variants don't need their own entry here, same principle as Hyundai's
+  # "Tucson Hybrid" note above.
   - brand: mercedes-benz
     country: cz
-    source_url: null
+    source_url: "https://www.mercedes-benz.cz/passengercars/services/ceniky.html"
     pdf_pattern: null
     parser_key: mercedes-benz
-    active: false
+    active: true
     models: [C-Class, E-Class]
 
   - brand: ford

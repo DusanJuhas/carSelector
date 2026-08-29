@@ -21,6 +21,25 @@ to one or more related commits.
 
 ---
 
+## 0.2.7 — 2026-08-29
+
+### Added
+- Mercedes-Benz support in the scraper: discovery + parser for C-Class and
+  E-Class (sedan and estate body styles), reading the combined "Souhrnný
+  ceník" PDF that covers the brand's entire lineup, with a PDF test fixture
+  and parser tests (`scraper/monitors/discovery/mercedes_benz.py`,
+  `scraper/parsers/mercedes_benz.py`).
+- Wired Mercedes-Benz data into `scripts/import_scraper_data.py` so scraped
+  results reach the catalog database.
+
+### Fixed
+- `scripts/import_scraper_data.py` assumed every scraper document covers
+  exactly one model; Mercedes-Benz's combined price list broke that
+  assumption (all its variants were being imported under a single model).
+  Variants are now grouped by their own `model` value within a document,
+  and `SourceDocument` rows are keyed by `(file_path, model)` instead of
+  `file_path` alone, so one PDF can correctly back several models.
+
 ## 0.2.6 — 2026-08-29
 
 ### Added
