@@ -15,6 +15,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Numeric,
     String,
     UniqueConstraint,
 )
@@ -97,5 +98,11 @@ class EquipmentAssignment(Base):
     variant_id: Mapped[int] = mapped_column(ForeignKey("variant.id"))
     equipment_id: Mapped[int] = mapped_column(ForeignKey("equipment.id"))
     availability: Mapped[str] = mapped_column(String(20))  # STANDARD/OPTIONAL/PACKAGE/NOT_AVAILABLE
+    # Price of this item for this variant, when the source states one (e.g.
+    # Škoda's "Samostatné prvky výbavy" page - see
+    # parsers/skoda_equipment.py) - null when the source doesn't carry a
+    # price (e.g. standard-equipment items, which aren't paid add-ons).
+    surcharge_amount: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
 
     variant: Mapped["Variant"] = relationship(back_populates="equipment")

@@ -16,12 +16,20 @@ up by natural key before creating, and prices only get a new row when the
 price actually changed (closing the previous one) - matching the
 append-only design in app/models/price.py.
 
-What it deliberately does NOT import (documented gaps, not silently
+Equipment/options: scraper's equipment_assignment now carries a
+surcharge_amount for the one format that has one so far (Škoda's
+"Samostatné prvky výbavy" page, see parsers/skoda_equipment.py) - those
+rows import as option_items/option_availability (category=equipment).
+Rows this still can't import, without fabricating data:
+- OPTIONAL rows with no surcharge_amount (no price to satisfy drivewise's
+  'optional' CHECK constraint) - counted in equipment_skipped.
+- PACKAGE rows - drivewise's AvailabilityStatus has no equivalent state
+  yet (standard/optional/unavailable only) - counted in equipment_skipped.
+scraper's STANDARD/NOT_AVAILABLE map onto drivewise's standard/unavailable
+directly (no surcharge needed for either).
+
+What it still deliberately does NOT import (documented gaps, not silently
 dropped):
-- Equipment/options: scraper's equipment_assignment never carries a
-  surcharge amount, but drivewise's option_availability requires one for
-  'optional' rows (a CHECK constraint) - importing would mean fabricating
-  a price. Skipped entirely for now.
 - model.category (body type), model_year, colors, and most of
   powertrains' spec columns (transmission, displacement_cc, consumption,
   co2, ...): none of these are structured fields in scraper's schema, only
@@ -71,12 +79,20 @@ from app.models import (  # noqa: E402
     Brand,
     CarModel,
     Configuration,
+    OptionAvailability,
+    OptionItem,
     Powertrain,
     Price,
     SourceDocument,
     Trim,
 )
-from app.models.enums import DocumentType, Drivetrain, FuelType  # noqa: E402
+from app.models.enums import (  # noqa: E402
+    AvailabilityStatus,
+    DocumentType,
+    Drivetrain,
+    FuelType,
+    OptionCategory,
+)
 
 SCRAPER_DB_PATH = REPO_ROOT / "storage" / "scraper.db"
 MARKET = "CZ"
@@ -110,6 +126,31 @@ _AWD_RE = re.compile(r"4x4|4motion|awd|quattro|4matic|xdrive", re.IGNORECASE)
 # "220 d" - see bmw.py's module docstring). Doesn't need a leading \b
 # since "M340d" has no word-boundary between "M" and "3".
 _DIESEL_RE = re.compile(r"\bTDI\b|\bCRDI\b|diesel|\d{2,3}d\b", re.IGNORECASE)
+
+# scraper's equipment_assignment.availability values that map onto
+# drivewise's AvailabilityStatus - PACKAGE is deliberately absent (no
+# equivalent state exists yet, see this module's docstring).
+_SCRAPER_TO_AVAILABILITY_STATUS = {
+    "STANDARD": AvailabilityStatus.standard,
+    "OPTIONAL": AvailabilityStatus.optional,
+    "NOT_AVAILABLE": AvailabilityStatus.unavailable,
+}
+
+
+def humanize_equipment_name(canonical_name: str) -> str:
+    """Args:
+        canonical_name: scraper's `equipment.canonical_name` - a
+            normalized slug (`EquipmentNormalizer`), e.g.
+            `"příprava_pro_tažné_zařízení"` or `"heated_seats"`.
+
+    Returns:
+        `canonical_name` with underscores turned back into spaces and its
+        first character capitalized - readable enough for
+        `option_items.name` given scraper's schema has no separate
+        display-name field yet (only the normalized slug).
+    """
+    text = canonical_name.replace("_", " ").strip()
+    return text[:1].upper() + text[1:] if text else text
 
 
 def slugify(text: str) -> str:
@@ -238,6 +279,10 @@ class ImportStats:
     source_documents: int = 0
     prices_inserted: int = 0
     prices_unchanged: int = 0
+    option_items: int = 0
+    option_availabilities_inserted: int = 0
+    option_availabilities_updated: int = 0
+    option_availabilities_unchanged: int = 0
     equipment_skipped: int = 0
     warnings: list[str] = field(default_factory=list)
 
@@ -267,6 +312,7 @@ class ScraperDataImporter:
         self._powertrain_cache: dict[tuple[int, str], Powertrain] = {}
         self._configuration_cache: dict[tuple[int, int], Configuration] = {}
         self._source_document_cache: dict[tuple[str, int], SourceDocument] = {}
+        self._option_item_cache: dict[tuple[int, str], OptionItem] = {}
 
     def get_or_create_brand(self, slug: str) -> Brand:
         """Args:
@@ -531,6 +577,135 @@ class ScraperDataImporter:
         self._db.flush()
         self.stats.prices_inserted += 1
 
+    def get_or_create_option_item(self, model: CarModel, name: str) -> OptionItem:
+        """Args:
+            model: The option item's model (`option_items.model_id` FK).
+            name: Display name (see `humanize_equipment_name`) - the
+                natural key together with `model`, since `option_items`
+                has no DB-level uniqueness of its own.
+
+        Returns:
+            The existing `OptionItem` row for `(model, name)`
+            (`category` always `equipment` - this importer only ever
+            creates equipment rows, never packages/warranties/service),
+            or a newly created one.
+        """
+        key = (model.id, name)
+        if key in self._option_item_cache:
+            return self._option_item_cache[key]
+        option_item = self._db.scalar(
+            select(OptionItem).where(OptionItem.model_id == model.id, OptionItem.name == name)
+        )
+        if option_item is None:
+            option_item = OptionItem(model_id=model.id, category=OptionCategory.equipment, name=name)
+            self._db.add(option_item)
+            self._db.flush()
+        self._option_item_cache[key] = option_item
+        return option_item
+
+    def upsert_option_availability(
+        self,
+        configuration: Configuration,
+        option_item: OptionItem,
+        availability: AvailabilityStatus,
+        surcharge_amount: float | None,
+        currency: str | None,
+    ) -> None:
+        """Inserts or updates the `(option_item, configuration)` row -
+        unlike `upsert_price`, this isn't append-only (option_availability
+        has no history concept), so an existing row is updated in place
+        rather than closed out. Updates
+        `self.stats.option_availabilities_inserted/updated/unchanged`.
+
+        Args:
+            configuration: The configuration this availability is for.
+            option_item: The option item this availability is for.
+            availability: Mapped drivewise status (see
+                `_SCRAPER_TO_AVAILABILITY_STATUS`).
+            surcharge_amount: Price in CZK, or `None` (only set for
+                `optional` - see the CHECK constraint on
+                `app/models/option_availability.py`).
+            currency: `"CZK"` when `surcharge_amount` is set, else `None`.
+        """
+        existing = self._db.scalar(
+            select(OptionAvailability).where(
+                OptionAvailability.option_item_id == option_item.id,
+                OptionAvailability.configuration_id == configuration.id,
+            )
+        )
+        if existing is not None:
+            existing_surcharge = float(existing.surcharge_amount) if existing.surcharge_amount is not None else None
+            if (
+                existing.availability == availability
+                and existing_surcharge == surcharge_amount
+                and existing.currency == currency
+            ):
+                self.stats.option_availabilities_unchanged += 1
+                return
+            existing.availability = availability
+            existing.surcharge_amount = surcharge_amount
+            existing.currency = currency
+            self.stats.option_availabilities_updated += 1
+            return
+
+        self._db.add(
+            OptionAvailability(
+                option_item_id=option_item.id,
+                configuration_id=configuration.id,
+                availability=availability,
+                surcharge_amount=surcharge_amount,
+                currency=currency,
+            )
+        )
+        # Flush now for the same reason as upsert_price above: two scraper
+        # variants can collapse into the same configuration within one run
+        # (duplicate source rows), and SessionLocal is autoflush=False - so
+        # a second call for the same (option_item, configuration) within
+        # this run must see this insert via the `existing = ...` select
+        # above, not violate the UNIQUE constraint on a blind second insert.
+        self._db.flush()
+        self.stats.option_availabilities_inserted += 1
+
+    def import_equipment(self, model: CarModel, configuration: Configuration, variant_id: int) -> None:
+        """Imports every `equipment_assignment` row for one scraper
+        `variant_id` into `option_items`/`option_availability` for
+        `configuration` - skipping rows this importer can't represent
+        without fabricating data (see module docstring). Updates
+        `self.stats.equipment_skipped`.
+
+        Args:
+            model: The variant's model (`option_items.model_id` FK).
+            configuration: The variant's already-resolved configuration.
+            variant_id: scraper's `variant.id` to read equipment_assignment for.
+        """
+        rows = self._scraper_con.execute(
+            "SELECT e.canonical_name, ea.availability, ea.surcharge_amount, ea.currency "
+            "FROM equipment_assignment ea JOIN equipment e ON e.id = ea.equipment_id "
+            "WHERE ea.variant_id = ?",
+            (variant_id,),
+        ).fetchall()
+
+        for canonical_name, scraper_availability, surcharge_amount, currency in rows:
+            availability = _SCRAPER_TO_AVAILABILITY_STATUS.get(scraper_availability)
+            if availability is None:
+                # PACKAGE - no equivalent drivewise state yet.
+                self.stats.equipment_skipped += 1
+                continue
+            if availability == AvailabilityStatus.optional and surcharge_amount is None:
+                # No price to satisfy the 'optional' CHECK constraint -
+                # can't fabricate one.
+                self.stats.equipment_skipped += 1
+                continue
+
+            option_item = self.get_or_create_option_item(model, humanize_equipment_name(canonical_name))
+            self.upsert_option_availability(
+                configuration,
+                option_item,
+                availability,
+                float(surcharge_amount) if surcharge_amount is not None else None,
+                currency,
+            )
+
     def run(self) -> ImportStats:
         """Imports every document/variant/price from `scraper_con` into
         `db`, via the `get_or_create_*`/`upsert_price` methods above.
@@ -542,10 +717,6 @@ class ScraperDataImporter:
             immediately after this returns, for callers that want it
             without capturing the return value).
         """
-        self.stats.equipment_skipped = self._scraper_con.execute(
-            "SELECT COUNT(*) FROM equipment_assignment"
-        ).fetchone()[0]
-
         documents = self._scraper_con.execute(
             "SELECT id, source_brand, file_path, release_date, downloaded_at FROM document"
         ).fetchall()
@@ -600,12 +771,15 @@ class ScraperDataImporter:
                         amount, currency, valid_from = price_row
                         self.upsert_price(configuration, source_document, amount, currency, valid_from)
 
+                    self.import_equipment(model, configuration, variant_id)
+
         self.stats.brands = len(self._brand_cache)
         self.stats.models = len(self._model_cache)
         self.stats.trims = len(self._trim_cache)
         self.stats.powertrains = len(self._powertrain_cache)
         self.stats.configurations = len(self._configuration_cache)
         self.stats.source_documents = len(self._source_document_cache)
+        self.stats.option_items = len(self._option_item_cache)
         return self.stats
 
 
@@ -644,7 +818,14 @@ def main() -> None:
     print(f"  source_documents: {stats.source_documents}")
     print(f"  prices: {stats.prices_inserted} inserted, {stats.prices_unchanged} already up to date")
     print(
-        f"  equipment_assignment rows skipped (no surcharge data to import): {stats.equipment_skipped}"
+        f"  option_items: {stats.option_items}, option_availability: "
+        f"{stats.option_availabilities_inserted} inserted, "
+        f"{stats.option_availabilities_updated} updated, "
+        f"{stats.option_availabilities_unchanged} already up to date"
+    )
+    print(
+        f"  equipment_assignment rows skipped (PACKAGE, or OPTIONAL with no price): "
+        f"{stats.equipment_skipped}"
     )
 
 

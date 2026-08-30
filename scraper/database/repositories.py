@@ -119,11 +119,14 @@ class VariantRepository:
 
             for raw_name, availability in extracted.equipment.items():
                 equipment = self._equipment.get_or_create(raw_name)
+                surcharge = extracted.equipment_surcharge.get(raw_name)
                 self._session.add(
                     EquipmentAssignment(
                         variant_id=variant.id,
                         equipment_id=equipment.id,
                         availability=availability,
+                        surcharge_amount=surcharge,
+                        currency="CZK" if surcharge is not None else None,
                     )
                 )
 

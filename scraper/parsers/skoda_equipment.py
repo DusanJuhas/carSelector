@@ -67,10 +67,32 @@ def _assign_column_labels(raw_labels: list[dict], column_x: list[float]) -> list
     return [" ".join(b) for b in buckets]
 
 
-def parse_standalone_equipment(pdf: pdfplumber.PDF) -> dict[str, dict[str, str]]:
-    """Returns `{trim_level: {item_name: "OPTIONAL"}}` from the "Samostatné
-    prvky výbavy" page. An item always has a non-zero price (it's a paid
-    add-on), so it's always `OPTIONAL`, never `STANDARD`."""
+def _parse_price(price_tokens: list[dict]) -> float | None:
+    """Args:
+        price_tokens: The tokens trailing the availability symbols on a
+            data row (see `_split_row`) - normally a single "Kč with DPH"
+            amount using a space as the thousands separator (e.g.
+            `"5 000"`, `"25 000"`).
+
+    Returns:
+        The amount as a float, or `None` if `price_tokens` doesn't reduce
+        to a plain integer (e.g. the row's price wrapped onto another
+        line, same class of gap as a wrapped item name - see module
+        docstring) - never fabricated.
+    """
+    digits = "".join(t["text"] for t in price_tokens).replace(" ", "").replace("\xa0", "")
+    return float(digits) if digits.isdigit() else None
+
+
+def parse_standalone_equipment(
+    pdf: pdfplumber.PDF,
+) -> tuple[dict[str, dict[str, str]], dict[str, float]]:
+    """Returns `({trim_level: {item_name: "OPTIONAL"}}, {item_name: price_czk})`
+    from the "Samostatné prvky výbavy" page. An item always has a non-zero
+    price (it's a paid add-on), so it's always `OPTIONAL`, never
+    `STANDARD` - and the price is the same regardless of trim (one price
+    column per item, not per trim), hence the separate flat dict rather
+    than nesting it under trim like the availability matrix."""
     for page in pdf.pages:
         text = page.extract_text() or ""
         lines_of_text = text.splitlines()
@@ -80,33 +102,37 @@ def parse_standalone_equipment(pdf: pdfplumber.PDF) -> dict[str, dict[str, str]]
         lines = group_into_lines(page.extract_words())
 
         column_x: list[float] | None = None
-        data_rows: list[tuple[list[dict], list[dict]]] = []
+        data_rows: list[tuple[list[dict], list[dict], list[dict]]] = []
         for line in lines:
             split = _split_row(line)
             if split is None:
                 continue
-            name_tokens, avail_tokens, _price_tokens = split
+            name_tokens, avail_tokens, price_tokens = split
             if column_x is None:
                 column_x = [t["x0"] for t in avail_tokens]
             if len(avail_tokens) != len(column_x):
                 continue  # incomplete/untrustworthy row, better to skip it
-            data_rows.append((name_tokens, avail_tokens))
+            data_rows.append((name_tokens, avail_tokens, price_tokens))
 
         if column_x is None:
-            return {}
+            return {}, {}
 
         raw_labels = group_rotated_chars_into_columns(page.chars)
         trims = _assign_column_labels(raw_labels, column_x)
 
         result: dict[str, dict[str, str]] = {trim: {} for trim in trims}
-        for name_tokens, avail_tokens in data_rows:
+        prices: dict[str, float] = {}
+        for name_tokens, avail_tokens, price_tokens in data_rows:
             item_name = " ".join(t["text"] for t in name_tokens).strip()
             if not item_name:
                 continue  # the name wrapped onto another line, see docstring
+            price = _parse_price(price_tokens)
+            if price is not None:
+                prices[item_name] = price
             for trim, token in zip(trims, avail_tokens):
                 if token["text"] == _AVAILABLE:
                     result[trim][item_name] = "OPTIONAL"
 
-        return result
+        return result, prices
 
-    return {}
+    return {}, {}

@@ -21,6 +21,21 @@ to one or more related commits.
 
 ---
 
+## 0.2.12 — 2026-08-31
+
+### Added
+- Equipment surcharge prices are now captured and imported into the
+  catalog. `skoda_equipment.py`'s parser already read the price column on
+  Škoda's "Samostatné prvky výbavy" page but discarded it; the scraper's
+  `EquipmentAssignment` gained `surcharge_amount`/`currency` columns to
+  hold it, and `scripts/import_scraper_data.py` now imports
+  STANDARD/OPTIONAL/NOT_AVAILABLE equipment rows into
+  `option_items`/`option_availability` (PACKAGE rows, and OPTIONAL rows
+  still missing a price, are skipped rather than fabricated - see that
+  script's module docstring). Previously equipment/options were skipped
+  entirely, since drivewise's `option_availability` CHECK constraint
+  requires a price for every `optional` row and none was ever available.
+
 ## 0.2.11 — 2026-08-29
 
 ### Changed

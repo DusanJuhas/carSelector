@@ -34,6 +34,11 @@ class ExtractedVariant:
     raw_text: str  # exact text/table row from the PDF — for manual verification
     powertrain: Powertrain
     equipment: dict[str, str] = field(default_factory=dict)  # name -> STANDARD/OPTIONAL/...
+    # name -> price in CZK, for items whose price the parser could read (see
+    # e.g. skoda_equipment.parse_standalone_equipment) - only meaningful for
+    # names that also appear in `equipment`; not every brand's parser fills
+    # this in yet.
+    equipment_surcharge: dict[str, float] = field(default_factory=dict)
 
 
 class BaseParser:

@@ -142,14 +142,15 @@ class SkodaIceParser(BaseParser):
 
         Returns:
             One `ExtractedVariant` per engine/trim combination found,
-            with `equipment` populated from the standalone equipment
-            page where available (see `parse_standalone_equipment`).
+            with `equipment`/`equipment_surcharge` populated from the
+            standalone equipment page where available (see
+            `parse_standalone_equipment`).
         """
         variants: list[ExtractedVariant] = []
 
         with pdfplumber.open(pdf_path) as pdf:
             model = extract_model_name(pdf)
-            equipment_by_trim = parse_standalone_equipment(pdf)
+            equipment_by_trim, equipment_prices = parse_standalone_equipment(pdf)
 
             for page_index, page in enumerate(pdf.pages):
                 words = page.extract_words()
@@ -242,6 +243,7 @@ class SkodaIceParser(BaseParser):
                                 raw_text=raw_text,
                                 powertrain=self.powertrain,
                                 equipment=equipment_by_trim.get(trim_label, {}),
+                                equipment_surcharge=equipment_prices,
                             )
                         )
 
