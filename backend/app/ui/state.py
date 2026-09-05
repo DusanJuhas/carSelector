@@ -18,7 +18,8 @@ from nicegui import run
 
 from app.models.enums import Drivetrain, FuelType
 from app.schemas.catalog import BrandRead
-from app.schemas.requirement import UserRequirement
+from app.schemas.common import Money
+from app.schemas.requirement import StructuredRequirements, UserRequirement
 from app.schemas.vehicle import VehicleDetail, VehicleSummary
 from app.services import catalog
 from app.services.conversation import orchestrator
@@ -108,6 +109,44 @@ class ConversationState:
         finally:
             self.is_sending = False
 
+    async def send_wizard_answers(self, requirements: StructuredRequirements, summary_message: str) -> None:
+        """Applies requirements collected by the guided wizard (see
+        `WizardState`) - the wizard's counterpart to `send`. Skips
+        straight to the recommend/explain step since the answers are
+        already structured; there is no free text for the AI to
+        interpret, so (unlike `send`) this never sets
+        `error = "ai_not_configured"`. No-ops if already sending or the
+        conversation hasn't started yet.
+
+        Args:
+            requirements: Structured requirements built from the
+                wizard's answers (see `WizardState.to_structured_requirements`).
+            summary_message: Human-readable recap of the answers, shown
+                as this turn's "user" chat bubble.
+        """
+        if self.is_sending or self.conversation_id is None:
+            return
+
+        self.messages.append(("user", summary_message))
+        self.is_sending = True
+        self.error = None
+        conversation_id = self.conversation_id
+
+        def _send() -> object:
+            with ui_db.get_session() as db:
+                return orchestrator.handle_wizard_answers(db, conversation_id, requirements, summary_message)
+
+        try:
+            result = await run.io_bound(_send)
+            self.messages.append(("assistant", result.assistant_text))
+            self.requirements = result.requirements
+            self.cars = result.vehicles
+            self.has_narrowed = True
+        except Exception:
+            self.error = "unknown_error"
+        finally:
+            self.is_sending = False
+
     async def restart(self) -> None:
         """Abandons the current conversation and starts a fresh one."""
         self.conversation_id = None
@@ -126,6 +165,111 @@ class ConversationState:
     def close_drawer(self) -> None:
         """Closes the requirements drawer."""
         self.drawer_open = False
+
+
+@dataclass
+class WizardState:
+    """Guided step-by-step alternative to the free-text chat for building
+    `StructuredRequirements`, aimed at non-technical users - see
+    `doc/ai/wizard-questions.md`. Deterministic: answers map straight
+    onto `StructuredRequirements` in `to_structured_requirements` below,
+    so (unlike the chat's `RequirementInterpreter`) it needs no AI call
+    and works even without `ANTHROPIC_API_KEY` configured - only the
+    per-vehicle explanation step, shared with the chat path via
+    `ConversationOrchestrator._apply_requirements`, degrades in that case.
+
+    All display text (question wording, option labels) lives in
+    `app/ui/components/wizard.py` via `t()` - this class holds identifiers
+    only (e.g. `"awd"`, `"cargo"`), never Czech copy, the same split
+    `CatalogState`'s enum-valued filters keep.
+    """
+
+    STEP_COUNT = 10
+
+    is_open: bool = False
+    step: int = 0
+    budget: float | None = None
+    usage: str | None = None
+    seats: int | None = None
+    body_type: str | None = None
+    needs_awd: bool | None = None
+    fuel_pattern: str | None = None
+    annual_km: int | None = None
+    cargo_need: str | None = None
+    brand_pref: str = ""
+    priority: str | None = None
+
+    def open_wizard(self) -> None:
+        """Clears any previous answers and opens the wizard at its first step."""
+        self.is_open = True
+        self.step = 0
+        self.budget = None
+        self.usage = None
+        self.seats = None
+        self.body_type = None
+        self.needs_awd = None
+        self.fuel_pattern = None
+        self.annual_km = None
+        self.cargo_need = None
+        self.brand_pref = ""
+        self.priority = None
+
+    def close(self) -> None:
+        """Closes the wizard without applying its (partial) answers."""
+        self.is_open = False
+
+    def go_next(self) -> None:
+        """Advances to the next step, capped at the last one."""
+        self.step = min(self.step + 1, self.STEP_COUNT - 1)
+
+    def go_back(self) -> None:
+        """Returns to the previous step, capped at the first one."""
+        self.step = max(self.step - 1, 0)
+
+    @property
+    def is_last_step(self) -> bool:
+        """True on the wizard's final step (its "Finish" step)."""
+        return self.step == self.STEP_COUNT - 1
+
+    def to_structured_requirements(self) -> StructuredRequirements:
+        """Maps the collected answers onto the same `StructuredRequirements`
+        shape the AI requirement interpreter produces, so a wizard-driven
+        turn feeds the same recommendation engine as a chat-driven one.
+
+        `usage`/`priority`/a cargo need all land in `priorities` rather
+        than dedicated fields - `StructuredRequirements` has no such
+        fields (see `doc/api-contract.md`), and the recommendation
+        engine's scoring already treats `priorities` as free-form tags,
+        the same as the ones the AI extracts from chat text. Brand
+        preference and annual mileage aren't filterable fields either;
+        they're recorded in `notes` so they're visible in the
+        requirements drawer, not silently dropped, but the recommendation
+        engine does not currently act on them.
+
+        Returns:
+            Only the fields with a corresponding answer are populated;
+            skipped questions leave their field at its default (`None`/
+            empty), the same as an AI extraction that didn't mention them.
+        """
+        priorities = [value for value in (self.usage, self.priority) if value]
+        if self.cargo_need and self.cargo_need != "none":
+            priorities.append("cargo")
+
+        notes_parts = []
+        if self.brand_pref.strip():
+            notes_parts.append(f"Preference značky: {self.brand_pref.strip()}")
+        if self.annual_km is not None:
+            notes_parts.append(f"Roční nájezd přibližně {self.annual_km} km")
+
+        return StructuredRequirements(
+            body_type=self.body_type,
+            min_seats=self.seats,
+            budget_max=Money(amount=self.budget, currency="CZK") if self.budget is not None else None,
+            fuel_type=self.fuel_pattern,
+            drivetrain=Drivetrain.awd if self.needs_awd else None,
+            priorities=priorities,
+            notes="; ".join(notes_parts) or None,
+        )
 
 
 @dataclass

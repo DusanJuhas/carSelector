@@ -12,7 +12,8 @@ of how the DOM ends up rendering it.
 """
 
 from app.models.enums import Drivetrain
-from app.ui.state import CatalogState, ConversationState
+from app.schemas.requirement import StructuredRequirements
+from app.ui.state import CatalogState, ConversationState, WizardState
 from tests.conftest import SeededData
 
 
@@ -113,3 +114,103 @@ def test_conversation_state_toggle_and_close_drawer() -> None:
     assert state.drawer_open is True
     state.close_drawer()
     assert state.drawer_open is False
+
+
+async def test_conversation_state_send_wizard_answers_works_without_api_key(
+    patch_ui_session, seeded_session: SeededData
+) -> None:
+    # Unlike send(), the wizard path skips AI requirement extraction
+    # entirely (see WizardState.to_structured_requirements), so it must
+    # still search and populate results without ANTHROPIC_API_KEY set.
+    state = ConversationState()
+    await state.begin()
+
+    wizard = WizardState()
+    wizard.open_wizard()
+    wizard.body_type = "SUV"
+    wizard.needs_awd = True
+
+    await state.send_wizard_answers(wizard.to_structured_requirements(), "Vyplnil(a) jsem průvodce: ...")
+
+    assert state.error is None
+    assert state.has_narrowed is True
+    assert len(state.cars) == 2
+    assert state.cars[0].configuration_id == seeded_session.config_centre_awd_id
+    assert state.messages[-2] == ("user", "Vyplnil(a) jsem průvodce: ...")
+    assert state.messages[-1][0] == "assistant"
+
+
+async def test_conversation_state_send_wizard_answers_noop_before_begin(patch_ui_session) -> None:
+    state = ConversationState()
+    await state.send_wizard_answers(StructuredRequirements(), "summary")
+    assert state.messages == []
+
+
+def test_wizard_state_open_wizard_resets_all_answers() -> None:
+    wizard = WizardState()
+    wizard.step = 4
+    wizard.budget = 900_000
+    wizard.brand_pref = "Škoda"
+
+    wizard.open_wizard()
+
+    assert wizard.is_open is True
+    assert wizard.step == 0
+    assert wizard.budget is None
+    assert wizard.brand_pref == ""
+
+
+def test_wizard_state_go_next_and_go_back_are_capped() -> None:
+    wizard = WizardState()
+    wizard.go_back()
+    assert wizard.step == 0
+
+    for _ in range(WizardState.STEP_COUNT + 2):
+        wizard.go_next()
+    assert wizard.step == WizardState.STEP_COUNT - 1
+    assert wizard.is_last_step is True
+
+
+def test_wizard_state_to_structured_requirements_maps_all_answers() -> None:
+    wizard = WizardState()
+    wizard.budget = 900_000
+    wizard.usage = "family"
+    wizard.seats = 5
+    wizard.body_type = "SUV"
+    wizard.needs_awd = True
+    wizard.fuel_pattern = "diesel"
+    wizard.annual_km = 20_000
+    wizard.cargo_need = "trailer"
+    wizard.brand_pref = "Preferuji Škodu"
+    wizard.priority = "repairs"
+
+    requirements = wizard.to_structured_requirements()
+
+    assert requirements.body_type == "SUV"
+    assert requirements.min_seats == 5
+    assert requirements.budget_max is not None
+    assert requirements.budget_max.amount == 900_000
+    assert requirements.budget_max.currency == "CZK"
+    assert requirements.fuel_type == "diesel"
+    assert requirements.drivetrain == Drivetrain.awd
+    assert requirements.priorities == ["family", "repairs", "cargo"]
+    assert requirements.notes == "Preference značky: Preferuji Škodu; Roční nájezd přibližně 20000 km"
+
+
+def test_wizard_state_to_structured_requirements_is_empty_when_everything_is_skipped() -> None:
+    requirements = WizardState().to_structured_requirements()
+
+    assert requirements.body_type is None
+    assert requirements.min_seats is None
+    assert requirements.budget_max is None
+    assert requirements.fuel_type is None
+    assert requirements.drivetrain is None
+    assert requirements.priorities == []
+    assert requirements.notes is None
+
+
+def test_wizard_state_needs_awd_false_leaves_drivetrain_unset() -> None:
+    wizard = WizardState()
+    wizard.needs_awd = False
+
+    assert wizard.to_structured_requirements().drivetrain is None

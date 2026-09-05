@@ -21,6 +21,44 @@ to one or more related commits.
 
 ---
 
+## 0.2.14 — 2026-09-06
+
+### Fixed
+- Infinite-scroll catalog browsing no longer disconnects the client once
+  enough pages accumulate. Each scroll-triggered page load previously
+  called `results.refresh()`, which (per `@ui.refreshable`'s "delete
+  everything and recreate" semantics) re-rendered and re-sent *every*
+  card loaded so far, not just the new page - at ~1.5 KB/card this
+  crosses NiceGUI's ~1MB websocket message limit around 650-700
+  accumulated cards, which the real catalog's 815 rows reliably hit,
+  producing a "Message too long" popup followed by "Connection lost."
+  `results_grid()` now returns its card container and a new
+  `append_car_cards()` (`app/ui/components/results_grid.py`) appends only
+  the newly-fetched page into it; `app/ui/pages.py`'s `on_results_scroll`
+  uses this for the common case and falls back to a full
+  `results.refresh()` only for the "Moje pořadí" custom-drag-order sort,
+  whose `make_sortable` wiring is set up once per full render. Verified
+  by scrolling the full 815-row catalog with no errors (previously
+  reproducible around card ~700).
+
+## 0.2.13 — 2026-09-05
+
+### Added
+- Guided step-by-step wizard as a non-technical alternative to the free-text
+  chat, opened via a new "Průvodce výběrem" header button
+  (`app/ui/components/wizard.py`, `WizardState` in `app/ui/state.py`). Ten
+  questions (see `doc/ai/wizard-questions.md`) collect answers through
+  buttons/number fields rather than typed text - each is phrased around the
+  user's real-world situation (e.g. "Jezdíte i tam, kde bývá bláto, sníh
+  nebo horší cesta?" instead of asking for a drivetrain) and mapped
+  deterministically onto `StructuredRequirements`, so unlike the chat's
+  `RequirementInterpreter` the wizard needs no AI call and works even
+  without `ANTHROPIC_API_KEY` configured. `ConversationOrchestrator` gained
+  `handle_wizard_answers`, sharing the same merge/recommend/explain pipeline
+  as chat turns (`_apply_requirements`) so wizard- and chat-driven turns
+  accumulate onto one conversation. `notes` is now shown in the
+  requirements drawer (previously populated but never displayed).
+
 ## 0.2.12 — 2026-08-31
 
 ### Added

@@ -12,6 +12,7 @@ STRINGS: dict = {
         "tagline": "Popište svůj životní styl. Najdeme vám auto.",
         "restart": "Restartovat",
         "technicalRequirements": "Technické požadavky",
+        "startWizard": "Průvodce výběrem",
     },
     "chat": {
         "typePlaceholder": "Napište odpověď…",
@@ -22,6 +23,95 @@ STRINGS: dict = {
             "ale bez rozpoznávání požadavků a doporučení."
         ),
         "genericError": "Něco se nepovedlo. Zkuste to prosím znovu.",
+    },
+    "wizard": {
+        "title": "Průvodce výběrem auta",
+        "subtitle": "Deset krátkých otázek — na konci vám rovnou ukážeme, co z katalogu vyhovuje.",
+        "progress": "Otázka {step} z {total}",
+        "back": "Zpět",
+        "next": "Další",
+        "skip": "Nevím / přeskočit",
+        "finish": "Zobrazit doporučení",
+        "close": "Zavřít",
+        "summaryIntro": "Vyplnil(a) jsem průvodce",
+        "questions": {
+            "budget": {
+                "title": "Jaký je váš rozpočet na nové auto?",
+                "placeholder": "Např. 800000",
+                "unit": "Kč",
+                "summary": "rozpočet do {amount} Kč",
+            },
+            "usage": {
+                "title": "K čemu auto nejčastěji použijete?",
+                "options": {
+                    "commute": "Dojíždění do práce",
+                    "family": "Rodinné výlety",
+                    "cargo": "Převoz nákladu",
+                    "mixed": "Kombinace všeho",
+                },
+            },
+            "seats": {
+                "title": "Kolik lidí bude auto pravidelně vozit?",
+                "placeholder": "Např. 5",
+                "summary": "min. {count} míst",
+            },
+            "bodyType": {
+                "title": "Jak má auto vypadat a jak velké má být?",
+                "hint": (
+                    "Menší auto do města, praktické kombi na časté cesty, vyšší SUV s lepším "
+                    "výhledem, nebo velký rodinný vůz na 7 lidí."
+                ),
+                "options": {
+                    "Hatchback": "Menší auto do města",
+                    "Kombi": "Praktické kombi",
+                    "SUV": "Vyšší SUV",
+                    "MPV": "Velký rodinný vůz (7 míst)",
+                },
+            },
+            "awd": {
+                "title": "Jezdíte i tam, kde bývá bláto, sníh nebo horší cesta (chalupa, hory, pole)?",
+                "hint": "Pokud ano, hodí se auto s pohonem všech kol – lépe drží na kluzkém povrchu.",
+                "yes": "Ano, často",
+                "no": "Ne, jezdím hlavně po silnicích",
+            },
+            "fuel": {
+                "title": "Jak vypadá vaše typické jezdění?",
+                "options": {
+                    "electric": "Hlavně po městě na kratší vzdálenosti, můžu dobíjet doma nebo v práci",
+                    "hybrid": "Kombinuji město i časté delší cesty",
+                    "diesel": "Jezdím hodně a na dlouhé vzdálenosti (dálnice, služební cesty)",
+                    "petrol": "Jezdím málo nebo nepravidelně, chci to mít jednoduché",
+                },
+            },
+            "mileage": {
+                "title": "Kolik kilometrů ročně přibližně najezdíte?",
+                "placeholder": "Např. 15000",
+                "summary": "roční nájezd přibližně {km} km",
+            },
+            "cargo": {
+                "title": "Vozíte často něco objemného?",
+                "options": {
+                    "stroller": "Kočárek",
+                    "sports": "Sportovní vybavení",
+                    "tools": "Nářadí",
+                    "trailer": "Táhnu přívěs nebo loď",
+                    "none": "Nic z toho",
+                },
+            },
+            "brand": {
+                "title": "Preferujete konkrétní značku, nebo naopak nějakou vyloučit?",
+                "placeholder": "Např. preferuji Škodu, nechci Fiat",
+            },
+            "priority": {
+                "title": "Co by vás nejvíc naštvalo na špatně vybraném autě?",
+                "options": {
+                    "cost": "Vysoké náklady na provoz",
+                    "repairs": "Časté opravy",
+                    "power": "Nedostatek síly/výkonu",
+                    "comfort": "Nepohodlí na dlouhých cestách",
+                },
+            },
+        },
     },
     "results": {
         "title": {

@@ -39,6 +39,7 @@ _FIELD_LABELS = {
     "fuel_type": "Palivo",
     "drivetrain": "Pohon",
     "priorities": "Priority",
+    "notes": "Poznámky",
 }
 
 
@@ -197,9 +198,9 @@ class ConversationOrchestrator:
             raise UnknownConversationError(conversation_id)
 
         extraction = self._requirement_interpreter.interpret(state.history, text)
-        state.history.append(ChatMessage(role="user", text=text))
 
         if extraction.requirements is None:
+            state.history.append(ChatMessage(role="user", text=text))
             assistant_text = extraction.follow_up_question or "Můžete mi prosím říct trochu více o tom, co potřebujete?"
             state.history.append(ChatMessage(role="assistant", text=assistant_text))
             return MessageResponse(
@@ -210,8 +211,69 @@ class ConversationOrchestrator:
                 searched=False,
             )
 
-        merged, changed = self._merge_requirements(state.requirements, extraction.requirements)
+        return self._apply_requirements(db, state, extraction.requirements, text)
+
+    def handle_wizard_answers(
+        self, db: Session, conversation_id: str, requirements: StructuredRequirements, summary_message: str
+    ) -> MessageResponse:
+        """Applies requirements captured directly by the step-by-step
+        wizard (see `app/ui/components/wizard.py`), skipping the AI
+        requirement-extraction step entirely since the input is already
+        structured - there is nothing for the AI to misinterpret. Runs
+        the same deterministic recommend-then-explain pipeline as
+        `handle_message`'s narrowed-search branch, so wizard-driven and
+        chat-driven turns end up in one shared conversation/requirements
+        state.
+
+        Args:
+            db: Database session to query the catalog through.
+            conversation_id: Id returned by an earlier `start_conversation`
+                call.
+            requirements: Requirements built from the wizard's answers
+                (see `WizardState.to_structured_requirements`).
+            summary_message: Human-readable recap of the wizard's answers,
+                recorded as this turn's "user" transcript entry (there is
+                no free-text message to store instead).
+
+        Returns:
+            Same shape as `handle_message`'s narrowed-search branch:
+            `searched=True`, `vehicles` possibly empty if nothing matches.
+
+        Raises:
+            UnknownConversationError: `conversation_id` doesn't match any
+                conversation started via `start_conversation`.
+        """
+        state = self._conversations.get(conversation_id)
+        if state is None:
+            raise UnknownConversationError(conversation_id)
+
+        return self._apply_requirements(db, state, requirements, summary_message)
+
+    def _apply_requirements(
+        self, db: Session, state: "_ConversationState", update: StructuredRequirements, source_message: str
+    ) -> MessageResponse:
+        """Shared tail of `handle_message` and `handle_wizard_answers`:
+        merges newly-known requirements into `state`, then filters,
+        ranks, and explains matching vehicles.
+
+        Args:
+            db: Database session to query the catalog through.
+            state: The conversation's accumulated state - mutated in
+                place (`state.requirements`) and appended to
+                (`state.history`).
+            update: Newly-known requirements to merge in, from either the
+                AI extraction step or the wizard.
+            source_message: Recorded as this turn's "user" transcript
+                entry and shown as the source quote on changed
+                requirement cards.
+
+        Returns:
+            The assistant's reply for this turn - `searched=True`, though
+            `vehicles` can still legitimately be empty.
+        """
+        merged, changed = self._merge_requirements(state.requirements, update)
         state.requirements = merged
+        state.history.append(ChatMessage(role="user", text=source_message))
 
         vehicles = self._recommendation_engine.recommend(db, merged)
 
@@ -235,7 +297,7 @@ class ConversationOrchestrator:
 
         return MessageResponse(
             assistant_text=assistant_text,
-            requirements=self._to_user_requirements(merged, changed, text),
+            requirements=self._to_user_requirements(merged, changed, source_message),
             structured_requirements=merged,
             vehicles=explained,
             searched=True,

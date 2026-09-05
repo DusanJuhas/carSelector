@@ -10,16 +10,18 @@ from nicegui import app, ui
 from nicegui.events import GenericEventArguments
 
 from app.models.enums import Drivetrain, FuelType
+from app.schemas.requirement import StructuredRequirements
 from app.schemas.vehicle import VehicleSummary
 from app.ui.components.chat_column import chat_column
 from app.ui.components.filter_bar import filter_bar
 from app.ui.components.header import app_header
 from app.ui.components.requirements_drawer import requirements_drawer
-from app.ui.components.results_grid import results_grid, sort_control
+from app.ui.components.results_grid import append_car_cards, results_grid, sort_control
 from app.ui.components.vehicle_detail_modal import vehicle_detail_modal
+from app.ui.components.wizard import wizard_dialog
 from app.ui.i18n import t, t_count
 from app.ui.sort import BACKEND_SORT_OPTIONS, sort_cars
-from app.ui.state import CatalogState, ConversationState
+from app.ui.state import CatalogState, ConversationState, WizardState
 from app.ui.styles import register_styles
 
 CUSTOM_ORDER_KEY = "custom_car_order"
@@ -34,6 +36,18 @@ class _SortState:
     """
 
     option: str = "recommended"
+
+
+@dataclass
+class _ResultsGridRef:
+    """Holds the current `results_grid` container across `results()`
+    rebuilds, so `on_results_scroll` can append later pages into the grid
+    that's actually on screen right now instead of the one from whenever
+    it was captured - `results()` reruns (and returns a brand new
+    container) on every filter/sort/narrow change, not just once.
+    """
+
+    row: ui.row | None = None
 
 
 @ui.page("/")
@@ -57,7 +71,9 @@ async def index() -> None:
 
     conv = ConversationState()
     catalog_state = CatalogState()
+    wizard_state = WizardState()
     sort_state = _SortState()
+    results_grid_ref = _ResultsGridRef()
 
     def custom_order() -> list[int]:
         return app.storage.user.get(CUSTOM_ORDER_KEY, [])
@@ -79,12 +95,23 @@ async def index() -> None:
     def refresh_all() -> None:
         chrome.refresh()
         results.refresh()
+        loading_more_indicator.refresh()
         drawer.refresh()
         chat_refresh()
 
     async def send(text: str) -> None:
         await conv.send(text)
         refresh_all()
+
+    async def finish_wizard(requirements: StructuredRequirements, summary_message: str) -> None:
+        await conv.send_wizard_answers(requirements, summary_message)
+        refresh_all()
+
+    open_wizard_dialog = wizard_dialog(wizard_state, finish_wizard)
+
+    def open_wizard() -> None:
+        wizard_state.open_wizard()
+        open_wizard_dialog()
 
     async def restart() -> None:
         await conv.restart()
@@ -121,6 +148,16 @@ async def index() -> None:
         overlapping fetches - scroll events arrive as a burst of separate
         async tasks, but each one's guard check runs synchronously before
         any `await`, so only the first of a burst ever gets past it.
+
+        The newly-fetched page is appended into the existing grid
+        container (`append_car_cards`) rather than going through a full
+        `results.refresh()` - refreshing would re-render every card
+        accumulated so far, not just the new page, and once enough pages
+        pile up that single re-render's message exceeds NiceGUI's ~1MB
+        websocket limit and disconnects the client. `results.refresh()`
+        is still used as a fallback for the "Moje pořadí" custom-sort
+        grid, whose drag handling is only wired up once per full render
+        (see `results_grid`/`append_car_cards`'s docstrings).
         """
         if conv.has_narrowed or not catalog_state.has_more or catalog_state.is_loading_more:
             return
@@ -133,13 +170,20 @@ async def index() -> None:
 
         # Kick the load off as its own task and yield once so its
         # synchronous prefix (setting `is_loading_more = True`) actually
-        # runs before this function's own `results.refresh()` - otherwise
-        # the spinner below would never get a chance to render.
+        # runs before this function's own refresh below - otherwise the
+        # spinner would never get a chance to render.
+        cars_before = len(catalog_state.cars)
         load_task = asyncio.ensure_future(catalog_state.load_more(backend_sort()))
         await asyncio.sleep(0)
-        results.refresh()
+        loading_more_indicator.refresh()
         await load_task
-        results.refresh()
+        loading_more_indicator.refresh()
+
+        new_cars = catalog_state.cars[cars_before:]
+        if results_grid_ref.row is not None and sort_state.option != "custom" and new_cars:
+            append_car_cards(results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id))
+        else:
+            results.refresh()
 
     async def change_brand(brand_id: int | None) -> None:
         catalog_state.brand_id = brand_id
@@ -164,7 +208,7 @@ async def index() -> None:
 
         @ui.refreshable
         def chrome() -> None:
-            app_header(len(conv.requirements), restart, toggle_drawer)
+            app_header(len(conv.requirements), restart, toggle_drawer, open_wizard)
 
         chrome()
 
@@ -231,21 +275,28 @@ async def index() -> None:
                         )
                     else:
                         reorderable = sort_state.option == "custom"
-                        results_grid(
+                        results_grid_ref.row = results_grid(
                             cars,
                             lambda car: open_detail(car.configuration_id),
                             reorderable,
                             reorder if reorderable else None,
                         )
-                        # Infinite scroll (see on_results_scroll) replaces the
-                        # old "Load more" button - this is just the in-flight
-                        # indicator for the fetch it triggers.
-                        if not conv.has_narrowed and catalog_state.is_loading_more:
-                            with ui.row().classes("mt-4 w-full items-center justify-center gap-2"):
-                                ui.spinner(size="1.25rem")
-                                ui.label(t("results.loadingMore")).classes("text-[13px] text-subtext")
 
                 results()
+
+                @ui.refreshable
+                def loading_more_indicator() -> None:
+                    # Infinite scroll (see on_results_scroll) replaces the
+                    # old "Load more" button - this is just the in-flight
+                    # indicator for the fetch it triggers. Refreshed on its
+                    # own (not as part of `results()`) since it needs to
+                    # toggle far more often than the grid itself changes.
+                    if not conv.has_narrowed and catalog_state.is_loading_more:
+                        with ui.row().classes("mt-4 w-full items-center justify-center gap-2"):
+                            ui.spinner(size="1.25rem")
+                            ui.label(t("results.loadingMore")).classes("text-[13px] text-subtext")
+
+                loading_more_indicator()
 
             @ui.refreshable
             def drawer() -> None:

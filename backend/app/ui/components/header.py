@@ -7,13 +7,22 @@ from nicegui import ui
 from app.ui.i18n import t
 
 
-def app_header(requirements_count: int, on_restart: Callable[[], None], on_toggle_drawer: Callable[[], None]) -> None:
-    """Builds the top bar: brand/tagline on the left, restart + requirements-drawer toggle on the right.
+def app_header(
+    requirements_count: int,
+    on_restart: Callable[[], None],
+    on_toggle_drawer: Callable[[], None],
+    on_open_wizard: Callable[[], None],
+) -> None:
+    """Builds the top bar: brand/tagline on the left, restart + wizard +
+    requirements-drawer toggle on the right.
 
     Args:
         requirements_count: Shown as a badge on the drawer-toggle button.
         on_restart: Called when "Restartovat" is clicked.
         on_toggle_drawer: Called when the requirements button is clicked.
+        on_open_wizard: Called when "Průvodce výběrem" is clicked - opens
+            the guided question-by-question alternative to the free-text
+            chat (see `app/ui/components/wizard.py`).
     """
     with ui.row().classes("shrink-0 items-center justify-between border-b border-border px-7 py-4.5 w-full"):
         with ui.column().classes("gap-0.5"):
@@ -22,6 +31,9 @@ def app_header(requirements_count: int, on_restart: Callable[[], None], on_toggl
 
         with ui.row().classes("items-center gap-2.5"):
             ui.link("Admin", "/admin").classes("text-[12.5px] text-subtext underline-offset-2 hover:underline")
+            ui.button(t("header.startWizard"), on_click=on_open_wizard).props("no-caps unelevated").classes(
+                "rounded-control bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-text"
+            )
             ui.button(t("header.restart"), on_click=on_restart).props("flat no-caps").classes(
                 "rounded-control border border-border px-3.5 py-2 text-[13px] text-subtext"
             )

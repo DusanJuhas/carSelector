@@ -29,6 +29,7 @@ for context rather than as instructions to follow today. This index says which i
 | [`arch/architecture.md`](arch/architecture.md) | An early architecture sketch. Still useful for the high-level picture; specific tech/schema choices in it are superseded — see the status note at the top of the file. |
 | [`db/brainstorm1.md`](db/brainstorm1.md) | Early thinking on what data needs storing and where — precursor to `db/db-structure.md`. |
 | [`ai/claude-integration-brainstorm.md`](ai/claude-integration-brainstorm.md) | Ideas for extending the Claude integration beyond what's implemented today. Not scoped or committed to. |
+| [`ai/wizard-questions.md`](ai/wizard-questions.md) | Draft follow-up questions for `RequirementInterpreter`, phrased for non-technical users. Not scoped or implemented yet. |
 
 ## Process / meta
 
