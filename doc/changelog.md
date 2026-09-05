@@ -41,7 +41,7 @@ to one or more related commits.
   by scrolling the full 815-row catalog with no errors (previously
   reproducible around card ~700).
 
-## 0.2.13 — 2026-09-05
+## 0.2.13 — 2026-09-06
 
 ### Added
 - Guided step-by-step wizard as a non-technical alternative to the free-text
