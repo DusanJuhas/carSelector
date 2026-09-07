@@ -21,7 +21,7 @@ from app.ui.components.vehicle_detail_modal import vehicle_detail_modal
 from app.ui.components.wizard import wizard_dialog
 from app.ui.i18n import t, t_count
 from app.ui.sort import BACKEND_SORT_OPTIONS, sort_cars
-from app.ui.state import CatalogState, ConversationState, WizardState
+from app.ui.state import PAGE_SIZE, CatalogState, ConversationState, WizardState
 from app.ui.styles import register_styles
 
 CUSTOM_ORDER_KEY = "custom_car_order"
@@ -36,6 +36,22 @@ class _SortState:
     """
 
     option: str = "recommended"
+
+
+@dataclass
+class _NarrowedPaging:
+    """How many of `conv.cars` are currently rendered, for narrowed
+    (AI/wizard) results - these arrive as one already-complete, already-
+    ranked list (unlike `catalog_state.cars`, which is fetched page by
+    page from the backend), so "load more" here means revealing more of
+    what's already in memory, not another network round-trip. Reset to
+    `PAGE_SIZE` on every new search (see `reset` and its call sites) so
+    a fresh search starts from one page's worth of cards again."""
+
+    shown: int = PAGE_SIZE
+
+    def reset(self) -> None:
+        self.shown = PAGE_SIZE
 
 
 @dataclass
@@ -74,6 +90,7 @@ async def index() -> None:
     catalog_state = CatalogState()
     wizard_state = WizardState()
     sort_state = _SortState()
+    narrowed_paging = _NarrowedPaging()
     results_grid_ref = _ResultsGridRef()
 
     def custom_order() -> list[int]:
@@ -85,11 +102,27 @@ async def index() -> None:
         return sort_state.option if sort_state.option in BACKEND_SORT_OPTIONS else None
 
     def displayed_cars() -> list[VehicleSummary]:
+        """Every current match, sorted - the true count (used for the
+        results-header title) and, for browsing mode, also exactly what's
+        rendered (`catalog_state.cars` is itself only as many rows as have
+        been fetched so far). Narrowed mode renders fewer than this -
+        see `visible_cars`."""
         base_cars = conv.cars if conv.has_narrowed else catalog_state.cars
         client_sort = (
             "custom" if sort_state.option == "custom" else (sort_state.option if conv.has_narrowed else "recommended")
         )
         return sort_cars(base_cars, client_sort, custom_order())
+
+    def visible_cars() -> list[VehicleSummary]:
+        """What `results_body` actually renders. Browsing mode already
+        only ever holds as many rows as fetched (`displayed_cars` itself
+        is the visible set); narrowed mode gets everything back from
+        `recommend()` in one go (see `RecommendationEngine.recommend`'s
+        own docstring for why it's no longer capped at 10), so it's sliced
+        client-side to `narrowed_paging.shown` instead - see
+        `on_results_scroll`."""
+        cars = displayed_cars()
+        return cars[: narrowed_paging.shown] if conv.has_narrowed else cars
 
     open_detail = vehicle_detail_modal()
 
@@ -102,10 +135,12 @@ async def index() -> None:
 
     async def send(text: str) -> None:
         await conv.send(text)
+        narrowed_paging.reset()
         refresh_all()
 
     async def finish_wizard(requirements: StructuredRequirements, summary_message: str) -> None:
         await conv.send_wizard_answers(requirements, summary_message)
+        narrowed_paging.reset()
         refresh_all()
 
     open_wizard_dialog = wizard_dialog(wizard_state, finish_wizard)
@@ -116,6 +151,7 @@ async def index() -> None:
 
     async def restart() -> None:
         await conv.restart()
+        narrowed_paging.reset()
         await catalog_state.load_first_page(backend_sort())
         refresh_all()
 
@@ -131,6 +167,8 @@ async def index() -> None:
         sort_state.option = value
         if not conv.has_narrowed and value in BACKEND_SORT_OPTIONS:
             await catalog_state.load_first_page(value)
+        else:
+            narrowed_paging.reset()  # new order - start revealing from the top again, same as browsing's re-fetch
         refresh_results()
 
     # How close to the bottom (px) of the scrollable results column
@@ -142,33 +180,57 @@ async def index() -> None:
     async def on_results_scroll(event: GenericEventArguments) -> None:
         """Infinite scroll: replaces the old "Load more" button - fires
         on every scroll of the results column (throttled, see `.on(...)`
-        below) and loads the next page once the user nears the bottom.
+        below) and reveals more results once the user nears the bottom.
+        Two sources, same reveal mechanism (`append_car_cards`, see below):
 
-        `catalog_state.load_more`'s own `is_loading_more`/`has_more` guard
-        (see app/ui/state.py) is what actually prevents duplicate/
-        overlapping fetches - scroll events arrive as a burst of separate
-        async tasks, but each one's guard check runs synchronously before
-        any `await`, so only the first of a burst ever gets past it.
+        - Browsing mode fetches the next page from the backend
+          (`catalog_state.load_more`) - its own `is_loading_more`/
+          `has_more` guard (see app/ui/state.py) is what actually prevents
+          duplicate/overlapping fetches, since scroll events arrive as a
+          burst of separate async tasks but each one's guard check runs
+          synchronously before any `await`, so only the first of a burst
+          ever gets past it.
+        - Narrowed (AI/wizard) mode already has every match in memory
+          (`conv.cars` - see `RecommendationEngine.recommend`'s own
+          docstring for why it's no longer capped at 10) - "loading more"
+          here just raises `narrowed_paging.shown` and reveals the next
+          slice, no backend call needed.
 
-        The newly-fetched page is appended into the existing grid
-        container (`append_car_cards`) rather than going through a full
-        `results_body.refresh()` - refreshing would re-render every card
-        accumulated so far, not just the new page, and once enough pages
+        Either way, the newly-revealed cars are appended into the existing
+        grid container (`append_car_cards`) rather than going through a
+        full `results_body.refresh()` - refreshing would re-render every
+        card accumulated so far, not just the new ones, and once enough
         pile up that single re-render's message exceeds NiceGUI's ~1MB
-        websocket limit and disconnects the client. `results_body.refresh()`
-        is still used as a fallback for the "Moje pořadí" custom-sort
-        grid, whose drag handling is only wired up once per full render
-        (see `results_grid`/`append_car_cards`'s docstrings) - the header
-        (title/sort/filters) never needs it here, since loading another
-        page changes neither the catalog's reported total nor the filters.
+        websocket limit and disconnects the client (exactly the failure
+        mode a large budget-only match set would otherwise hit).
+        `results_body.refresh()` is still used as a fallback for the
+        "Moje pořadí" custom-sort grid, whose drag handling is only wired
+        up once per full render (see `results_grid`/`append_car_cards`'s
+        docstrings) - the header (title/sort/filters) never needs it here,
+        since revealing more already-fetched/already-known results changes
+        neither the reported total nor the filters.
         """
-        if conv.has_narrowed or not catalog_state.has_more or catalog_state.is_loading_more:
-            return
         metrics = event.args or {}
         distance_to_bottom = metrics.get("scrollHeight", 0) - metrics.get("scrollTop", 0) - metrics.get(
             "clientHeight", 0
         )
         if distance_to_bottom > _LOAD_MORE_THRESHOLD_PX:
+            return
+
+        if conv.has_narrowed:
+            all_cars = displayed_cars()
+            shown_before = narrowed_paging.shown
+            if shown_before >= len(all_cars):
+                return
+            narrowed_paging.shown = min(shown_before + PAGE_SIZE, len(all_cars))
+            new_cars = all_cars[shown_before : narrowed_paging.shown]
+            if results_grid_ref.row is not None and sort_state.option != "custom" and new_cars:
+                append_car_cards(results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id))
+            else:
+                results_body.refresh()
+            return
+
+        if not catalog_state.has_more or catalog_state.is_loading_more:
             return
 
         # Kick the load off as its own task and yield once so its
@@ -285,8 +347,7 @@ async def index() -> None:
 
                     @ui.refreshable
                     def results_body() -> None:
-                        cars = displayed_cars()
-                        has_results = len(cars) > 0
+                        has_results = len(displayed_cars()) > 0
                         show_catalog_error = not conv.has_narrowed and catalog_state.error and not has_results
                         show_catalog_loading = not conv.has_narrowed and catalog_state.is_loading
 
@@ -301,7 +362,7 @@ async def index() -> None:
                         else:
                             reorderable = sort_state.option == "custom"
                             results_grid_ref.row = results_grid(
-                                cars,
+                                visible_cars(),
                                 lambda car: open_detail(car.configuration_id),
                                 reorderable,
                                 reorder if reorderable else None,

@@ -7,11 +7,17 @@ Exercises the real recommendation engine against the seeded catalog
 correctness is the point.
 """
 
-import pytest
+from datetime import date, datetime, timezone
 
-from app.models.enums import Drivetrain
+import pytest
+from sqlalchemy.orm import Session
+
+import app.services.conversation as conversation_module
+from app.models import Brand, CarModel, Configuration, Powertrain, Price, SourceDocument, Trim
+from app.models.enums import DocumentType, Drivetrain, FuelType
 from app.schemas.common import Money
 from app.schemas.requirement import StructuredRequirements
+from app.schemas.vehicle import VehicleSummary
 from app.services.conversation import ConversationOrchestrator, UnknownConversationError
 from tests.conftest import SeededData
 
@@ -88,3 +94,103 @@ def test_handle_wizard_answers_raises_for_unknown_conversation(seeded_session: S
         orchestrator.handle_wizard_answers(
             seeded_session.session, "not-a-real-id", StructuredRequirements(), "summary"
         )
+
+
+class _CountingExplanationGenerator:
+    """Fake `ExplanationGenerator` (duck-typed, see `explain`'s matching
+    signature) that just counts how many times it was actually called,
+    for `test_handle_wizard_answers_caps_ai_explanations_not_result_count`
+    below - real explanations aren't the point of that test, only how many
+    get requested."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def explain(self, vehicle: VehicleSummary, requirements: StructuredRequirements) -> str:
+        self.calls += 1
+        return "stub explanation"
+
+
+def _add_cheap_configs(session: Session, count: int, id_offset: int) -> None:
+    """Adds `count` cheap (300,000 Kč), otherwise-identical SUV
+    configurations directly to `session` - enough to exceed
+    `ConversationOrchestrator.EXPLANATION_LIMIT` so the cap below actually
+    gets exercised."""
+    brand = Brand(id=id_offset, slug="bulk", name="Bulk")
+    session.add(brand)
+    session.flush()
+
+    model = CarModel(id=id_offset, brand_id=brand.id, slug="bulk-model", name="Model", category="SUV")
+    session.add(model)
+    session.flush()
+
+    source_doc = SourceDocument(
+        id=id_offset,
+        model_id=model.id,
+        file_path="storage/cars/bulk/pricelist.pdf",
+        document_type=DocumentType.price_list,
+        market="CZ",
+        locale="cs-CZ",
+        effective_date=date(2026, 1, 1),
+        retrieved_at=datetime.now(timezone.utc),
+    )
+    session.add(source_doc)
+    session.flush()
+
+    for i in range(count):
+        row_id = id_offset + i
+        trim = Trim(id=row_id, model_id=model.id, name=f"Trim {i}", display_order=i)
+        session.add(trim)
+        session.flush()
+
+        powertrain = Powertrain(
+            id=row_id, model_id=model.id, fuel_type=FuelType.petrol, transmission="automatic", drivetrain=Drivetrain.fwd
+        )
+        session.add(powertrain)
+        session.flush()
+
+        configuration = Configuration(id=row_id, trim_id=trim.id, powertrain_id=powertrain.id)
+        session.add(configuration)
+        session.flush()
+
+        session.add(
+            Price(
+                id=row_id,
+                configuration_id=configuration.id,
+                source_document_id=source_doc.id,
+                market="CZ",
+                currency="CZK",
+                list_price=300_000,
+                price_incl_vat=300_000,
+                valid_from=date(2026, 1, 1),
+                valid_to=None,
+                scraped_at=datetime.now(timezone.utc),
+            )
+        )
+    session.commit()
+
+
+def test_handle_wizard_answers_caps_ai_explanations_not_result_count(seeded_session: SeededData) -> None:
+    # Reported bug: a budget-only wizard answer matching far more than 10
+    # vehicles returned only 10. The fix returns every match, but must
+    # still bound the number of AI explanation calls per turn (each
+    # `ExplanationGenerator.explain` is its own Claude API call) -
+    # `ConversationOrchestrator.EXPLANATION_LIMIT` is that separate cap.
+    _add_cheap_configs(seeded_session.session, count=25, id_offset=1000)
+    assert conversation_module.ConversationOrchestrator.EXPLANATION_LIMIT < 25
+
+    fake_generator = _CountingExplanationGenerator()
+    orchestrator = ConversationOrchestrator(explanation_generator=fake_generator)  # type: ignore[arg-type]
+    conversation_id, _ = orchestrator.start_conversation()
+
+    result = orchestrator.handle_wizard_answers(
+        seeded_session.session,
+        conversation_id,
+        StructuredRequirements(budget_max=Money(amount=1_000_000, currency="CZK")),
+        "Vyplnil(a) jsem průvodce: rozpočet do 1 000 000 Kč",
+    )
+
+    assert len(result.vehicles) == 25 + 1  # + the seeded fixture's own in-budget Mazda config
+    assert fake_generator.calls == conversation_module.ConversationOrchestrator.EXPLANATION_LIMIT
+    explained_count = sum(1 for v in result.vehicles if v.explanation == "stub explanation")
+    assert explained_count == conversation_module.ConversationOrchestrator.EXPLANATION_LIMIT

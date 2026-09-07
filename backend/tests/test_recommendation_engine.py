@@ -104,3 +104,19 @@ def test_recommend_does_not_let_a_low_id_brand_crowd_out_a_cheaper_one(db_sessio
     zzz_scores = {v.match_score for v in results if v.brand == "ZZZ"}
     aaa_scores = {v.match_score for v in results if v.brand == "AAA"}
     assert min(zzz_scores) >= max(aaa_scores)
+
+
+def test_recommend_returns_every_hard_filtered_match_by_default(db_session: Session) -> None:
+    # A hard constraint (budget) isn't something to additionally truncate
+    # on top of - reported: a wizard answer with only a 1,000,000 Kč budget
+    # returned just 10 of the real, much larger set of matches. 37 > the
+    # old hardcoded limit=10 default.
+    _add_catalog(db_session, "aaa", "AAA", count=37, price=500_000, id_offset=1)
+
+    engine = RecommendationEngine()
+    results = engine.recommend(
+        db_session,
+        StructuredRequirements(budget_max=Money(amount=600_000, currency="CZK")),
+    )
+
+    assert len(results) == 37

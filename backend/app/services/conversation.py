@@ -63,6 +63,18 @@ class ConversationOrchestrator:
     module-level global, now encapsulated here instead.
     """
 
+    # Bounds how many of `recommend()`'s (now-unlimited, see that method's
+    # own docstring) results get an AI-generated explanation - a genuine
+    # per-result cap, unlike RecommendationEngine's old limit=10, which
+    # used to hide real matches from the user entirely. This one only
+    # trims a Claude API call each result would otherwise cost (a wizard
+    # answer matching hundreds of vehicles would otherwise fire hundreds
+    # of explanation calls in one turn) - every vehicle past this point
+    # still reaches `vehicles`/the UI, just without its own explanation
+    # sentence (`VehicleSummary.explanation` is already optional, and
+    # `results_grid.py`'s card only renders the line when it's set).
+    EXPLANATION_LIMIT = 10
+
     def __init__(
         self,
         requirement_interpreter: RequirementInterpreter | None = None,
@@ -278,7 +290,10 @@ class ConversationOrchestrator:
         vehicles = self._recommendation_engine.recommend(db, merged)
 
         explained = []
-        for vehicle in vehicles:
+        for index, vehicle in enumerate(vehicles):
+            if index >= self.EXPLANATION_LIMIT:
+                explained.append(vehicle)
+                continue
             try:
                 explanation = self._explanation_generator.explain(vehicle, merged)
             except RuntimeError:

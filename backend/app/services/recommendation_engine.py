@@ -88,7 +88,7 @@ class RecommendationEngine:
         requirements: StructuredRequirements,
         *,
         market: str = catalog.DEFAULT_MARKET,
-        limit: int = 10,
+        limit: int | None = None,
     ) -> list[VehicleSummary]:
         """Filters the catalog on hard constraints, then scores and ranks
         the rest.
@@ -111,7 +111,18 @@ class RecommendationEngine:
             requirements: Structured output of the AI requirement
                 interpreter (or a direct caller building one manually).
             market: Market to price and filter against.
-            limit: Maximum number of ranked results to return.
+            limit: Maximum number of ranked results to return, or `None`
+                (the default) for every hard-filtered match. A hard
+                constraint like budget isn't something to additionally
+                truncate on top of - a user who set a 1,000,000 Kč budget
+                and nothing else expects every match under it, not an
+                arbitrary top-N (reported: a budget-only wizard answer
+                returning just 10 of the 462 actual matches). Callers that
+                need a bounded shortlist for a different reason (e.g.
+                `ConversationOrchestrator` capping how many results get an
+                AI-generated explanation, not how many are returned to the
+                user) should truncate on their own end instead of asking
+                this method to hide genuine matches.
 
         Returns:
             Vehicles ranked best-first (highest score to lowest), each

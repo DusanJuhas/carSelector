@@ -21,6 +21,31 @@ to one or more related commits.
 
 ---
 
+## 0.2.19 — 2026-09-07
+
+### Fixed
+- The wizard (and chat) still only ever showed 10 results, even once
+  0.2.18 fixed the single-brand-monoculture bug - reported: a 1,000,000 Kč
+  budget-only wizard answer showed 10 cars when 462 actually matched.
+  `RecommendationEngine.recommend()`'s `limit` now defaults to `None` (no
+  truncation) - a hard constraint like budget isn't something to
+  additionally cap on top of. The real reason a cap existed at all -
+  bounding how many per-vehicle AI explanation calls one chat/wizard turn
+  makes (`ExplanationGenerator.explain` is its own Claude API call) - is
+  now `ConversationOrchestrator.EXPLANATION_LIMIT` (10) instead: every
+  match is still returned, but only the top 10 get an AI-generated
+  explanation sentence (`VehicleSummary.explanation` is already optional
+  and the card only renders that line when it's set).
+- `app/ui/pages.py`'s results column only ever rendered the narrowed
+  (AI/wizard) result list in one shot, unlike browsing mode's paginated
+  "load more" - fine at 10 results, not at several hundred: rendering all
+  462 at once would have reintroduced the ~650-700-card NiceGUI websocket
+  message-size disconnect the 0.2.14 infinite-scroll fix addressed for
+  browsing. Narrowed mode's infinite scroll now reveals more of the
+  already-in-memory `conv.cars` list client-side (`_NarrowedPaging`, same
+  `append_car_cards` mechanism as browsing's page fetches, just without a
+  network round-trip) instead of being disabled outright.
+
 ## 0.2.18 — 2026-09-07
 
 ### Fixed
