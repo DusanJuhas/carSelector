@@ -110,6 +110,7 @@ BRAND_NAMES = {
     "mazda": "Mazda",
     "bmw": "BMW",
     "dacia": "Dacia",
+    "ford": "Ford",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {

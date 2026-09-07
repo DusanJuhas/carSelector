@@ -228,14 +228,25 @@ sources:
     active: true
     models: [CX-5, "3", CX-30]
 
+  # Verified 2026-09-07 - the listing page itself has no PDF links (every
+  # "Stáhnout" opens an AEM content-overlay fragment with the real links -
+  # FordDiscoverer fetches each model's own overlay page directly rather
+  # than this one, see that module's docstring), so pdf_pattern isn't used.
+  # Ford's price lists are a genuine trim x engine MATRIX, structurally
+  # unlike every other brand's parser here - only Puma/Kuga/Mustang/Bronco
+  # (of Ford's ~10-model current CZ lineup) are covered so far; Explorer/
+  # Puma Gen-E/Mustang Mach-E (electric - an extra "Dojezd"/range column
+  # breaks this parser's column model), Tourneo Courier/Connect/Custom (a
+  # different "AKČNÍ CENÍK" bez/s DPH layout), Puma ST (a "Benzín" header
+  # this parser doesn't recognize) and Capri (unreachable from this
+  # environment) are a known gap - see parsers/ford.py's module docstring.
   - brand: ford
     country: cz
-    # Not fetch-verified — see note above.
     source_url: "https://www.ford.cz/pred-nakupem/dalsi-kroky/katalogy-a-ceniky-ke-stazeni"
     pdf_pattern: null
     parser_key: ford
-    active: false
-    models: [Puma, Kuga]
+    active: true
+    models: [Puma, Kuga, Mustang, Bronco]
 
   - brand: renault
     country: cz

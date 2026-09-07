@@ -21,6 +21,28 @@ to one or more related commits.
 
 ---
 
+## 0.2.17 — 2026-09-07
+
+### Added
+- Ford support in the scraper: discovery + parser for Puma, Kuga, Mustang
+  and Bronco, with PDF test fixtures and parser tests
+  (`scraper/monitors/discovery/ford.py`, `scraper/parsers/ford.py`). Ford's
+  price lists are a genuine trim x engine price matrix (column = trim,
+  row = engine/transmission, each cell holding a discounted-with-financing
+  price and a base list price) — structurally unlike every other brand's
+  parser here, which reads a one-column list of trim headings with engine
+  rows underneath. Only 4 of Ford's ~10-model current CZ lineup are
+  covered — Explorer/Puma Gen-E/Mustang Mach-E (electric, an extra
+  per-trim "Dojezd"/range column breaks this parser's column model),
+  Tourneo Courier/Connect/Custom (a different "AKČNÍ CENÍK" bez/s DPH
+  layout), Puma ST (a "Benzín" header this parser doesn't recognize) and
+  Capri (unreachable from this environment) are a known gap for a
+  follow-up, documented in `parsers/ford.py`'s module docstring rather
+  than silently mis-parsed.
+- Wired Ford data into `scripts/import_scraper_data.py` (brand display
+  name; Kuga's "AWD" drivetrain marker already matched the existing AWD
+  regex, no fix needed there).
+
 ## 0.2.16 — 2026-09-07
 
 ### Fixed

@@ -109,19 +109,24 @@ discoverers), Škoda and VW complete (both ICE and EV), Kia price lists
 Yaris Cross, Corolla x3 body styles, C-HR, RAV4, HEV/PHEV), Hyundai price
 lists (i20, i30, Kona, Tucson, Santa Fe, ICE/MHEV/HEV/PHEV), Mercedes-Benz,
 Mazda, BMW, Dacia (Spring/Sandero/Sandero Stepway/Jogger/Duster/Bigster —
-the full current CZ lineup, ICE/MHEV/HEV/EV), optional equipment for Škoda
+the full current CZ lineup, ICE/MHEV/HEV/EV), Ford (Puma/Kuga/Mustang/
+Bronco — a genuine trim x engine price MATRIX, structurally unlike every
+other brand's parser here; Explorer/Puma Gen-E/Mustang Mach-E/Tourneo
+Courier/Connect/Custom/Puma ST/Capri don't fit this parser's column model
+yet, see parsers/ford.py's module docstring), optional equipment for Škoda
 (one of three formats — "Samostatné prvky výbavy" / standalone equipment
 items).
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/
-Mazda/BMW/Dacia equipment, Kia/Toyota/Hyundai/Mercedes-Benz/Mazda/BMW/
-Dacia release-date extraction (see Data coverage above), Ford/Renault, and
-the rest of `doc/carVendors.md`'s "Mainstream brands" list beyond the
-original top-10-by-CZ-market-share scope (Peugeot, MG, Cupra, Opel,
-Citroën, Audi, Seat, Volvo, Suzuki, Nissan, Honda, Mitsubishi, Fiat, ...).
-Details and the reasoning for scaling one piece at a time (vertical slice,
-verify on real data, then generalize) are in the phases above.
+Mazda/BMW/Dacia/Ford equipment, Kia/Toyota/Hyundai/Mercedes-Benz/Mazda/BMW/
+Dacia/Ford release-date extraction (see Data coverage above), the rest of
+Ford's current CZ lineup (see Done, above), Renault, and the rest of
+`doc/carVendors.md`'s "Mainstream brands" list beyond the original
+top-10-by-CZ-market-share scope (Peugeot, MG, Cupra, Opel, Citroën, Audi,
+Seat, Volvo, Suzuki, Nissan, Honda, Mitsubishi, Fiat, ...). Details and the
+reasoning for scaling one piece at a time (vertical slice, verify on real
+data, then generalize) are in the phases above.
 
 There's now a manual/periodic import step from this scraper's database
 (`storage/scraper.db`, repo root — see `storage/README.md`) into the
