@@ -21,6 +21,26 @@ to one or more related commits.
 
 ---
 
+## 0.2.18 — 2026-09-07
+
+### Fixed
+- The wizard (and chat) could return results from a single brand only,
+  even for a wide, single-constraint filter like "budget up to 1,000,000
+  Kč" (reported: only Škoda came back). `RecommendationEngine.recommend()`
+  capped its candidate pool at `catalog.list_vehicles(..., page_size=100)`
+  with no explicit `sort`, which defaults to `configuration.id` ascending;
+  since ids are assigned in scrape/import order and Škoda was the first
+  brand ever imported (186 configurations), any budget filter narrow
+  enough to leave >=100 Škoda matches silently excluded every other brand
+  from scoring entirely, regardless of how well - or how much more
+  cheaply - they'd have matched. The candidate pool is now effectively the
+  whole catalog (`CANDIDATE_POOL_SIZE = 5000`, comfortably above the
+  current ~939 configurations) sorted by price ascending, so a future cap
+  overflow degrades to "missing the priciest matches" rather than a
+  single-brand monoculture. Added `backend/tests/test_recommendation_engine.py`,
+  which reproduces the exact failure shape (a low-id, higher-priced brand
+  crowding out a cheaper, higher-id one) as a regression test.
+
 ## 0.2.17 — 2026-09-07
 
 ### Added

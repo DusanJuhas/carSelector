@@ -34,6 +34,23 @@ class RecommendationEngine:
     BUDGET_HEADROOM_WEIGHT = 20.0
     BASE_SCORE = 50.0
 
+    # The whole catalog is currently under 1,000 configurations (see
+    # storage/README.md) - pulling every hard-filtered match here, rather
+    # than capping at some arbitrary page, is what makes `_score` below a
+    # true rank over ALL candidates instead of whichever ones happen to
+    # come back first. A prior version capped this at 100 with no explicit
+    # `sort`, which defaults `catalog.list_vehicles` to `configuration.id`
+    # order - since ids are assigned in scrape/import order and Škoda was
+    # the first brand ever imported, any budget filter narrow enough to
+    # leave >=100 Škoda matches (Škoda alone has 186 configurations)
+    # silently excluded every other brand from scoring entirely, no matter
+    # how well they'd have matched (e.g. "just a 1,000,000 Kč budget, no
+    # other requirements" returned Škoda-only results). `sort="price_asc"`
+    # below is kept as a defensive fallback so that if the catalog outgrows
+    # this cap, truncation degrades to "missing the priciest matches"
+    # rather than reintroducing a single-brand monoculture.
+    CANDIDATE_POOL_SIZE = 5000
+
     def _score(self, vehicle: VehicleSummary, requirements: StructuredRequirements) -> float:
         """Computes a soft-preference match score for one already
         hard-filtered candidate vehicle.
@@ -115,8 +132,9 @@ class RecommendationEngine:
             budget_max=requirements.budget_max.amount if requirements.budget_max else None,
             currency=requirements.budget_max.currency if requirements.budget_max else "CZK",
             market=market,
+            sort="price_asc",
             page=1,
-            page_size=100,
+            page_size=self.CANDIDATE_POOL_SIZE,
         ).items
 
         scored = sorted(
