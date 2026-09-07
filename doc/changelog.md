@@ -21,6 +21,23 @@ to one or more related commits.
 
 ---
 
+## 0.2.16 — 2026-09-07
+
+### Fixed
+- The manufacturer/engine-type/drivetrain filter row scrolled away with
+  the results, instead of staying visible while browsing the catalog.
+  `app/ui/pages.py`'s single `results()` refreshable rendered the title/
+  sort/filters and the card grid as one block inside the same scrollable
+  column; it's now split into `results_header()` (title, sort control,
+  filter_bar - a `shrink-0` sibling *outside* the scrollable column) and
+  `results_body()` (loading/error state, the card grid - the only part
+  that still scrolls, in its own `overflow-y-auto` column). A new
+  `refresh_results()` helper refreshes both halves together at every call
+  site that used to refresh the old single `results` (filter/sort
+  changes, restart, wizard completion, chat turns); the infinite-scroll
+  handler's own fallback re-render now targets `results_body()` alone,
+  since loading another page never changes the title/count or filters.
+
 ## 0.2.15 — 2026-09-07
 
 ### Added

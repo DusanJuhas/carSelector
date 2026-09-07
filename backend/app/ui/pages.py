@@ -40,10 +40,10 @@ class _SortState:
 
 @dataclass
 class _ResultsGridRef:
-    """Holds the current `results_grid` container across `results()`
+    """Holds the current `results_grid` container across `results_body()`
     rebuilds, so `on_results_scroll` can append later pages into the grid
     that's actually on screen right now instead of the one from whenever
-    it was captured - `results()` reruns (and returns a brand new
+    it was captured - `results_body()` reruns (and returns a brand new
     container) on every filter/sort/narrow change, not just once.
     """
 
@@ -58,12 +58,13 @@ async def index() -> None:
     of one mounted React tree.
 
     Event handlers are all defined before any UI is built: the
-    refreshable render functions built further down (`chrome`/`results`/
-    `drawer`) are invoked once immediately, synchronously, to draw the
-    initial page - and their bodies pass these handlers to child
-    components as plain values (button callbacks), which requires the
-    names to already be bound. The handlers' own bodies are free to
-    reference `chrome`/`results`/`drawer`/`chat_refresh` even though
+    refreshable render functions built further down (`chrome`/
+    `results_header`/`results_body`/`drawer`) are invoked once
+    immediately, synchronously, to draw the initial page - and their
+    bodies pass these handlers to child components as plain values
+    (button callbacks), which requires the names to already be bound.
+    The handlers' own bodies are free to reference `chrome`/
+    `results_header`/`results_body`/`drawer`/`chat_refresh` even though
     those are defined later, since a handler body only actually runs
     later too (on a click, well after page construction has finished).
     """
@@ -94,7 +95,7 @@ async def index() -> None:
 
     def refresh_all() -> None:
         chrome.refresh()
-        results.refresh()
+        refresh_results()
         loading_more_indicator.refresh()
         drawer.refresh()
         chat_refresh()
@@ -130,7 +131,7 @@ async def index() -> None:
         sort_state.option = value
         if not conv.has_narrowed and value in BACKEND_SORT_OPTIONS:
             await catalog_state.load_first_page(value)
-        results.refresh()
+        refresh_results()
 
     # How close to the bottom (px) of the scrollable results column
     # triggers the next page - far enough that the fetch has a chance to
@@ -151,13 +152,15 @@ async def index() -> None:
 
         The newly-fetched page is appended into the existing grid
         container (`append_car_cards`) rather than going through a full
-        `results.refresh()` - refreshing would re-render every card
+        `results_body.refresh()` - refreshing would re-render every card
         accumulated so far, not just the new page, and once enough pages
         pile up that single re-render's message exceeds NiceGUI's ~1MB
-        websocket limit and disconnects the client. `results.refresh()`
+        websocket limit and disconnects the client. `results_body.refresh()`
         is still used as a fallback for the "Moje pořadí" custom-sort
         grid, whose drag handling is only wired up once per full render
-        (see `results_grid`/`append_car_cards`'s docstrings).
+        (see `results_grid`/`append_car_cards`'s docstrings) - the header
+        (title/sort/filters) never needs it here, since loading another
+        page changes neither the catalog's reported total nor the filters.
         """
         if conv.has_narrowed or not catalog_state.has_more or catalog_state.is_loading_more:
             return
@@ -183,26 +186,35 @@ async def index() -> None:
         if results_grid_ref.row is not None and sort_state.option != "custom" and new_cars:
             append_car_cards(results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id))
         else:
-            results.refresh()
+            results_body.refresh()
 
     async def change_brand(brand_id: int | None) -> None:
         catalog_state.brand_id = brand_id
         await catalog_state.load_first_page(backend_sort())
-        results.refresh()
+        refresh_results()
 
     async def change_fuel_type(fuel_type: FuelType | None) -> None:
         catalog_state.fuel_type = fuel_type
         await catalog_state.load_first_page(backend_sort())
-        results.refresh()
+        refresh_results()
 
     async def change_drivetrain(drivetrain: Drivetrain | None) -> None:
         catalog_state.drivetrain = drivetrain
         await catalog_state.load_first_page(backend_sort())
-        results.refresh()
+        refresh_results()
 
     def reorder(order: list[int]) -> None:
         app.storage.user[CUSTOM_ORDER_KEY] = order
-        results.refresh()
+        refresh_results()
+
+    def refresh_results() -> None:
+        """Refreshes both halves of the results column (see the split
+        between `results_header` and `results_body` below) - every call
+        site that used to just refresh the old single `results` needs
+        both, since a filter/sort change can affect the title/count text
+        (header) as well as the grid itself (body)."""
+        results_header.refresh()
+        results_body.refresh()
 
     with ui.column().classes("relative flex h-screen w-full flex-col overflow-hidden bg-bg text-text gap-0"):
 
@@ -215,25 +227,15 @@ async def index() -> None:
         with ui.row().classes("relative flex min-h-0 flex-1 w-full gap-0"):
             chat_refresh = chat_column(conv, send)
 
-            with ui.column().classes("min-w-0 h-full flex-1 overflow-y-auto px-7 py-6 gap-0").on(
-                "scroll",
-                on_results_scroll,
-                throttle=0.2,
-                js_handler=(
-                    "(event) => emit({"
-                    "scrollTop: event.target.scrollTop, "
-                    "scrollHeight: event.target.scrollHeight, "
-                    "clientHeight: event.target.clientHeight"
-                    "})"
-                ),
-            ):
+            with ui.column().classes("min-w-0 h-full flex-1 flex flex-col overflow-hidden gap-0"):
 
                 @ui.refreshable
-                def results() -> None:
+                def results_header() -> None:
+                    # Title/sort/filters - kept OUTSIDE the scrollable
+                    # column below (a `shrink-0` sibling above it, not
+                    # part of its scrolled content) so they stay in view
+                    # while only the card grid scrolls underneath.
                     cars = displayed_cars()
-                    has_results = len(cars) > 0
-                    show_catalog_error = not conv.has_narrowed and catalog_state.error and not has_results
-                    show_catalog_loading = not conv.has_narrowed and catalog_state.is_loading
 
                     with ui.row().classes("mb-4.5 w-full flex-wrap items-start justify-between gap-3"):
                         with ui.column().classes("gap-0"):
@@ -265,38 +267,61 @@ async def index() -> None:
                             "mb-4 w-full rounded-control bg-flag-bg px-3.5 py-2.5 text-[13px] text-flag"
                         )
 
-                    if show_catalog_loading:
-                        ui.label(t("results.loadingCatalog")).classes(
-                            "w-full px-5 py-10 text-center text-[13px] text-subtext"
-                        )
-                    elif show_catalog_error:
-                        ui.label(t("results.catalogError")).classes(
-                            "w-full px-5 py-10 text-center text-[13px] text-subtext"
-                        )
-                    else:
-                        reorderable = sort_state.option == "custom"
-                        results_grid_ref.row = results_grid(
-                            cars,
-                            lambda car: open_detail(car.configuration_id),
-                            reorderable,
-                            reorder if reorderable else None,
-                        )
+                with ui.column().classes("w-full shrink-0 px-7 pt-6 gap-0"):
+                    results_header()
 
-                results()
+                with ui.column().classes("min-h-0 min-w-0 flex-1 overflow-y-auto px-7 pb-6 gap-0").on(
+                    "scroll",
+                    on_results_scroll,
+                    throttle=0.2,
+                    js_handler=(
+                        "(event) => emit({"
+                        "scrollTop: event.target.scrollTop, "
+                        "scrollHeight: event.target.scrollHeight, "
+                        "clientHeight: event.target.clientHeight"
+                        "})"
+                    ),
+                ):
 
-                @ui.refreshable
-                def loading_more_indicator() -> None:
-                    # Infinite scroll (see on_results_scroll) replaces the
-                    # old "Load more" button - this is just the in-flight
-                    # indicator for the fetch it triggers. Refreshed on its
-                    # own (not as part of `results()`) since it needs to
-                    # toggle far more often than the grid itself changes.
-                    if not conv.has_narrowed and catalog_state.is_loading_more:
-                        with ui.row().classes("mt-4 w-full items-center justify-center gap-2"):
-                            ui.spinner(size="1.25rem")
-                            ui.label(t("results.loadingMore")).classes("text-[13px] text-subtext")
+                    @ui.refreshable
+                    def results_body() -> None:
+                        cars = displayed_cars()
+                        has_results = len(cars) > 0
+                        show_catalog_error = not conv.has_narrowed and catalog_state.error and not has_results
+                        show_catalog_loading = not conv.has_narrowed and catalog_state.is_loading
 
-                loading_more_indicator()
+                        if show_catalog_loading:
+                            ui.label(t("results.loadingCatalog")).classes(
+                                "w-full px-5 py-10 text-center text-[13px] text-subtext"
+                            )
+                        elif show_catalog_error:
+                            ui.label(t("results.catalogError")).classes(
+                                "w-full px-5 py-10 text-center text-[13px] text-subtext"
+                            )
+                        else:
+                            reorderable = sort_state.option == "custom"
+                            results_grid_ref.row = results_grid(
+                                cars,
+                                lambda car: open_detail(car.configuration_id),
+                                reorderable,
+                                reorder if reorderable else None,
+                            )
+
+                    results_body()
+
+                    @ui.refreshable
+                    def loading_more_indicator() -> None:
+                        # Infinite scroll (see on_results_scroll) replaces the
+                        # old "Load more" button - this is just the in-flight
+                        # indicator for the fetch it triggers. Refreshed on its
+                        # own (not as part of `results_body()`) since it needs
+                        # to toggle far more often than the grid itself changes.
+                        if not conv.has_narrowed and catalog_state.is_loading_more:
+                            with ui.row().classes("mt-4 w-full items-center justify-center gap-2"):
+                                ui.spinner(size="1.25rem")
+                                ui.label(t("results.loadingMore")).classes("text-[13px] text-subtext")
+
+                    loading_more_indicator()
 
             @ui.refreshable
             def drawer() -> None:
