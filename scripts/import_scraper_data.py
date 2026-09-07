@@ -109,6 +109,7 @@ BRAND_NAMES = {
     "mercedes-benz": "Mercedes-Benz",
     "mazda": "Mazda",
     "bmw": "BMW",
+    "dacia": "Dacia",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {
@@ -120,7 +121,9 @@ _SCRAPER_TO_FUEL_TYPE = {
 }
 
 _KW_RE = re.compile(r"(\d+)\s*kW", re.IGNORECASE)
-_AWD_RE = re.compile(r"4x4|4motion|awd|quattro|4matic|xdrive", re.IGNORECASE)
+# "4×4" (Dacia's own marker, e.g. "hybrid 150 4×4") uses the real
+# multiplication sign U+00D7, not a literal "x" - "4x4" alone wouldn't match it.
+_AWD_RE = re.compile(r"4x4|4×4|4motion|awd|quattro|4matic|xdrive", re.IGNORECASE)
 # \d{2,3}d\b: BMW's own diesel suffix ("118d", "320d", "M340d" - fused
 # directly onto the trim's number with no space, unlike Mercedes-Benz's
 # "220 d" - see bmw.py's module docstring). Doesn't need a leading \b

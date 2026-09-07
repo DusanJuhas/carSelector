@@ -166,13 +166,23 @@ sources:
   # bmw.cz specifically) — URL not independently verified, re-check before
   # building a discoverer against it.
 
+  # Verified 2026-09-07 - the page is a single listing (like Škoda/BMW),
+  # server-rendered, one "Ceník" link per model, no pdf_pattern needed
+  # (DaciaDiscoverer reads the model straight off each link's own URL
+  # slug instead - see that module's docstring). The full current CZ
+  # lineup is 6 models, not the 3 originally placeholder-listed above
+  # (Logan/Lodgy are no longer sold new) - Spring (electric-only) and
+  # Sandero Stepway are their own price lists, not folded into
+  # Sandero/Duster's. One PDF per model (like Kia/VW, unlike Škoda's/
+  # BMW's/Mercedes-Benz's combined documents) - DaciaParser extracts the
+  # model name from each PDF's own cover page.
   - brand: dacia
     country: cz
     source_url: "https://www.dacia.cz/ceniky-a-brozury.html"
     pdf_pattern: null
     parser_key: dacia
-    active: false
-    models: [Sandero, Duster, Jogger]
+    active: true
+    models: [Spring, Sandero, Sandero Stepway, Jogger, Duster, Bigster]
 
   # Verified 2026-08-29. Unlike every other brand above, Mercedes-Benz
   # doesn't publish a PDF per model at all - the ceniky.html page below

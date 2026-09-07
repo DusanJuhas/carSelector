@@ -21,6 +21,25 @@ to one or more related commits.
 
 ---
 
+## 0.2.15 — 2026-09-07
+
+### Added
+- Dacia support in the scraper: discovery + parser for the full current CZ
+  lineup (Spring, Sandero, Sandero Stepway, Jogger, Duster, Bigster — one
+  PDF price list per model, unlike Škoda/BMW's single combined listing),
+  with PDF test fixtures and parser tests
+  (`scraper/monitors/discovery/dacia.py`, `scraper/parsers/dacia.py`).
+  Jogger's price list holds two full tables on one page (5-seat and 7-seat
+  versions of the same trim/engine lineup); the seat count is folded into
+  each variant's name so the two tables' otherwise-identical rows don't
+  collapse into each other on import.
+
+### Fixed
+- `scripts/import_scraper_data.py`'s `infer_drivetrain` only matched a
+  literal "4x4" AWD marker — Dacia's own "4×4" (Duster/Bigster's hybrid
+  4×4 trims) uses the real multiplication sign (U+00D7), not the letter
+  "x", so those variants were silently defaulting to FWD.
+
 ## 0.2.14 — 2026-09-06
 
 ### Fixed
