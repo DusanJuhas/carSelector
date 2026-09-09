@@ -21,6 +21,12 @@ for context rather than as instructions to follow today. This index says which i
 | [`po/MVP.md`](po/MVP.md) | What's in scope for the MVP and why. |
 | [`po/Version2.md`](po/Version2.md) | What was deliberately deferred past MVP, and why it can wait. |
 
+## Proposals (not yet implemented)
+
+| Doc | Covers |
+|---|---|
+| [`arch/deployment.md`](arch/deployment.md) | Proposed Docker/Compose container architecture and free/cheap hosting options. No `Dockerfile`/`docker-compose.yml` exist yet — move to "Source of truth" once they do. |
+
 ## Historical / brainstorm (context, not current spec)
 
 | Doc | Covers |
