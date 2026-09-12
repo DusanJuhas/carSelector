@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from .base import BaseDiscoverer
 from .bmw import BmwDiscoverer
+from .cupra import CupraDiscoverer
 from .dacia import DaciaDiscoverer
 from .ford import FordDiscoverer
 from .hyundai import HyundaiDiscoverer
@@ -31,4 +32,5 @@ DISCOVERERS: dict[str, type[BaseDiscoverer]] = {
     "bmw": BmwDiscoverer,
     "dacia": DaciaDiscoverer,
     "ford": FordDiscoverer,
+    "cupra": CupraDiscoverer,
 }

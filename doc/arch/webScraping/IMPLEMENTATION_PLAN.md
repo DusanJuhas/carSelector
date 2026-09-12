@@ -113,20 +113,26 @@ the full current CZ lineup, ICE/MHEV/HEV/EV), Ford (Puma/Kuga/Mustang/
 Bronco — a genuine trim x engine price MATRIX, structurally unlike every
 other brand's parser here; Explorer/Puma Gen-E/Mustang Mach-E/Tourneo
 Courier/Connect/Custom/Puma ST/Capri don't fit this parser's column model
-yet, see parsers/ford.py's module docstring), optional equipment for Škoda
-(one of three formats — "Samostatné prvky výbavy" / standalone equipment
-items).
+yet, see parsers/ford.py's module docstring), CUPRA (Leon/Leon
+Sportstourer/Formentor/Terramar/Born/Raval, ICE/MHEV/PHEV/EV — Ateca sold
+stock-only and Tavascan not yet on sale in CZ have no price list of their
+own to scrape, see discovery/cupra.py's module docstring), optional
+equipment for Škoda (one of three formats — "Samostatné prvky výbavy" /
+standalone equipment items).
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/
-Mazda/BMW/Dacia/Ford equipment, Kia/Toyota/Hyundai/Mercedes-Benz/Mazda/BMW/
-Dacia/Ford release-date extraction (see Data coverage above), the rest of
-Ford's current CZ lineup (see Done, above), Renault, and the rest of
-`doc/carVendors.md`'s "Mainstream brands" list beyond the original
-top-10-by-CZ-market-share scope (Peugeot, MG, Cupra, Opel, Citroën, Audi,
-Seat, Volvo, Suzuki, Nissan, Honda, Mitsubishi, Fiat, ...). Details and the
-reasoning for scaling one piece at a time (vertical slice, verify on real
-data, then generalize) are in the phases above.
+Mazda/BMW/Dacia/Ford/CUPRA equipment, Kia/Toyota/Hyundai/Mercedes-Benz/
+Mazda/BMW/Dacia/Ford/CUPRA release-date extraction (see Data coverage
+above - CUPRA's own disclaimer text would actually match
+`extract_release_date`'s date-format pattern, but it's on the price-table
+page, not the cover page that helper reads), the rest of Ford's current CZ
+lineup (see Done, above), Renault, and the rest of `doc/carVendors.md`'s
+"Mainstream brands" list beyond the original top-10-by-CZ-market-share
+scope (Peugeot, MG, Opel, Citroën, Audi, Seat, Volvo, Suzuki, Nissan,
+Honda, Mitsubishi, Fiat, ...). Details and the reasoning for scaling one
+piece at a time (vertical slice, verify on real data, then generalize)
+are in the phases above.
 
 There's now a manual/periodic import step from this scraper's database
 (`storage/scraper.db`, repo root — see `storage/README.md`) into the

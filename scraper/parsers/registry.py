@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from .base import BaseParser
 from .bmw import BmwParser
+from .cupra import CupraParser
 from .dacia import DaciaParser
 from .ford import FordParser
 from .hyundai import HyundaiParser
@@ -32,4 +33,5 @@ PARSERS: dict[str, type[BaseParser]] = {
     "bmw": BmwParser,
     "dacia": DaciaParser,
     "ford": FordParser,
+    "cupra": CupraParser,
 }

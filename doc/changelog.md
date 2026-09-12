@@ -21,6 +21,31 @@ to one or more related commits.
 
 ---
 
+## 0.2.20 — 2026-09-12
+
+### Added
+- CUPRA support in the scraper: discovery + parser for Leon, Leon
+  Sportstourer, Formentor, Terramar, Born and Raval - 6 of CUPRA's 8
+  current CZ nameplates (Ateca is sold stock-only and Tavascan isn't yet
+  on sale in CZ, so neither has a price list of its own to scrape), with
+  PDF test fixtures and parser tests
+  (`scraper/monitors/discovery/cupra.py`, `scraper/parsers/cupra.py`).
+  CUPRA's price lists read like Kia's (a trim heading, then one row per
+  engine) rather than Ford's column matrix; some documents (Leon,
+  Formentor, Terramar) hold a second full price table further into the
+  same PDF for a special edition ("Tribe", "VZ5", "Tribe Edition") -
+  `CupraParser` reads every such table on a page-by-page basis rather than
+  assuming one table per document. `release_date` still isn't populated
+  (falls back to the download date, like every other brand added so far),
+  but for a new reason: CUPRA's own disclaimer text would actually satisfy
+  the shared `extract_release_date` helper's date-format pattern, it's
+  just on the price-table page rather than the cover page that helper
+  reads.
+- Wired CUPRA data into `scripts/import_scraper_data.py` (brand display
+  name; `infer_drivetrain`'s AWD regex didn't recognize CUPRA's own "4WD"
+  marker, e.g. "2.0 TSI 204k DSG 4WD" - same class of gap as Dacia's
+  "4×4" and BMW's "xDrive").
+
 ## 0.2.19 — 2026-09-07
 
 ### Fixed

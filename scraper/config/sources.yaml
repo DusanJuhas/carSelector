@@ -278,3 +278,28 @@ sources:
       3 Series Sedan, i3 Sedan, 3 Series Touring, 4 Series Coupé, 4 Series Cabrio,
       4 Series Gran Coupé, i4 Gran Coupé, 5 Series Sedan, i5 Sedan, 5 Series Touring,
       i5 Touring, 7 Series, i7, X1, iX1, X2, iX2, X3, iX3, X5, X6, X7, XM, iX]
+
+  # Verified 2026-09-12 - a single listing page (like Škoda/BMW/Dacia),
+  # server-rendered, one "Ceník" link per model. Unlike those three, the
+  # link itself is a client-side download handler (href="#") - the real
+  # path lives in a data-gtm-element-url attribute, and the MODEL is
+  # identified by a sibling data-gtm-event attribute, not by anchor text
+  # (every model's link just says "Ceník") - see CupraDiscoverer's own
+  # docstring. pdf_pattern isn't used (matched by attribute, not a URL
+  # regex). CUPRA's price lists read like Kia's (a trim heading, then one
+  # row per engine underneath - not BMW's/Ford's column matrix); each
+  # document can hold more than one such table (e.g. Leon's own "Tribe"
+  # special edition gets a second full table later in the same PDF, all
+  # read the same way - CupraParser doesn't special-case it).
+  #
+  # 6 of CUPRA's 8 current CZ nameplates have a price list of their own -
+  # Ateca (sold stock-only) and Tavascan (CZ sales not yet started as of
+  # this verification) don't, and are omitted rather than left as
+  # placeholders with no discoverable link.
+  - brand: cupra
+    country: cz
+    source_url: "https://www.cupraofficial.cz/nabidky/ceniky-a-katalogy"
+    pdf_pattern: null
+    parser_key: cupra
+    active: true
+    models: [Leon, Leon Sportstourer, Formentor, Terramar, Born, Raval]
