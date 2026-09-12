@@ -112,6 +112,7 @@ BRAND_NAMES = {
     "dacia": "Dacia",
     "ford": "Ford",
     "cupra": "CUPRA",
+    "renault": "Renault",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {

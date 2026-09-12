@@ -248,13 +248,26 @@ sources:
     active: true
     models: [Puma, Kuga, Mustang, Bronco]
 
+  # Verified 2026-09-12 - a single listing page (like Škoda/BMW/Dacia),
+  # server-rendered, one plain "Ceník" link per model, no pdf_pattern
+  # needed. Renault shares its parent Renault Group's own CDN with Dacia
+  # (cdn.group.renault.com, /ren/ instead of /dac/), but the price-list
+  # PDF template is different - a trim heading + one row per engine
+  # underneath (closer to Kia's shape), see RenaultParser's own docstring.
+  # Full current CZ personal-car lineup with a price list of its own: the
+  # combustion/hybrid Clio/Captur/Symbioz/Arkana/Austral/Espace/Rafale,
+  # plus five "e-tech elektrický" (electric-only) cars under revived
+  # nameplates - Twingo, Renault 4 ("4"), Renault 5 ("5"), Megane, Scenic.
+  # Kangoo/Trafic/Master (commercial vehicles, also on this same page,
+  # each with their own combustion and electric price lists) are out of
+  # scope, same "personal cars only" convention as every other brand here.
   - brand: renault
     country: cz
     source_url: "https://www.renault.cz/ceniky-a-brozury.html"
     pdf_pattern: null
     parser_key: renault
-    active: false
-    models: [Clio, Captur]
+    active: true
+    models: [Clio, Captur, Symbioz, Arkana, Austral, Espace, Rafale, Twingo, "4", "5", Megane, Scenic]
 
   # Verified 2026-08-29 - the page is reachable now (the "not fetch-
   # verified" note above predates this). Unlike Mercedes-Benz/Mazda's

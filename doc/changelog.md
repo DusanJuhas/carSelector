@@ -21,6 +21,30 @@ to one or more related commits.
 
 ---
 
+## 0.2.21 — 2026-09-12
+
+### Added
+- Renault support in the scraper: discovery + parser for the full current
+  CZ personal-car lineup - Clio, Captur, Symbioz, Arkana, Austral, Espace,
+  Rafale, plus the electric Twingo, Renault 4, Renault 5, Megane and
+  Scenic (Kangoo/Trafic/Master commercial vehicles are out of scope) -
+  with PDF test fixtures and parser tests
+  (`scraper/monitors/discovery/renault.py`, `scraper/parsers/renault.py`).
+  Renault shares its parent Renault Group's own CDN with Dacia
+  (cdn.group.renault.com), but its own price-list template reads like
+  Kia's (a trim heading, then one row per engine) rather than Dacia's;
+  row shape varies even within Renault's own documents (Twingo's price
+  list omits the promotional-price column entirely, 2 trailing numeric
+  columns instead of every other document's 3) - `RenaultParser` counts
+  the trailing all-digit columns per row rather than assuming a fixed
+  count. "Renault 4"/"Renault 5" are stored as bare `model` values ("4"/
+  "5", matching the brand+model+trim display convention) - sources.yaml
+  quotes them in the `models` list, learning from the exact bug an
+  unquoted Mazda "3" caused earlier (see 0.2.9's Fixed entry).
+- Wired Renault data into `scripts/import_scraper_data.py` (brand display
+  name; Rafale's own "4×4" AWD marker and diesel markers already matched
+  the existing regexes, no fixes needed there).
+
 ## 0.2.20 — 2026-09-12
 
 ### Added

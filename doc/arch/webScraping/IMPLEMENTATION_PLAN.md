@@ -116,19 +116,23 @@ Courier/Connect/Custom/Puma ST/Capri don't fit this parser's column model
 yet, see parsers/ford.py's module docstring), CUPRA (Leon/Leon
 Sportstourer/Formentor/Terramar/Born/Raval, ICE/MHEV/PHEV/EV — Ateca sold
 stock-only and Tavascan not yet on sale in CZ have no price list of their
-own to scrape, see discovery/cupra.py's module docstring), optional
-equipment for Škoda (one of three formats — "Samostatné prvky výbavy" /
-standalone equipment items).
+own to scrape, see discovery/cupra.py's module docstring), Renault (Clio/
+Captur/Symbioz/Arkana/Austral/Espace/Rafale plus the electric Twingo/
+Renault 4/Renault 5/Megane/Scenic — the full current CZ personal-car
+lineup, ICE/MHEV/HEV/PHEV/EV; Kangoo/Trafic/Master commercial vehicles are
+out of scope), optional equipment for Škoda (one of three formats —
+"Samostatné prvky výbavy" / standalone equipment items).
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/
-Mazda/BMW/Dacia/Ford/CUPRA equipment, Kia/Toyota/Hyundai/Mercedes-Benz/
-Mazda/BMW/Dacia/Ford/CUPRA release-date extraction (see Data coverage
-above - CUPRA's own disclaimer text would actually match
-`extract_release_date`'s date-format pattern, but it's on the price-table
-page, not the cover page that helper reads), the rest of Ford's current CZ
-lineup (see Done, above), Renault, and the rest of `doc/carVendors.md`'s
-"Mainstream brands" list beyond the original top-10-by-CZ-market-share
+Mazda/BMW/Dacia/Ford/CUPRA/Renault equipment, Kia/Toyota/Hyundai/
+Mercedes-Benz/Mazda/BMW/Dacia/Ford/CUPRA/Renault release-date extraction
+(see Data coverage above - CUPRA's and Renault's own disclaimer text would
+actually match `extract_release_date`'s date-format pattern, but it's on
+the price-table page, not the cover page that helper reads), the rest of
+Ford's current CZ lineup (see Done, above), and the rest of
+`doc/carVendors.md`'s "Mainstream brands" list beyond the original
+top-10-by-CZ-market-share
 scope (Peugeot, MG, Opel, Citroën, Audi, Seat, Volvo, Suzuki, Nissan,
 Honda, Mitsubishi, Fiat, ...). Details and the reasoning for scaling one
 piece at a time (vertical slice, verify on real data, then generalize)
