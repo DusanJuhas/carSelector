@@ -120,23 +120,31 @@ own to scrape, see discovery/cupra.py's module docstring), Renault (Clio/
 Captur/Symbioz/Arkana/Austral/Espace/Rafale plus the electric Twingo/
 Renault 4/Renault 5/Megane/Scenic — the full current CZ personal-car
 lineup, ICE/MHEV/HEV/PHEV/EV; Kangoo/Trafic/Master commercial vehicles are
-out of scope), optional equipment for Škoda (one of three formats —
-"Samostatné prvky výbavy" / standalone equipment items).
+out of scope), Opel (Corsa/Astra HB+ST/Mokka/Frontera/Grandland plus each
+one's own separate all-electric document — the full current CZ personal-
+car lineup, ICE/MHEV/PHEV/EV; Combo/Vivaro/Movano commercial vehicles are
+out of scope; unlike every other brand here, opel.cz's own listing page
+can't be fetched automatically at all — an Akamai WAF blocks at the TLS/
+network-fingerprint level, not just on missing headers — so
+`OpelDiscoverer` hardcodes the current document URLs directly instead of
+finding them on that page, see its own module docstring for the staleness
+risk that comes with that), optional equipment for Škoda (one of three
+formats — "Samostatné prvky výbavy" / standalone equipment items).
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/
-Mazda/BMW/Dacia/Ford/CUPRA/Renault equipment, Kia/Toyota/Hyundai/
-Mercedes-Benz/Mazda/BMW/Dacia/Ford/CUPRA/Renault release-date extraction
-(see Data coverage above - CUPRA's and Renault's own disclaimer text would
-actually match `extract_release_date`'s date-format pattern, but it's on
-the price-table page, not the cover page that helper reads), the rest of
-Ford's current CZ lineup (see Done, above), and the rest of
-`doc/carVendors.md`'s "Mainstream brands" list beyond the original
-top-10-by-CZ-market-share
-scope (Peugeot, MG, Opel, Citroën, Audi, Seat, Volvo, Suzuki, Nissan,
-Honda, Mitsubishi, Fiat, ...). Details and the reasoning for scaling one
-piece at a time (vertical slice, verify on real data, then generalize)
-are in the phases above.
+Mazda/BMW/Dacia/Ford/CUPRA/Renault/Opel equipment, Kia/Toyota/Hyundai/
+Mercedes-Benz/Mazda/BMW/Dacia/Ford/CUPRA/Renault/Opel release-date
+extraction (see Data coverage above - CUPRA's and Renault's own disclaimer
+text would actually match `extract_release_date`'s date-format pattern,
+but it's on the price-table page, not the cover page that helper reads;
+same gap for Opel's own campaign-window date), the rest of Ford's current
+CZ lineup (see Done, above), and the rest of `doc/carVendors.md`'s
+"Mainstream brands" list beyond the original top-10-by-CZ-market-share
+scope (Peugeot, MG, Citroën, Audi, Seat, Volvo, Suzuki, Nissan, Honda,
+Mitsubishi, Fiat, ...). Details and the reasoning for scaling one piece at
+a time (vertical slice, verify on real data, then generalize) are in the
+phases above.
 
 There's now a manual/periodic import step from this scraper's database
 (`storage/scraper.db`, repo root — see `storage/README.md`) into the

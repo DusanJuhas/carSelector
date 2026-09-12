@@ -21,6 +21,39 @@ to one or more related commits.
 
 ---
 
+## 0.2.22 — 2026-09-13
+
+### Added
+- Opel support in the scraper: discovery + parser for the current CZ
+  personal-car lineup - Corsa, Astra (hatchback and Sports Tourer body
+  styles), Mokka, Frontera and Grandland, each with its own combustion/
+  hybrid document plus its own separate all-electric document (Combo/
+  Vivaro/Movano commercial vehicles are out of scope) - with PDF test
+  fixtures and parser tests (`scraper/monitors/discovery/opel.py`,
+  `scraper/parsers/opel.py`). Opel's own price table is a genuine column
+  grid (trim/LCDV code/engine/fuel/transmission/price), closer to Ford's
+  matrix shape than Kia's/Renault's plain trim-heading list, with its own
+  set of column-position pitfalls not seen in Ford's own table (a
+  vertically-merged trim cell spanning several engine rows; wrapped
+  engine/transmission text split across the row's own baseline; wide
+  values in some columns starting past a naive midpoint boundary in either
+  direction) - see `OpelParser`'s module docstring for how each is solved.
+- Unlike every other brand here, opel.cz's own listing page can't be
+  fetched automatically at all - it sits behind an Akamai WAF blocking at
+  the TLS/network-fingerprint level, not just on missing headers (verified
+  even Windows' own curl.exe gets blocked the same way on endpoints
+  Python's `requests` gets through on). `OpelDiscoverer` hardcodes the
+  current 11 document URLs directly instead; `scripts/
+  download_opel_pricelists.py` (plus a thin `.bat` wrapper for a
+  non-technical manual re-fetch) exists to re-download them by hand once
+  the URLs eventually go stale (the path embeds a quarter marker that will
+  presumably roll over) - see both modules' own docstrings.
+- Wired Opel data into `scripts/import_scraper_data.py`: brand display
+  name, and a new `CDTI` alternative in the diesel-detection regex (Opel/
+  Stellantis's own diesel badge, not covered by the existing TDI/CRDI/
+  BMW-style-suffix patterns) - the existing AWD regex already matched
+  Opel's own "4x4" marker, no fix needed there.
+
 ## 0.2.21 — 2026-09-12
 
 ### Added

@@ -316,3 +316,42 @@ sources:
     parser_key: cupra
     active: true
     models: [Leon, Leon Sportstourer, Formentor, Terramar, Born, Raval]
+
+  # Verified 2026-09-12/13 - unlike every other brand here, this listing
+  # page (source_url) can't actually be fetched automatically at all:
+  # opel.cz sits behind an Akamai WAF that blocks `requests` at the TLS/
+  # network-fingerprint level (not just on missing headers - a full,
+  # realistic browser header set still gets a 403 for the listing page
+  # and even the bare homepage; verified separately that Windows' own
+  # curl.exe gets blocked the same way even on the PDF endpoints
+  # `requests` DOES get through on, ruling out a pure-shell workaround
+  # too). OpelDiscoverer therefore hardcodes the 11 current document URLs
+  # directly rather than finding them on this page - see its own
+  # docstring for the staleness risk that comes with that (the URL path
+  # embeds a quarter marker that will presumably roll over).
+  #
+  # `models` lists one entry per DOCUMENT rather than one per real-world
+  # model name (OpelDiscoverer's own contract) - Astra alone needs 3
+  # ("Astra HB"/"Astra ST"/"Astra Electric") to reach all of its own price
+  # data, even though OpelParser then normalizes all 3 down to plain
+  # "Astra" for the actual catalog. Opel's price table is a genuine column
+  # grid (trim/LCDV code/engine/.../price), closer to Ford's own matrix
+  # shape than Kia's/Renault's plain trim-heading list - see OpelParser's
+  # module docstring for the column-position parsing that needs and the
+  # boundary-classification pitfalls specific to this layout.
+  #
+  # 6 personal-car nameplates covered: Corsa, Astra (both body styles),
+  # Mokka, Frontera, Grandland - each with its own combustion/hybrid
+  # document plus its own separate all-electric one (Astra's two body
+  # styles share one Electric document instead of splitting it too).
+  # Combo/Vivaro/Movano commercial vehicles (also on this same listing
+  # page, each with their own price lists) are out of scope, same
+  # "personal cars only" convention as every other brand here.
+  - brand: opel
+    country: cz
+    source_url: "https://www.opel.cz/nastroje/katalogy-a-ceniky.html"
+    pdf_pattern: null
+    parser_key: opel
+    active: true
+    models: [Corsa, Corsa Electric, Astra HB, Astra ST, Astra Electric, Mokka, Mokka Electric,
+      Frontera, Frontera Electric, Grandland, Grandland Electric]
