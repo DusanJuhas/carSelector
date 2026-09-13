@@ -114,6 +114,7 @@ BRAND_NAMES = {
     "cupra": "CUPRA",
     "renault": "Renault",
     "opel": "Opel",
+    "peugeot": "Peugeot",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {
@@ -136,8 +137,11 @@ _AWD_RE = re.compile(r"4x4|4×4|4wd|4motion|awd|quattro|4matic|xdrive", re.IGNOR
 # since "M340d" has no word-boundary between "M" and "3".
 # CDTI: Opel/Stellantis's own diesel badge (e.g. "1.5 CDTI (96kW/130k)") -
 # needs its own alternative rather than folding into \bTDI\b, since "CDTI"
-# has no word boundary before the "TDI" substring it contains.
-_DIESEL_RE = re.compile(r"\bTDI\b|\bCRDI\b|\bCDTI\b|diesel|\d{2,3}d\b", re.IGNORECASE)
+# has no word boundary before the "TDI" substring it contains. HDi: fellow
+# Stellantis brand Peugeot's own diesel badge, almost always fused onto a
+# "Blue" prefix with no separator ("BlueHDi 130 EAT8") - same reasoning,
+# no leading \b since "Blue"+"HDi" has no word boundary between them either.
+_DIESEL_RE = re.compile(r"\bTDI\b|\bCRDI\b|\bCDTI\b|HDi\b|diesel|\d{2,3}d\b", re.IGNORECASE)
 
 # scraper's equipment_assignment.availability values that map onto
 # drivewise's AvailabilityStatus - PACKAGE is deliberately absent (no

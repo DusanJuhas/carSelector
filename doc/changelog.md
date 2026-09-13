@@ -21,6 +21,18 @@ to one or more related commits.
 
 ---
 
+## 0.2.23 — 2026-09-13
+
+### Added
+- Peugeot support in the scraper: discovery + parser for 208, 2008,
+  308 SW, 3008, 408, 5008 and Rifter (`scraper/parsers/peugeot.py`,
+  `scraper/monitors/discovery/peugeot.py`), with PDF fixtures and parser
+  tests. peugeot.cz's own listing page is Akamai-blocked like Opel's, but
+  the real PDFs live on an unblocked flipbook-viewer site
+  (peugeot.ecpaper.cz), so `PeugeotDiscoverer` resolves each model's
+  current PDF live instead of hardcoding it. Added `HDi` to
+  `scripts/import_scraper_data.py`'s diesel regex (BlueHDi's own badge).
+
 ## 0.2.22 — 2026-09-13
 
 ### Added

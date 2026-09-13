@@ -355,3 +355,35 @@ sources:
     active: true
     models: [Corsa, Corsa Electric, Astra HB, Astra ST, Astra Electric, Mokka, Mokka Electric,
       Frontera, Frontera Electric, Grandland, Grandland Electric]
+
+  # Verified 2026-09-13 - peugeot.cz's own listing page is blocked the
+  # same Akamai way Opel's own is (see that entry's own comment), but
+  # unlike Opel the actual PDFs live on a separate, unblocked site
+  # (peugeot.ecpaper.cz - a flipbook viewer whose page embeds the real
+  # Azure-hosted PDF). PeugeotDiscoverer hardcodes each model's own STABLE
+  # ecpaper.cz viewer-page URL and resolves today's actual PDF link out of
+  # that page live, so - unlike Opel's fully-hardcoded URLs - a routine
+  # price refresh doesn't go stale here; only a genuine slug change (a new
+  # model year) would need this source's own module updated by hand. See
+  # PeugeotDiscoverer's own docstring.
+  #
+  # Peugeot is a fellow Stellantis brand alongside Opel and its price
+  # table reads like a simplified version of Opel's own column grid, but
+  # PeugeotParser reads it by line sequence rather than column position -
+  # see its own module docstring for why, and for the two personal-car
+  # nameplates NOT covered (plain "308" hatchback has no working price
+  # list link; Traveller uses a different document structure entirely).
+  #
+  # 7 personal-car nameplates covered: 208, 2008, 308 SW, 3008, 408, 5008,
+  # Rifter (whose own document covers two body lengths, "Rifter"/"Rifter
+  # Long", plus two N1-light-commercial-homologation sections that are out
+  # of scope - see PeugeotParser's own docstring). Expert/Partner/Boxer
+  # commercial vehicles are out of scope, same "personal cars only"
+  # convention as every other brand here.
+  - brand: peugeot
+    country: cz
+    source_url: "https://www.peugeot.cz/uzitecne-odkazy/ceniky.html"
+    pdf_pattern: null
+    parser_key: peugeot
+    active: true
+    models: ["208", "2008", "308 SW", "3008", "408", "5008", Rifter]

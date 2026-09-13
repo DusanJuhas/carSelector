@@ -15,7 +15,7 @@ A list of passenger car brands with an active sales/dealer presence in the Czech
 | 7 | Ford | 7,842 | 3.2% | ✓ |
 | 8 | Renault | 7,510 | 3.0% | ✓ |
 | 9 | Mercedes-Benz | 8,364 | 3.4% | ✓ |
-| 10 | Peugeot | 5,412 | 2.3% | |
+| 10 | Peugeot | 5,412 | 2.3% | ✓ |
 | 11 | BMW | 5,779 | 2.3% | ✓ |
 | 12 | MG | 4,677 | 2.0% | |
 | 13 | Cupra | 4,200 | 1.8% | ✓ |
