@@ -14,6 +14,7 @@ from .hyundai import HyundaiParser
 from .kia import KiaParser
 from .mazda import MazdaParser
 from .mercedes_benz import MercedesBenzParser
+from .mg import MgParser
 from .opel import OpelParser
 from .peugeot import PeugeotParser
 from .renault import RenaultParser
@@ -40,4 +41,5 @@ PARSERS: dict[str, type[BaseParser]] = {
     "renault": RenaultParser,
     "opel": OpelParser,
     "peugeot": PeugeotParser,
+    "mg": MgParser,
 }

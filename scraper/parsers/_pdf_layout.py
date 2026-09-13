@@ -11,7 +11,10 @@ from datetime import date
 import pdfplumber
 
 LINE_TOLERANCE = 4  # tolerance (in points) for grouping words into a single line
-_RELEASE_DATE_RE = re.compile(r"Platnost od (\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})")
+# "(?:ceníku )?": MG's own cover page reads "Platnost ceníku od D. M. RRRR."
+# rather than every other brand's plain "Platnost od ..." - a harmless
+# widening since it only adds an alternative, not narrows the existing match.
+_RELEASE_DATE_RE = re.compile(r"Platnost (?:ceníku )?od (\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})")
 
 
 def group_into_lines(words: list[dict]) -> list[list[dict]]:

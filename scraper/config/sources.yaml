@@ -387,3 +387,29 @@ sources:
     parser_key: peugeot
     active: true
     models: ["208", "2008", "308 SW", "3008", "408", "5008", Rifter]
+
+  # Verified 2026-09-13 - unlike Opel/Peugeot, mgmotor-czech.cz has no
+  # bot-blocking at all; the homepage itself links every current model's
+  # own "Ceník" PDF directly (no separate listing page), same single-page
+  # shape as Škoda/BMW/Dacia's own discoverers. MgDiscoverer maps each PDF
+  # link's own filename to the model name MgParser's own cover-page
+  # extraction would produce for it - see MgDiscoverer's own docstring.
+  #
+  # MG's price table reads like Kia's/Renault's own (trim heading, then
+  # one row per engine), but with a wrinkle neither of those needed: a
+  # trim heading covering more than one row is a single cell vertically
+  # MERGED across the whole group (the same pattern OpelParser's own
+  # `_nearest_trim` solves there) - see MgParser's own module docstring,
+  # including for the two skipped stock-only/seasonal-promo tables and
+  # the model-name/release-date extraction quirks specific to this brand.
+  #
+  # All 7 of MG's current CZ nameplates are covered - unlike every other
+  # brand here, there's no separate commercial-vehicle lineup to exclude;
+  # MG only sells passenger cars in this market.
+  - brand: mg
+    country: cz
+    source_url: "https://www.mgmotor-czech.cz"
+    pdf_pattern: null
+    parser_key: mg
+    active: true
+    models: ["3", "S9 PHEV", ZS, HS, "4 EV Urban", "S5 EV", Cyberster]

@@ -135,24 +135,31 @@ Partner/Boxer commercial vehicles and Rifter's own N1-homologation
 sections are out of scope; peugeot.cz's own listing page is Akamai-blocked
 like Opel's, but `PeugeotDiscoverer` resolves each model's current PDF
 live from an unblocked flipbook-viewer site instead of hardcoding it, see
-its own module docstring), optional equipment for Škoda (one of three
-formats — "Samostatné prvky výbavy" / standalone equipment items).
+its own module docstring), MG (MG3/MGS9 PHEV/MG ZS/MG HS/MG4 EV Urban/
+MGS5 EV/MG Cyberster — MG's entire current CZ lineup, ICE/HEV/PHEV/EV,
+including genuinely rear-wheel-drive trims read via a new "zadní" check
+in `infer_drivetrain`; mgmotor-czech.cz has no bot-blocking at all, unlike
+Opel/Peugeot; `extract_release_date`'s own regex was widened to also
+match MG's "Platnost ceníku od ..." wording, so this is also the first of
+the recent additions with real per-document release dates instead of
+falling back to the download date), optional equipment for Škoda (one of
+three formats — "Samostatné prvky výbavy" / standalone equipment items).
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/
-Mazda/BMW/Dacia/Ford/CUPRA/Renault/Opel/Peugeot equipment, Kia/Toyota/
+Mazda/BMW/Dacia/Ford/CUPRA/Renault/Opel/Peugeot/MG equipment, Kia/Toyota/
 Hyundai/Mercedes-Benz/Mazda/BMW/Dacia/Ford/CUPRA/Renault/Opel/Peugeot
 release-date extraction (see Data coverage above - CUPRA's and Renault's
 own disclaimer text would actually match `extract_release_date`'s
 date-format pattern, but it's on the price-table page, not the cover page
 that helper reads; same gap for Opel's/Peugeot's own campaign-window
-date), the rest of Ford's current CZ lineup (see Done, above), Peugeot's
-own Traveller and plain-308, and the rest of `doc/carVendors.md`'s
-"Mainstream brands" list beyond the original top-10-by-CZ-market-share
-scope (MG, Citroën, Audi, Seat, Volvo, Suzuki, Nissan, Honda, Mitsubishi,
-Fiat, ...). Details and the reasoning for scaling one piece at a time
-(vertical slice, verify on real data, then generalize) are in the phases
-above.
+date - MG is the exception, see Done above), the rest of Ford's current
+CZ lineup (see Done, above), Peugeot's own Traveller and plain-308, and
+the rest of `doc/carVendors.md`'s "Mainstream brands" list beyond the
+original top-10-by-CZ-market-share scope (Citroën, Audi, Seat, Volvo,
+Suzuki, Nissan, Honda, Mitsubishi, Fiat, ...). Details and the reasoning
+for scaling one piece at a time (vertical slice, verify on real data,
+then generalize) are in the phases above.
 
 There's now a manual/periodic import step from this scraper's database
 (`storage/scraper.db`, repo root — see `storage/README.md`) into the

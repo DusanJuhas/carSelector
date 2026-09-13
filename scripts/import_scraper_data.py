@@ -115,6 +115,7 @@ BRAND_NAMES = {
     "renault": "Renault",
     "opel": "Opel",
     "peugeot": "Peugeot",
+    "mg": "MG",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {
@@ -131,6 +132,11 @@ _KW_RE = re.compile(r"(\d+)\s*kW", re.IGNORECASE)
 # "4WD" (CUPRA's own marker, e.g. "2.0 TSI 204k DSG 4WD") is yet another
 # spelling none of the others cover.
 _AWD_RE = re.compile(r"4x4|4×4|4wd|4motion|awd|quattro|4matic|xdrive", re.IGNORECASE)
+# MG's own POHON (drivetrain) column is printed per row, in Czech, and
+# kept verbatim in variant_name - "zadní" ("rear") is the one other
+# brands here don't expose plainly enough to be worth a general marker
+# for (see infer_drivetrain's own docstring on that gap).
+_RWD_RE = re.compile(r"\bzadní\b", re.IGNORECASE)
 # \d{2,3}d\b: BMW's own diesel suffix ("118d", "320d", "M340d" - fused
 # directly onto the trim's number with no space, unlike Mercedes-Benz's
 # "220 d" - see bmw.py's module docstring). Doesn't need a leading \b
@@ -211,7 +217,8 @@ def infer_drivetrain(variant_name: str) -> Drivetrain:
             AWD/4x4-style marker (4x4, 4Motion, AWD, quattro, 4MATIC, xDrive).
 
     Returns:
-        `Drivetrain.awd` if a marker was found, else `Drivetrain.fwd`.
+        `Drivetrain.awd` if a marker was found, else `Drivetrain.rwd` if
+        MG's own "zadní" ("rear") marker was found, else `Drivetrain.fwd`.
         RWD isn't distinguishable from the naming most brands here use for
         these segments, so defaulting the rest to fwd was accurate for
         them - BMW is the exception (plenty of genuinely rear-wheel-drive
@@ -221,9 +228,15 @@ def infer_drivetrain(variant_name: str) -> Drivetrain:
         knowing which model FAMILY a row belongs to, not just scanning
         its own text - out of scope for this brand-agnostic heuristic, so
         BMW's non-xDrive trims fall into the same accepted fwd-default gap
-        as everyone else's for now.
+        as everyone else's for now. MG doesn't share that gap: its own
+        price tables print POHON (drivetrain) explicitly per row, so
+        "zadní" is read directly rather than guessed.
     """
-    return Drivetrain.awd if _AWD_RE.search(variant_name) else Drivetrain.fwd
+    if _AWD_RE.search(variant_name):
+        return Drivetrain.awd
+    if _RWD_RE.search(variant_name):
+        return Drivetrain.rwd
+    return Drivetrain.fwd
 
 
 def extract_power_kw(text: str) -> int | None:

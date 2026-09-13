@@ -21,6 +21,21 @@ to one or more related commits.
 
 ---
 
+## 0.2.24 — 2026-09-13
+
+### Added
+- MG support in the scraper: discovery + parser for MG's full current CZ
+  lineup - MG3, MGS9 PHEV, MG ZS, MG HS, MG4 EV Urban, MGS5 EV, MG
+  Cyberster (`scraper/parsers/mg.py`, `scraper/monitors/discovery/mg.py`),
+  with PDF fixtures and parser tests. mgmotor-czech.cz has no bot-blocking
+  (unlike Opel/Peugeot), so discovery is a plain single-page scrape.
+  Widened `_pdf_layout.extract_release_date`'s regex ("Platnost ceníku
+  od ..." vs the usual "Platnost od ...") so MG's own release dates are
+  captured instead of falling back to the download date. Added RWD
+  detection to `scripts/import_scraper_data.py`'s `infer_drivetrain` (MG
+  is the first brand here to print drivetrain per row plainly enough to
+  read "zadní"/rear directly).
+
 ## 0.2.23 — 2026-09-13
 
 ### Added
