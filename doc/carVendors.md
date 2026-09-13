@@ -4,41 +4,41 @@ A list of passenger car brands with an active sales/dealer presence in the Czech
 
 ## Mainstream brands, ranked by 2025 registrations
 
-| Rank | Brand | Units (2025) | Market share |
-|------|-------|---------------|---------------|
-| 1 | Škoda | 83,950 | 33.7% |
-| 2 | Hyundai | 20,672 | 8.3% |
-| 3 | Toyota | 18,626 | 7.5% |
-| 4 | Volkswagen | 16,589 | 6.7% |
-| 5 | Dacia | 11,693 | 4.7% |
-| 6 | Kia | 10,871 | 4.4% |
-| 7 | Ford | 7,842 | 3.2% |
-| 8 | Renault | 7,510 | 3.0% |
-| 9 | Mercedes-Benz | 8,364 | 3.4% |
-| 10 | Peugeot | 5,412 | 2.3% |
-| 11 | BMW | 5,779 | 2.3% |
-| 12 | MG | 4,677 | 2.0% |
-| 13 | Cupra | 4,200 | 1.8% |
-| 14 | Opel | 3,657 | 1.5% |
-| 15 | Citroën | 3,397 | 1.4% |
-| 16 | Audi | — | — |
-| 17 | Seat | — | — |
-| 18 | Volvo | — | — |
-| 19 | Suzuki | — | — |
-| 20 | Mazda | — | — |
-| 21 | Nissan | — | — |
-| 22 | Honda | — | — |
-| 23 | Mitsubishi | — | — |
-| 24 | Fiat | — | — |
-| 25 | Subaru | — | — |
-| 26 | Lexus | — | — |
-| 27 | Jeep | — | — |
-| 28 | Alfa Romeo | — | — |
-| 29 | Land Rover | — | — |
-| 30 | Jaguar | — | — |
-| 31 | SsangYong / KGM | — | — |
-| 32 | smart | — | — |
-| 33 | Tesla | — | (-47.7% YoY) |
+| Rank | Brand | Units (2025) | Market share | Supported |
+|------|-------|---------------|---------------|:---------:|
+| 1 | Škoda | 83,950 | 33.7% | ✓ |
+| 2 | Hyundai | 20,672 | 8.3% | ✓ |
+| 3 | Toyota | 18,626 | 7.5% | ✓ |
+| 4 | Volkswagen | 16,589 | 6.7% | ✓ |
+| 5 | Dacia | 11,693 | 4.7% | ✓ |
+| 6 | Kia | 10,871 | 4.4% | ✓ |
+| 7 | Ford | 7,842 | 3.2% | ✓ |
+| 8 | Renault | 7,510 | 3.0% | ✓ |
+| 9 | Mercedes-Benz | 8,364 | 3.4% | ✓ |
+| 10 | Peugeot | 5,412 | 2.3% | |
+| 11 | BMW | 5,779 | 2.3% | ✓ |
+| 12 | MG | 4,677 | 2.0% | |
+| 13 | Cupra | 4,200 | 1.8% | ✓ |
+| 14 | Opel | 3,657 | 1.5% | ✓ |
+| 15 | Citroën | 3,397 | 1.4% | |
+| 16 | Audi | — | — | |
+| 17 | Seat | — | — | |
+| 18 | Volvo | — | — | |
+| 19 | Suzuki | — | — | |
+| 20 | Mazda | — | — | ✓ |
+| 21 | Nissan | — | — | |
+| 22 | Honda | — | — | |
+| 23 | Mitsubishi | — | — | |
+| 24 | Fiat | — | — | |
+| 25 | Subaru | — | — | |
+| 26 | Lexus | — | — | |
+| 27 | Jeep | — | — | |
+| 28 | Alfa Romeo | — | — | |
+| 29 | Land Rover | — | — | |
+| 30 | Jaguar | — | — | |
+| 31 | SsangYong / KGM | — | — | |
+| 32 | smart | — | — | |
+| 33 | Tesla | — | (-47.7% YoY) | |
 
 *Exact 2025 unit counts weren't publicly available for ranks 16–33 in the sources checked, but all are established, actively-selling brands in the Czech market.*
 
