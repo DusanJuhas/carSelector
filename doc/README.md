@@ -10,6 +10,7 @@ for context rather than as instructions to follow today. This index says which i
 |---|---|
 | [`api-contract.md`](api-contract.md) | Backend `/api/*` endpoint signatures and shared request/response shapes; `backend/app/schemas/` must match it. |
 | [`db/db-structure.md`](db/db-structure.md) | The actual PostgreSQL catalog schema (`brands/models/trims/powertrains/configurations/...`), matching `backend/app/models/`. |
+| [`db/troubleshooting-few-models.md`](db/troubleshooting-few-models.md) | Checklist (in Czech) when a fresh deployment (e.g. Render) shows only the 4 seeded cars — missing scraper import, ephemeral disk, `DATABASE_URL`. |
 | [`design-tokens.md`](design-tokens.md) | Colors/typography/spacing tokens used in `backend/app/ui/styles.py` (Tailwind `@theme`). |
 | [`arch/webScraping/`](arch/webScraping/) | The scraper's real, implemented architecture and current brand/model coverage — see `IMPLEMENTATION_PLAN.md` for status, `Car_Price_List_Architecture.md` for the longer-term target. |
 | [`prompt/CLAUDE.md`](prompt/CLAUDE.md) | Repo-wide conventions for Claude Code / any coding agent working in this repo. |
