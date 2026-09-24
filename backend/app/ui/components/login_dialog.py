@@ -94,7 +94,7 @@ def login_dialog(auth: AuthState, on_logged_in: Callable[[], None]) -> Callable[
         body.refresh()
 
     with ui.dialog() as dialog, ui.card().classes(
-        "w-full max-w-[420px] rounded-card border border-border bg-panel p-6 shadow-card animate-fade-in gap-3"
+        "w-full max-w-[420px] rounded-card border border-border bg-panel p-4 md:p-6 shadow-card animate-fade-in gap-3"
     ):
 
         @ui.refreshable

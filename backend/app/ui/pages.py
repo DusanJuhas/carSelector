@@ -87,7 +87,35 @@ class _ResultsGridRef:
     row: ui.row | None = None
 
 
-@ui.page("/")
+@dataclass
+class _MobileState:
+    """Page-local layout state that only matters below the `md` breakpoint
+    (768px) - on wider screens the chat and results columns sit side by
+    side and the results controls are always shown, whatever these say.
+
+    - `tab`: which single panel a phone shows - `"chat"` or `"results"`
+      (switched by the bottom tab bar, see `mobile_tabs` in `index`).
+    - `controls_open`: whether the sort/filter controls are expanded
+      above the results - collapsed by default so they don't push the
+      card list off a phone screen.
+    """
+
+    tab: str = "chat"
+    controls_open: bool = False
+
+
+# Hides an element below `md` only; the `!` is needed to beat nicegui.css's
+# unlayered `display: flex` on rows/columns (see app/ui/styles.py).
+MOBILE_HIDDEN = "max-md:hidden!"
+
+# `viewport-fit=cover` exposes the `env(safe-area-inset-*)` values the
+# bottom tab bar pads itself with; `interactive-widget=resizes-content`
+# makes Android Chrome shrink the page (not overlay it) when the on-screen
+# keyboard opens, keeping the chat input in view.
+MOBILE_VIEWPORT = "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+
+
+@ui.page("/", viewport=MOBILE_VIEWPORT)
 async def index() -> None:
     """Builds the whole app for one browser connection - NiceGUI gives
     each connection its own call of this function with private local
@@ -119,6 +147,7 @@ async def index() -> None:
     wizard_state = WizardState()
     sort_state = _SortState()
     narrowed_paging = _NarrowedPaging()
+    mobile_state = _MobileState()
     results_grid_ref = _ResultsGridRef()
 
     def custom_order() -> list[int]:
@@ -169,6 +198,9 @@ async def index() -> None:
     async def finish_wizard(requirements: StructuredRequirements, summary_message: str) -> None:
         await conv.send_wizard_answers(requirements, summary_message)
         narrowed_paging.reset()
+        # The wizard is a "just show me cars" path - on a phone, land on
+        # the results rather than on the chat summary it leaves behind.
+        set_mobile_tab("results")
         refresh_all()
 
     open_wizard_dialog = wizard_dialog(wizard_state, finish_wizard)
@@ -339,11 +371,33 @@ async def index() -> None:
         between `results_header` and `results_body` below) - every call
         site that used to just refresh the old single `results` needs
         both, since a filter/sort change can affect the title/count text
-        (header) as well as the grid itself (body)."""
+        (header) as well as the grid itself (body). Also the mobile tab
+        bar, whose "Výsledky" tab shows the same count."""
         results_header.refresh()
         results_body.refresh()
+        mobile_tabs.refresh()
 
-    with ui.column().classes("relative flex h-screen w-full flex-col overflow-hidden bg-bg text-text gap-0"):
+    def results_count() -> int:
+        return len(displayed_cars()) if conv.has_narrowed else catalog_state.total
+
+    def set_mobile_tab(tab: str) -> None:
+        """Switches which panel a phone shows. CSS-only (`MOBILE_HIDDEN`):
+        both panels stay built and keep their state (chat scroll position,
+        loaded result pages), and desktop ignores it entirely."""
+        mobile_state.tab = tab
+        if tab == "chat":
+            chat_panel.classes(remove=MOBILE_HIDDEN)
+            results_panel.classes(add=MOBILE_HIDDEN)
+        else:
+            chat_panel.classes(add=MOBILE_HIDDEN)
+            results_panel.classes(remove=MOBILE_HIDDEN)
+        mobile_tabs.refresh()
+
+    def toggle_mobile_controls() -> None:
+        mobile_state.controls_open = not mobile_state.controls_open
+        results_header.refresh()
+
+    with ui.column().classes("relative flex h-[100dvh] w-full flex-col overflow-hidden bg-bg text-text gap-0"):
 
         @ui.refreshable
         def chrome() -> None:
@@ -361,10 +415,20 @@ async def index() -> None:
 
         chrome()
 
-        with ui.row().classes("relative flex min-h-0 flex-1 w-full gap-0"):
-            chat_refresh = chat_column(conv, send)
+        # `overflow-clip`, not `-hidden`: the closed requirements drawer
+        # sits just off-screen (`translate-x-full`), and an `overflow:
+        # hidden` box can still be scrolled sideways (by focus/tap), which
+        # on a phone slid the whole layout left.
+        with ui.row().classes("relative flex min-h-0 flex-1 w-full flex-nowrap gap-0 overflow-clip"):
+            # Phones show one of these two panels at a time (see
+            # `set_mobile_tab`); chat first, since it's the app's main
+            # entry point.
+            with ui.column().classes("h-full w-full md:w-auto shrink-0 gap-0").mark("chat-panel") as chat_panel:
+                chat_refresh = chat_column(conv, send)
 
-            with ui.column().classes("min-w-0 h-full flex-1 flex flex-col overflow-hidden gap-0"):
+            with ui.column().classes(
+                f"min-w-0 h-full flex-1 flex flex-col overflow-hidden gap-0 {MOBILE_HIDDEN}"
+            ).mark("results-panel") as results_panel:
 
                 @ui.refreshable
                 def results_header() -> None:
@@ -373,30 +437,46 @@ async def index() -> None:
                     # part of its scrolled content) so they stay in view
                     # while only the card grid scrolls underneath.
                     cars = displayed_cars()
+                    # Sort/filters collapse behind a toggle on phones only.
+                    controls_hidden = "" if mobile_state.controls_open else MOBILE_HIDDEN
 
-                    with ui.row().classes("mb-4.5 w-full flex-wrap items-start justify-between gap-3"):
-                        with ui.column().classes("gap-0"):
+                    with ui.row().classes("mb-3 md:mb-4.5 w-full flex-wrap items-start justify-between gap-3"):
+                        with ui.column().classes("gap-0 max-md:min-w-0 max-md:flex-1"):
                             title = (
                                 t_count("results.title", len(cars))
                                 if conv.has_narrowed
                                 else t_count("results.browsingTitle", catalog_state.total)
                             )
-                            ui.label(title).classes("text-[19px] font-bold text-text")
+                            ui.label(title).classes("text-[17px] md:text-[19px] font-bold text-text")
                             ui.label(t("results.updated") if conv.has_narrowed else t("results.startPrompt")).classes(
                                 "mt-0.5 text-[13px] text-subtext"
                             )
-                        sort_control(sort_state.option, change_sort)
+                        ui.button(
+                            t("results.controlsToggle"),
+                            icon="tune",
+                            on_click=toggle_mobile_controls,
+                        ).props("flat no-caps").classes(
+                            "shrink-0 rounded-control border px-3 py-1.5 text-[13px] font-semibold md:hidden! "
+                            + (
+                                "border-accent bg-accent-soft text-accent"
+                                if mobile_state.controls_open
+                                else "border-border bg-panel-2 text-text"
+                            )
+                        )
+                        with ui.row().classes(f"gap-0 max-md:w-full {controls_hidden}").mark("sort-controls"):
+                            sort_control(sort_state.option, change_sort)
 
                     if not conv.has_narrowed:
-                        filter_bar(
-                            catalog_state.brands,
-                            catalog_state.brand_id,
-                            catalog_state.fuel_type,
-                            catalog_state.drivetrain,
-                            change_brand,
-                            change_fuel_type,
-                            change_drivetrain,
-                        )
+                        with ui.column().classes(f"w-full gap-0 {controls_hidden}"):
+                            filter_bar(
+                                catalog_state.brands,
+                                catalog_state.brand_id,
+                                catalog_state.fuel_type,
+                                catalog_state.drivetrain,
+                                change_brand,
+                                change_fuel_type,
+                                change_drivetrain,
+                            )
 
                     if conv.error is not None:
                         message = error_message(conv.error, auth_state.is_admin)
@@ -404,10 +484,10 @@ async def index() -> None:
                             "mb-4 w-full rounded-control bg-flag-bg px-3.5 py-2.5 text-[13px] text-flag"
                         )
 
-                with ui.column().classes("w-full shrink-0 px-7 pt-6 gap-0"):
+                with ui.column().classes("w-full shrink-0 px-4 pt-4 md:px-7 md:pt-6 gap-0"):
                     results_header()
 
-                with ui.column().classes("min-h-0 min-w-0 flex-1 overflow-y-auto px-7 pb-6 gap-0").on(
+                with ui.column().classes("min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-4 md:px-7 md:pb-6 gap-0").on(
                     "scroll",
                     on_results_scroll,
                     throttle=0.2,
@@ -464,6 +544,30 @@ async def index() -> None:
                 requirements_drawer(conv.requirements, conv.drawer_open, close_drawer)
 
             drawer()
+
+        @ui.refreshable
+        def mobile_tabs() -> None:
+            """Bottom tab bar, phones only - switches between the chat and
+            results panels (see `set_mobile_tab`). Pads itself by the iOS
+            home-indicator safe area (see `MOBILE_VIEWPORT`)."""
+            with ui.row().classes(
+                "w-full shrink-0 flex-nowrap gap-0 border-t border-border bg-panel "
+                "pb-[env(safe-area-inset-bottom)] md:hidden!"
+            ):
+                tabs = [
+                    ("chat", "forum", t("mobileTabs.chat")),
+                    ("results", "directions_car", f"{t('mobileTabs.results')} ({results_count()})"),
+                ]
+                for key, icon, label in tabs:
+                    active = mobile_state.tab == key
+                    ui.button(label, icon=icon, on_click=lambda key=key: set_mobile_tab(key)).props(
+                        "flat no-caps stack"
+                    ).classes(
+                        "min-h-14 flex-1 rounded-none py-1.5 text-[12px] font-semibold "
+                        + ("text-accent" if active else "text-subtext")
+                    )
+
+        mobile_tabs()
 
     await conv.begin()
     await catalog_state.load_brands()

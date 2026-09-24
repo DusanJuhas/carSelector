@@ -24,10 +24,10 @@ def _select(label: str, options: dict[object, str], value: object, on_change: Ca
         value: Currently selected option value.
         on_change: Called with the newly selected option's value.
     """
-    with ui.row().classes("items-center gap-2 text-[13px] text-subtext"):
-        ui.label(label)
+    with ui.row().classes("flex-nowrap items-center gap-2 text-[13px] text-subtext max-md:w-full"):
+        ui.label(label).classes("max-md:w-28 max-md:shrink-0")
         ui.select(options, value=value, on_change=lambda e: on_change(e.value)).classes(
-            "rounded-control border border-border bg-panel-2 px-2.5 py-1.5 text-[13px] font-semibold text-text"
+            "max-md:min-w-0 max-md:grow rounded-control border border-border bg-panel-2 px-2.5 py-1.5 text-[13px] font-semibold text-text"
         ).props("borderless dense options-dense")
 
 
@@ -51,7 +51,7 @@ def filter_bar(
         on_fuel_type_change: Called with the newly selected fuel type.
         on_drivetrain_change: Called with the newly selected drivetrain.
     """
-    with ui.row().classes("mb-3.5 w-full flex-wrap items-center gap-4"):
+    with ui.row().classes("mb-3.5 w-full flex-wrap items-center gap-4 max-md:gap-2.5"):
         brand_options: dict[object, str] = {None: t("results.filters.all")}
         brand_options.update({brand.id: brand.name for brand in brands})
         _select(t("results.filters.brand"), brand_options, brand_id, on_brand_change)

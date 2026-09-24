@@ -20,7 +20,7 @@ def requirements_drawer(requirements: list[UserRequirement], open_: bool, on_clo
     Args:
         requirements: Cards to list, one per populated `StructuredRequirements` field.
         open_: Whether the drawer is currently shown.
-        on_close: Called when the backdrop is clicked.
+        on_close: Called when the backdrop or the close button is clicked.
     """
     backdrop_classes = "absolute inset-0 z-10 transition-colors " + (
         "pointer-events-auto bg-black/25" if open_ else "pointer-events-none bg-transparent"
@@ -28,12 +28,19 @@ def requirements_drawer(requirements: list[UserRequirement], open_: bool, on_clo
     ui.element("div").classes(backdrop_classes).on("click", on_close)
 
     panel_classes = (
-        "absolute inset-y-0 right-0 z-20 w-[360px] overflow-y-auto border-l border-border bg-panel p-[22px] "
+        "absolute inset-y-0 right-0 z-20 w-full md:w-[360px] overflow-y-auto border-l border-border bg-panel p-4 md:p-[22px] "
         "shadow-card transition-transform duration-300 ease-out "
     ) + ("translate-x-0" if open_ else "translate-x-full")
 
     with ui.column().classes(panel_classes + " gap-0"):
-        ui.label(t("header.technicalRequirements")).classes("text-[16px] font-bold text-text")
+        with ui.row().classes("w-full flex-nowrap items-start justify-between gap-3"):
+            ui.label(t("header.technicalRequirements")).classes("text-[16px] font-bold text-text")
+            # Explicit close: on mobile the panel is full-width, leaving no
+            # backdrop to tap.
+            ui.button(t("requirements.close"), on_click=on_close).props("flat no-caps").classes(
+                "shrink-0 rounded-control border border-border bg-panel-2 px-3 py-1.5 text-[13px] font-semibold "
+                "text-text"
+            )
         ui.label(t("requirements.subtitle")).classes("mb-2 text-[12.5px] text-subtext")
 
         if not requirements:

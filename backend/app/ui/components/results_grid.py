@@ -9,6 +9,8 @@ from app.ui.i18n import t
 from app.ui.money import format_money
 from app.ui.sort import SORT_OPTIONS
 
+DRAG_HANDLE_CLASS = "drag-handle"
+
 
 def sort_control(value: str, on_change: Callable[[str], None]) -> None:
     """Builds the "Seřadit podle" sort dropdown.
@@ -18,10 +20,10 @@ def sort_control(value: str, on_change: Callable[[str], None]) -> None:
         on_change: Called with the newly selected option's value.
     """
     options = {option: t(f"results.sort.{option}") for option in SORT_OPTIONS}
-    with ui.row().classes("items-center gap-2 text-[13px] text-subtext"):
-        ui.label(t("results.sortBy"))
+    with ui.row().classes("flex-nowrap items-center gap-2 text-[13px] text-subtext max-md:w-full"):
+        ui.label(t("results.sortBy")).classes("max-md:w-28 max-md:shrink-0")
         ui.select(options, value=value, on_change=lambda e: on_change(e.value)).classes(
-            "rounded-control border border-border bg-panel-2 px-2.5 py-1.5 text-[13px] font-semibold text-text"
+            "max-md:min-w-0 max-md:grow rounded-control border border-border bg-panel-2 px-2.5 py-1.5 text-[13px] font-semibold text-text"
         ).props("borderless dense options-dense")
 
 
@@ -37,7 +39,7 @@ def _car_card(car: VehicleSummary, on_select: Callable[[VehicleSummary], None] |
     is_high_score = car.match_score is not None and car.match_score >= 90
     border_class = "border-accent" if car.top_pick else "border-border"
     with ui.column().classes(
-        "relative overflow-hidden rounded-card border bg-panel shadow-card animate-fade-in gap-0 "
+        "relative w-full overflow-hidden rounded-card border bg-panel shadow-card animate-fade-in gap-0 "
         f"{border_class} {'cursor-pointer' if on_select else ''}"
     ) as card:
         if on_select is not None:
@@ -52,7 +54,7 @@ def _car_card(car: VehicleSummary, on_select: Callable[[VehicleSummary], None] |
             )
 
         with ui.element("div").classes(
-            "flex h-[140px] w-full items-center justify-center px-3 text-center font-mono text-[11px] text-subtext"
+            "flex h-[110px] sm:h-[140px] w-full items-center justify-center px-3 text-center font-mono text-[11px] text-subtext"
         ).style(
             "background-image: repeating-linear-gradient(45deg, var(--color-panel-2), var(--color-panel-2) 10px, "
             "var(--color-border) 10px, var(--color-border) 20px)"
@@ -84,8 +86,8 @@ def _car_card(car: VehicleSummary, on_select: Callable[[VehicleSummary], None] |
 
 
 def _card_slot(car: VehicleSummary, on_select: Callable[[VehicleSummary], None], reorderable: bool) -> None:
-    """Renders one card in its grid slot (the `relative w-[230px]` wrapper
-    plus the optional drag handle) - the loop body shared by `results_grid`
+    """Renders one card in its grid slot (the `relative w-[230px]` wrapper -
+    full-width on phones - plus the optional drag handle) - the loop body shared by `results_grid`
     and `append_car_cards`.
 
     Args:
@@ -93,11 +95,14 @@ def _card_slot(car: VehicleSummary, on_select: Callable[[VehicleSummary], None],
         on_select: Called when the card is clicked/activated.
         reorderable: Shows the "⠿" drag handle when true.
     """
-    with ui.column().classes("relative w-[230px] gap-0"):
+    with ui.column().classes("relative w-full sm:w-[230px] gap-0"):
         if reorderable:
+            # The only drag handle (see `results_grid`'s `make_sortable`) -
+            # bigger on touch screens, where it's a finger target.
             ui.label("⠿").classes(
-                "absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full "
-                "bg-panel-2/90 text-[13px] text-subtext"
+                f"{DRAG_HANDLE_CLASS} absolute right-2 top-2 z-10 flex h-6 w-6 cursor-grab items-center "
+                "justify-center rounded-full bg-panel-2/90 text-[13px] text-subtext "
+                "pointer-coarse:h-10 pointer-coarse:w-10 pointer-coarse:text-[18px]"
             ).tooltip(t("results.dragHint"))
         _car_card(car, on_select)
 
@@ -110,7 +115,8 @@ def results_grid(
 ) -> ui.row | None:
     """Renders the responsive card grid, or an empty-state message.
 
-    Cards are laid out as a wrapping flex row (fixed 230px card width)
+    Cards are laid out as a wrapping flex row (fixed 230px card width,
+    full width below the `sm` breakpoint)
     rather than the original CSS grid - visually equivalent for this
     fixed-size-card case, and avoids the sortable container needing a
     `display: grid` that plays awkwardly with `make_sortable`'s DOM
@@ -119,7 +125,8 @@ def results_grid(
     Args:
         cars: Cars to display, already sorted (see `app/ui/sort.py`).
         on_select: Called when a card is clicked/activated.
-        reorderable: Enables drag-to-reorder ("Moje pořadí" sort mode).
+        reorderable: Enables drag-to-reorder ("Moje pořadí" sort mode),
+            by each card's "⠿" handle only.
         on_reorder: Called with every card's configuration id in its new
             order once a drag completes. Required when `reorderable` is
             `True`.
@@ -133,6 +140,11 @@ def results_grid(
     if not cars:
         ui.label(t("results.emptyState")).classes("w-full px-5 py-10 text-center text-[13px] text-subtext")
         return None
+
+    if reorderable:
+        # Tooltips need hover - touch screens get the hint as plain text.
+        # (`block!`: Quasar's own `.hidden` is `!important`.)
+        ui.label(t("results.dragHintTouch")).classes("mb-3 hidden text-[12.5px] text-subtext pointer-coarse:block!")
 
     with ui.row().classes("w-full gap-4") as container:
         for car in cars:
@@ -149,7 +161,9 @@ def results_grid(
             new_order.insert(event.new_index, moved)  # type: ignore[attr-defined]
             on_reorder(new_order)
 
-        container.make_sortable(handle=None, animation=0.15, on_end=_on_end)
+        # Handle-only dragging: with the whole card draggable, a touch
+        # swipe meant to scroll the results would reorder cards instead.
+        container.make_sortable(handle=f".{DRAG_HANDLE_CLASS}", animation=0.15, on_end=_on_end)
 
     return container
 

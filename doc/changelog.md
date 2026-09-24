@@ -21,6 +21,47 @@ to one or more related commits.
 
 ---
 
+## 0.2.38 — 2026-09-24
+
+### Added
+- Mobile layout (below Tailwind's `md` breakpoint, 768px - chosen by screen
+  width, not user-agent sniffing). Desktop layout is unchanged.
+  - Phones show one panel at a time: a bottom tab bar ("Konverzace" /
+    "Výsledky (N)") switches between the chat and the results
+    (`app/ui/pages.py`'s `_MobileState`/`set_mobile_tab`). Finishing the
+    wizard jumps to the results tab.
+  - Header: the tagline is hidden, the requirements button shrinks to an
+    icon + badge, and restart/login/admin/API key fold into a hamburger
+    dropdown. The controls are the same elements on every screen size,
+    not a duplicated mobile copy.
+  - Sort and filters collapse behind a "Řazení a filtry" toggle and
+    stack as full-width selects when opened.
+  - Result cards are full width (below `sm`) with a shorter photo area.
+  - The requirements drawer is full width and has an explicit
+    "Zavřít" button.
+  - The vehicle detail and wizard dialogs are fullscreen
+    (`dialog-mobile-full` in `app/ui/styles.py`), and the equipment
+    list is a single column.
+- Touch screens (`pointer: coarse`): 44px minimum button height, and the
+  "Moje pořadí" drag hint appears as text (tooltips need hover). The
+  admin link is always underlined.
+- `tests/ui/test_mobile_layout.py`.
+
+### Fixed
+- "Moje pořadí" reordering drags only by the "⠿" handle, so on touch
+  screens a swipe to scroll no longer reorders cards.
+- `100vh` → `100dvh`, plus `viewport-fit=cover` and
+  `interactive-widget=resizes-content` on `/`. The mobile browser
+  address bar no longer hides the chat input, the keyboard now resizes
+  the page, and the tab bar respects the iOS safe area.
+- Form inputs are 16px on mobile, so iOS Safari no longer zooms the page
+  when an input is focused.
+- The layout no longer slides sideways on a phone: the row that holds the
+  off-screen requirements drawer uses `overflow-clip` instead of being
+  scrollable.
+
+---
+
 ## 0.2.37 — 2026-09-22
 
 ### Added

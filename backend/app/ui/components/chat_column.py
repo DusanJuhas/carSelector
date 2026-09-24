@@ -40,7 +40,7 @@ def chat_column(state: ConversationState, on_send: Callable[[str], Awaitable[Non
         input-disabled state from the current `state` - call after any
         mutation to `state`.
     """
-    with ui.column().classes("flex w-[400px] shrink-0 flex-col border-r border-border h-full gap-0"):
+    with ui.column().classes("flex w-full md:w-[400px] shrink-0 flex-col md:border-r border-border h-full gap-0"):
         scroll_area = ui.scroll_area().classes("min-h-0 grow")
 
         with scroll_area:
@@ -59,7 +59,7 @@ def chat_column(state: ConversationState, on_send: Callable[[str], Awaitable[Non
 
             _messages()
 
-        with ui.row().classes("gap-2 border-t border-border p-4 px-5 w-full items-center"):
+        with ui.row().classes("flex-nowrap gap-2 border-t border-border p-3 md:p-4 md:px-5 w-full items-center"):
             text_input = (
                 ui.input(placeholder=t("chat.typePlaceholder"))
                 .classes(

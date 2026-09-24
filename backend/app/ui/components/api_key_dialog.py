@@ -43,7 +43,7 @@ def api_key_dialog(on_changed: Callable[[], None], is_authorized: Callable[[], b
     provider, console_url = _PROVIDER_LABELS.get(AI_PROVIDER, (AI_PROVIDER, ""))
 
     with ui.dialog() as dialog, ui.card().classes(
-        "w-full max-w-[480px] rounded-card border border-border bg-panel p-6 shadow-card animate-fade-in gap-3"
+        "w-full max-w-[480px] rounded-card border border-border bg-panel p-4 md:p-6 shadow-card animate-fade-in gap-3"
     ):
         ui.label(t("apiKey.title", provider=provider)).classes("text-[17px] font-bold text-text")
         ui.label(t("apiKey.description")).classes("text-[13px] text-subtext")

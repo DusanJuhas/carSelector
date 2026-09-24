@@ -96,8 +96,9 @@ def vehicle_detail_modal() -> Callable[[int], None]:
     """
     state = _ModalState()
 
-    with ui.dialog() as dialog, ui.card().classes(
-        "max-h-[85vh] w-full max-w-[640px] overflow-y-auto rounded-card border border-border bg-panel p-6 "
+    # `dialog-mobile-full` (see app/ui/styles.py): fullscreen on phones.
+    with ui.dialog().classes("dialog-mobile-full") as dialog, ui.card().classes(
+        "max-h-[85vh] w-full max-w-[640px] overflow-y-auto rounded-card border border-border bg-panel p-4 md:p-6 "
         "shadow-card animate-fade-in"
     ):
 
@@ -158,7 +159,7 @@ def vehicle_detail_modal() -> Callable[[int], None]:
                 ui.label(t("vehicleDetail.sections.standardEquipment")).classes(
                     "text-[13px] font-bold uppercase tracking-wide text-subtext"
                 )
-                with ui.grid(columns=2).classes("w-full gap-x-4 gap-y-1 text-[12.5px] text-text"):
+                with ui.grid().classes("w-full grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[12.5px] text-text"):
                     for item in detail.standard_equipment:
                         ui.label(f"• {item}")
 

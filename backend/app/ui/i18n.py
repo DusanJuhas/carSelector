@@ -17,6 +17,11 @@ STRINGS: dict = {
         "apiKeyMissing": "AI klíč chybí",
         "login": "Přihlásit se",
         "logout": "Odhlásit",
+        "menu": "Menu",
+    },
+    "mobileTabs": {
+        "chat": "Konverzace",
+        "results": "Výsledky",
     },
     "auth": {
         "title": "Přihlášení",
@@ -210,6 +215,8 @@ STRINGS: dict = {
             "custom": "Moje pořadí",
         },
         "dragHint": "Přetáhněte pro změnu pořadí",
+        "dragHintTouch": "Pořadí změníte přetažením karty za úchyt ⠿.",
+        "controlsToggle": "Řazení a filtry",
         "filters": {
             "all": "Vše",
             "brand": "Výrobce",
@@ -224,6 +231,7 @@ STRINGS: dict = {
     "requirements": {
         "subtitle": "Běžný jazyk, převedený na technické specifikace.",
         "empty": "Zatím nebyly zachyceny žádné požadavky.",
+        "close": "Zavřít",
     },
     "vehicleDetail": {
         "close": "Zavřít",

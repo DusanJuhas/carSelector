@@ -114,8 +114,10 @@ def wizard_dialog(
         A zero-argument function that opens the dialog at the wizard's
         current step - call after `wizard.open_wizard()`.
     """
-    with ui.dialog() as dialog, ui.card().classes(
-        "w-full max-w-[480px] rounded-card border border-border bg-panel p-6 shadow-card animate-fade-in"
+    # `dialog-mobile-full` (see app/ui/styles.py): fullscreen on phones.
+    with ui.dialog().classes("dialog-mobile-full") as dialog, ui.card().classes(
+        "w-full max-w-[480px] overflow-y-auto rounded-card border border-border bg-panel p-4 md:p-6 shadow-card "
+        "animate-fade-in"
     ):
 
         async def _advance() -> None:

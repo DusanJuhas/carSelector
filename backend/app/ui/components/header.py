@@ -23,6 +23,10 @@ def app_header(
     requirements-drawer toggle and the login/logout control on the right.
     The admin link and the API-key button are rendered for admins only.
 
+    On mobile (below `md`) the tagline is hidden, the requirements button
+    shrinks to an icon + badge, and restart/login/admin/API-key fold into
+    a dropdown behind a hamburger button.
+
     Args:
         requirements_count: Shown as a badge on the drawer-toggle button.
         on_restart: Called when "Restartovat" is clicked.
@@ -44,42 +48,82 @@ def app_header(
         on_logout: Called when "Odhlásit" is clicked.
     """
     is_admin = user is not None and user.is_admin
-    with ui.row().classes("shrink-0 items-center justify-between border-b border-border px-7 py-4.5 w-full"):
-        with ui.column().classes("gap-0.5"):
+    with ui.row().classes(
+        "relative shrink-0 flex-nowrap items-center justify-between gap-3 border-b border-border "
+        "px-4 py-3 md:px-7 md:py-4.5 w-full"
+    ):
+        with ui.column().classes("min-w-0 gap-0.5"):
             ui.label(t("header.brand")).classes("text-xl font-bold tracking-tight text-text")
-            ui.label(t("header.tagline")).classes("text-[12.5px] text-subtext")
+            ui.label(t("header.tagline")).classes("text-[12.5px] text-subtext max-md:hidden!")
 
-        with ui.row().classes("items-center gap-2.5"):
-            if is_admin:
-                ui.link("Admin", "/admin").classes("text-[12.5px] text-subtext underline-offset-2 hover:underline")
-                ui.button(
-                    t("header.apiKey") if ai_configured else t("header.apiKeyMissing"),
-                    icon="key",
-                    on_click=on_open_api_key,
-                ).props("flat no-caps").classes(
-                    "rounded-control border px-3.5 py-2 text-[13px] "
-                    + ("border-border text-subtext" if ai_configured else "border-flag bg-flag-bg text-flag")
-                )
+        with ui.row().classes("flex-nowrap items-center gap-2 md:gap-2.5"):
+            # Always visible, on every screen size: the primary action and
+            # the requirements badge. Everything else lives in `secondary`
+            # below, which is an inline row on desktop but a hamburger-
+            # toggled dropdown on mobile - the same elements either way (not
+            # a duplicated mobile copy), so each control exists exactly once.
             ui.button(t("header.startWizard"), on_click=on_open_wizard).props("no-caps unelevated").classes(
                 "rounded-control bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-text"
-            )
-            ui.button(t("header.restart"), on_click=on_restart).props("flat no-caps").classes(
-                "rounded-control border border-border px-3.5 py-2 text-[13px] text-subtext"
             )
             with ui.button(on_click=on_toggle_drawer).props("flat no-caps").classes(
                 "flex items-center gap-2 rounded-control border border-border bg-panel-2 px-3.5 py-2 "
                 "text-[13px] font-semibold text-text"
-            ):
-                ui.label(t("header.technicalRequirements"))
+            ).tooltip(t("header.technicalRequirements")).mark("requirements-toggle"):
+                ui.label(t("header.technicalRequirements")).classes("max-md:hidden!")
+                ui.icon("tune", size="18px").classes("md:hidden!")
                 ui.label(str(requirements_count)).classes(
                     "rounded-full bg-accent px-[7px] py-0.5 text-[11px] font-bold text-accent-text"
                 )
-            if user is None:
-                ui.button(t("header.login"), icon="login", on_click=on_login).props("flat no-caps").classes(
+
+            secondary = ui.row().classes(
+                "items-center gap-2.5 "
+                "max-md:absolute max-md:right-4 max-md:top-full max-md:z-30 max-md:mt-1 max-md:min-w-[220px] "
+                "max-md:flex-col! max-md:items-stretch! max-md:gap-1.5! max-md:rounded-card max-md:border "
+                "max-md:border-border max-md:bg-panel max-md:p-2 max-md:shadow-card max-md:hidden!"
+            )
+
+            def _toggle_menu() -> None:
+                if "max-md:hidden!" in secondary.classes:
+                    secondary.classes(remove="max-md:hidden!")
+                else:
+                    secondary.classes(add="max-md:hidden!")
+
+            def _from_menu(action: Callable[[], None]) -> Callable[[], None]:
+                """Wraps a menu item's handler so it also closes the mobile dropdown."""
+
+                def _run():
+                    secondary.classes(add="max-md:hidden!")
+                    return action()
+
+                return _run
+
+            ui.button(icon="menu", on_click=_toggle_menu).props("flat round").classes(
+                "text-text md:hidden!"
+            ).tooltip(t("header.menu"))
+
+            with secondary:
+                if is_admin:
+                    ui.link("Admin", "/admin").classes(
+                        "text-[12.5px] text-subtext underline-offset-2 hover:underline touch-underline max-md:px-3.5 "
+                        "max-md:py-2"
+                    )
+                    ui.button(
+                        t("header.apiKey") if ai_configured else t("header.apiKeyMissing"),
+                        icon="key",
+                        on_click=_from_menu(on_open_api_key),
+                    ).props("flat no-caps").classes(
+                        "rounded-control border px-3.5 py-2 text-[13px] "
+                        + ("border-border text-subtext" if ai_configured else "border-flag bg-flag-bg text-flag")
+                    )
+                ui.button(t("header.restart"), on_click=_from_menu(on_restart)).props("flat no-caps").classes(
                     "rounded-control border border-border px-3.5 py-2 text-[13px] text-subtext"
                 )
-            else:
-                ui.label(user.email).classes("text-[12.5px] text-subtext")
-                ui.button(t("header.logout"), on_click=on_logout).props("flat no-caps").classes(
-                    "rounded-control border border-border px-3.5 py-2 text-[13px] text-subtext"
-                )
+                if user is None:
+                    ui.button(t("header.login"), icon="login", on_click=_from_menu(on_login)).props(
+                        "flat no-caps"
+                    ).classes("rounded-control border border-border px-3.5 py-2 text-[13px] text-subtext")
+                else:
+                    ui.label(user.email).classes("text-[12.5px] text-subtext max-md:px-3.5 max-md:py-1 break-all")
+                    ui.button(t("header.logout"), on_click=_from_menu(on_logout)).props("flat no-caps").classes(
+                        "rounded-control border border-border px-3.5 py-2 text-[13px] text-subtext"
+                    )

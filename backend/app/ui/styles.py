@@ -5,6 +5,12 @@ the same utility classes used in the former JSX (`rounded-card`,
 `bg-panel`, `text-subtext`, ...) work unchanged against `.classes(...)`
 once these custom properties are registered the same way Tailwind v4's
 `@theme` block registers them.
+
+Responsive layout: the mobile layout comes from screen width (Tailwind's
+`md` breakpoint, 768px), not from user-agent sniffing. Watch out when
+hiding a NiceGUI container: `nicegui.css` sets `display: flex` on
+`.nicegui-row`/`.nicegui-column` *unlayered*, which beats Tailwind's
+layered `hidden` - use the important modifier (`max-md:hidden!`) there.
 """
 
 from nicegui import ui
@@ -64,7 +70,44 @@ body {
    className="h-screen w-full ..."> relied on. */
 .nicegui-content {
   padding: 0;
-  height: 100vh;
+  height: 100dvh;
+}
+
+/* Mobile (below Tailwind's `md` breakpoint). iOS Safari zooms the whole
+   page when a focused input's font is under 16px - pin every form control
+   to 16px there instead of each component's desktop 13px. */
+@media (max-width: 767.98px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Opt-in (`.classes("dialog-mobile-full")` on a `ui.dialog`): the
+     dialog covers the whole screen instead of floating with Quasar's
+     24px inset and 560px max-width. */
+  .dialog-mobile-full .q-dialog__inner--minimized {
+    padding: 0;
+  }
+  .dialog-mobile-full .q-dialog__inner--minimized > div {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: 0;
+  }
+}
+
+/* Touch screens: 44px minimum tap targets (Apple HIG / WCAG 2.5.5), and
+   hover-only affordances made permanently visible. */
+@media (pointer: coarse) {
+  .q-btn {
+    min-height: 44px;
+  }
+  .touch-underline {
+    text-decoration: underline;
+  }
 }
 """
 
