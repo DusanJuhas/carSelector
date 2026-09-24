@@ -8,17 +8,19 @@ Odhad rozsahu: **S** = do dne, **M** = pár dní, **L** = týden a víc.
 
 ## Přehled
 
-| # | Featura | Oblast | Rozsah | Závisí na |
-|---|---|---|---|---|
-| 1 | Porovnání vozů | Rozhodování | M | — |
-| 2 | Kalkulačka TCO | Rozhodování | M | kvalita dat o spotřebě |
-| 3 | Oblíbené vozy | Rozhodování | S–M | přihlášení (hotové) |
-| 4 | Chat k jednomu vozu | AI | M | — |
-| 5 | Sdílení a PDF export | AI / výstup | M | — |
-| 6 | Hlídač cen a akcí | Data | M | 3 (Oblíbené), 8 (Plánovaný scraping) |
-| 7 | Fotky vozů | Data | L | — |
-| 8 | Plánovaný scraping | Data | M | persistentní DB na nasazení |
-| 9 | Analytika poptávky | Platforma | M | — |
+| # | Featura | Oblast | Rozsah | Závisí na | Stav |
+|---|---|---|---|---|---|
+| 1 | Porovnání vozů | Rozhodování | M | — | ❌ |
+| 2 | Kalkulačka TCO | Rozhodování | M | kvalita dat o spotřebě | ❌ |
+| 3 | Oblíbené vozy | Rozhodování | S–M | přihlášení (hotové) | ✅ (0.2.39) |
+| 4 | Chat k jednomu vozu | AI | M | — | ❌ |
+| 5 | Sdílení a PDF export | AI / výstup | M | — | ❌ |
+| 6 | Hlídač cen a akcí | Data | M | 3 (Oblíbené), 8 (Plánovaný scraping) | ❌ |
+| 7 | Fotky vozů | Data | L | — | ❌ |
+| 8 | Plánovaný scraping | Data | M | persistentní DB na nasazení | ❌ |
+| 9 | Analytika poptávky | Platforma | M | — | ❌ |
+
+✅ = hotovo, ❌ = nehotovo.
 
 ---
 
@@ -55,15 +57,36 @@ v kódu. Výpočet patří do service vrstvy (`app/services/`), UI jen zobrazuje
 **Rizika:** importovaná data často spotřebu nemají (viz docstring
 `scripts/import_scraper_data.py`). U takových vozů TCO nezobrazovat a netvářit se přesně.
 
-## 3. Oblíbené vozy
+## 3. Oblíbené vozy — ✅ hotovo (0.2.39)
 
-**Co:** srdíčko na kartě a v detailu. Přihlášený uživatel má seznam „Moje oblíbené“ napříč
-relacemi, u každého vozu volitelnou poznámku. Anonym uvidí výzvu k přihlášení.
+**Co je hotové:** srdíčko (like) na každé kartě ve výsledcích.
 
-**Proč:** výběr auta trvá týdny a uživatel se vrací. Je to i základ pro hlídač cen (#6).
+- **Like platí pro model, ne pro konkrétní vůz.** Když dáte like jedné kartě VW Tiguan,
+  vyplní se srdíčko na všech kartách Tiguanu (všechny výbavy a motory). Like vyjadřuje vkus
+  pro auto samotné, ne pro jednu výbavu.
+- **Přihlášený uživatel:** like se ukládá do účtu a po návratu na web ho uvidí znovu.
+- **Nepřihlášený uživatel:** like platí do obnovení stránky. Když se pak přihlásí, jeho liky
+  se přidají k těm z účtu. Po odhlášení srdíčka zmizí.
+- **Vliv na vyhledávání:** like jen mění pořadí, nikdy žádný vůz neskryje.
+  - Při hledání přes chat nebo průvodce dostane likenutý model +15 bodů ke shodě a ostatní
+    modely stejné značky +5.
+  - V procházení katalogu s řazením „Doporučeno“ jsou likenuté modely nahoře. Řazení podle ceny
+    a abecedy like ignoruje.
+  - Like se projeví až při dalším hledání nebo změně filtru. Karty na obrazovce se po
+    kliknutí nepřeskládají.
 
-**Návaznost:** stejný vzor jako `saved_requirements` (tabulka + service + migrace), klíčované
-přes `configuration_id`.
+**Implementace:** tabulka `liked_models` (migrace `0031bdd2429f`),
+`app/services/liked_models.py`, `LikedModelsState` v `app/ui/state.py`, `LikeButtons`
+v `app/ui/components/results_grid.py`. Do `VehicleSummary` přibylo pole `model_id`.
+
+**Co z původního návrhu zbývá (případně jako navazující úkol):**
+
+- **Srdíčko v detailu vozu:** zatím je jen na kartě.
+- **Seznam „Moje oblíbené“:** samostatný přehled likenutých modelů, dnes je poznáte jen podle
+  srdíček ve výsledcích.
+- **Poznámka k vozu:** volitelný text u oblíbeného modelu.
+- **Výzva k přihlášení u anonyma:** dnes like funguje i bez přihlášení, jen se neuloží.
+  Nápověda typu „Přihlaste se, ať o oblíbené nepřijdete“ zatím chybí.
 
 ## 4. Chat k jednomu vozu
 
@@ -99,6 +122,11 @@ vypnout jedním kliknutím z e-mailu.
 **Návaznost:** append-only historie cen (`prices` s platností) a `app/services/mailer.py`
 existují. Spouští se po importu (#8). Chce to rate-limit a souhrnný e-mail místo jednoho e-mailu
 za každou změnu.
+
+**Otevřená otázka (po dokončení #3):** oblíbené jsou uložené po *modelech*, ceny ale po
+konfiguracích (výbava × motor). Hlídač tedy buď upozorní na změnu u kterékoli konfigurace
+likenutého modelu (jednodušší, ale víc e-mailů), nebo si uživatel u modelu vybere konkrétní
+konfigurace ke hlídání.
 
 ## 7. Fotky vozů
 
@@ -144,7 +172,7 @@ na uživatele (bez e-mailu, IP, volného textu zpráv). Grafy v admin stránce.
 
 1. **#8 Plánovaný scraping**: předpokladem je persistentní DB. Odblokuje #6 a vyřeší
    aktuálnost dat.
-2. **#3 Oblíbené vozy**: malé a je základem pro #6.
+2. ~~**#3 Oblíbené vozy**: malé a je základem pro #6.~~ Hotovo v 0.2.39.
 3. **#1 Porovnání vozů**: největší přínos pro rozhodování.
 4. **#6 Hlídač cen**: staví na #3 a #8.
 5. **#4 Chat k vozu** a **#2 TCO**: AI a výpočetní vrstva, nezávislé.
