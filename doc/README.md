@@ -21,6 +21,7 @@ for context rather than as instructions to follow today. This index says which i
 |---|---|
 | [`po/MVP.md`](po/MVP.md) | What's in scope for the MVP and why. |
 | [`po/Version2.md`](po/Version2.md) | What was deliberately deferred past MVP, and why it can wait. |
+| [`po/Brainstorm-2026-09.md`](po/Brainstorm-2026-09.md) | Accepted feature ideas from the 2026-09 brainstorm (in Czech), with dependencies and suggested order. |
 
 ## Proposals (not yet implemented)
 
