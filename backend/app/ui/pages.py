@@ -20,12 +20,12 @@ from app.ui.components.filter_bar import filter_bar
 from app.ui.components.header import app_header
 from app.ui.components.login_dialog import login_dialog
 from app.ui.components.requirements_drawer import requirements_drawer
-from app.ui.components.results_grid import append_car_cards, results_grid, sort_control
+from app.ui.components.results_grid import LikeButtons, append_car_cards, results_grid, sort_control
 from app.ui.components.vehicle_detail_modal import vehicle_detail_modal
 from app.ui.components.wizard import wizard_dialog
 from app.ui.i18n import STRINGS, t, t_count
 from app.ui.sort import BACKEND_SORT_OPTIONS, sort_cars
-from app.ui.state import PAGE_SIZE, CatalogState, ConversationState, WizardState
+from app.ui.state import PAGE_SIZE, CatalogState, ConversationState, LikedModelsState, WizardState
 from app.ui.styles import register_styles
 
 CUSTOM_ORDER_KEY = "custom_car_order"
@@ -143,7 +143,13 @@ async def index() -> None:
 
     conv = ConversationState()
     conv.user_id = auth_state.user.id if auth_state.is_logged_in else None
-    catalog_state = CatalogState()
+    # Loaded before anything is built, like `auth_state`, so the first
+    # catalog page and the first render already know the user's likes.
+    liked = LikedModelsState(user_id=conv.user_id)
+    await liked.load()
+    conv.liked = liked
+    catalog_state = CatalogState(liked=liked)
+    like_buttons = LikeButtons(liked.is_liked, liked.toggle)
     wizard_state = WizardState()
     sort_state = _SortState()
     narrowed_paging = _NarrowedPaging()
@@ -219,9 +225,13 @@ async def index() -> None:
         # has been gathered yet this session - restores that account's
         # previously saved requirements. See ConversationState.on_login.
         conv.user_id = auth_state.user.id if auth_state.user else None
+        liked.user_id = conv.user_id
         if conv.user_id is not None:
 
             async def _apply_login() -> None:
+                # Likes first: a restored-requirements search inside
+                # `conv.on_login()` should already rank by the merged set.
+                await liked.on_login()
                 await conv.on_login()
                 # Only the restore branch can actually change cars/
                 # messages/requirements (persisting saves what's already
@@ -240,7 +250,9 @@ async def index() -> None:
         # Stops this (now-anonymous) session from continuing to save its
         # requirements under the account that just logged out.
         conv.user_id = None
+        liked.on_logout()
         chrome.refresh()
+        refresh_results()  # empty the hearts that belonged to the account
 
     def open_wizard() -> None:
         wizard_state.open_wizard()
@@ -322,7 +334,9 @@ async def index() -> None:
             narrowed_paging.shown = min(shown_before + PAGE_SIZE, len(all_cars))
             new_cars = all_cars[shown_before : narrowed_paging.shown]
             if results_grid_ref.row is not None and sort_state.option != "custom" and new_cars:
-                append_car_cards(results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id))
+                append_car_cards(
+                    results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id), like_buttons
+                )
             else:
                 results_body.refresh()
             return
@@ -343,7 +357,9 @@ async def index() -> None:
 
         new_cars = catalog_state.cars[cars_before:]
         if results_grid_ref.row is not None and sort_state.option != "custom" and new_cars:
-            append_car_cards(results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id))
+            append_car_cards(
+                results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id), like_buttons
+            )
         else:
             results_body.refresh()
 
@@ -521,6 +537,7 @@ async def index() -> None:
                                 lambda car: open_detail(car.configuration_id),
                                 reorderable,
                                 reorder if reorderable else None,
+                                like_buttons,
                             )
 
                     results_body()

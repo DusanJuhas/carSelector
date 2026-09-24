@@ -23,7 +23,7 @@ from app.schemas.catalog import BrandRead
 from app.schemas.common import Money
 from app.schemas.requirement import StructuredRequirements, UserRequirement
 from app.schemas.vehicle import VehicleDetail, VehicleSummary
-from app.services import catalog, saved_requirements
+from app.services import catalog, liked_models, saved_requirements
 from app.services.conversation import orchestrator
 from app.ui import db as ui_db
 
@@ -41,6 +41,121 @@ PAGE_SIZE = 20
 # handle_wizard_answers` needs *some* source_message to attribute the
 # turn to.
 RESTORE_SUMMARY_MESSAGE = "Moje uložené požadavky z minulé relace."
+
+
+@dataclass
+class LikedModelsState:
+    """Which car models this session has liked (the heart on a results
+    card). Anonymous likes live only here, for this page load; a logged-in
+    user's are also persisted to their account (see
+    `app/services/liked_models.py`), and a mid-session login merges the
+    anonymous ones in (`on_login`).
+
+    Read by `ConversationState`/`CatalogState` through `ids` to boost
+    liked models in the next search - an already-rendered result list is
+    not reordered under the user's finger when they like a card.
+    """
+
+    model_ids: set[int] = field(default_factory=set)
+    # Same contract as `ConversationState.user_id` - set by
+    # `app/ui/pages.py` from `AuthState`, `None` while logged out.
+    user_id: int | None = None
+
+    @property
+    def ids(self) -> frozenset[int]:
+        """An immutable snapshot of `model_ids`, safe to hand to a
+        background thread (`run.io_bound`) while the UI keeps mutating
+        the live set."""
+        return frozenset(self.model_ids)
+
+    def is_liked(self, model_id: int) -> bool:
+        """Args:
+            model_id: The `models` row to check.
+
+        Returns:
+            Whether this session has that model liked.
+        """
+        return model_id in self.model_ids
+
+    async def load(self) -> None:
+        """Replaces the session's likes with `user_id`'s saved ones - on
+        page load for an already-logged-in user. No-op while logged out.
+        A failure is logged and leaves the likes as they were, same
+        swallow-and-log handling as `ConversationState`'s saved
+        requirements."""
+        if self.user_id is None:
+            return
+        user_id = self.user_id
+
+        def _load() -> set[int]:
+            with ui_db.get_session() as db:
+                return liked_models.list_ids(db, user_id)
+
+        try:
+            self.model_ids = await run.io_bound(_load)
+        except Exception:
+            logger.exception("Loading liked models for user %s failed", user_id)
+
+    async def toggle(self, model_id: int) -> bool:
+        """Likes `model_id` if it isn't liked yet, unlikes it otherwise -
+        in this session right away, and in the account too if logged in.
+
+        Args:
+            model_id: The `models` row whose heart was clicked.
+
+        Returns:
+            Whether the model is liked after the toggle.
+        """
+        now_liked = model_id not in self.model_ids
+        if now_liked:
+            self.model_ids.add(model_id)
+        else:
+            self.model_ids.discard(model_id)
+
+        if self.user_id is not None:
+            user_id = self.user_id
+
+            def _save() -> None:
+                with ui_db.get_session() as db:
+                    if now_liked:
+                        liked_models.like(db, user_id, model_id)
+                    else:
+                        liked_models.unlike(db, user_id, model_id)
+
+            try:
+                await run.io_bound(_save)
+            except Exception:
+                logger.exception("Saving a like for user %s failed", user_id)
+        return now_liked
+
+    async def on_login(self) -> None:
+        """Called right after `user_id` is set mid-session: saves the
+        likes gathered anonymously under the account, then loads the
+        account's full set (the union of both)."""
+        if self.user_id is None:
+            return
+        user_id = self.user_id
+        anonymous = self.ids
+
+        def _merge() -> set[int]:
+            with ui_db.get_session() as db:
+                liked_models.like_many(db, user_id, anonymous)
+                return liked_models.list_ids(db, user_id)
+
+        try:
+            self.model_ids = await run.io_bound(_merge)
+        except Exception:
+            logger.exception("Merging liked models for user %s failed", user_id)
+
+    def on_logout(self) -> None:
+        """Forgets the likes - they belong to the account that just
+        logged out, not to the anonymous session that remains."""
+        self.user_id = None
+        self.model_ids = set()
+
+
+def _liked_ids(liked: LikedModelsState | None) -> frozenset[int]:
+    return liked.ids if liked is not None else frozenset()
 
 
 @dataclass
@@ -82,6 +197,9 @@ class ConversationState:
     # load and on a mid-session login/logout; `ConversationState` itself
     # never reads `AuthState` to stay decoupled from the auth layer.
     user_id: int | None = None
+    # The page's likes, passed to every search as a ranking boost - see
+    # `LikedModelsState`. `None` means "no likes" (e.g. in tests).
+    liked: LikedModelsState | None = None
 
     async def begin(self) -> None:
         """Starts a new conversation and seeds the transcript with its
@@ -125,10 +243,13 @@ class ConversationState:
             if saved is None:
                 return
             conversation_id = self.conversation_id
+            liked_ids = _liked_ids(self.liked)
 
             def _restore() -> object:
                 with ui_db.get_session() as db:
-                    return orchestrator.handle_wizard_answers(db, conversation_id, saved, RESTORE_SUMMARY_MESSAGE)
+                    return orchestrator.handle_wizard_answers(
+                        db, conversation_id, saved, RESTORE_SUMMARY_MESSAGE, liked_model_ids=liked_ids
+                    )
 
             self.messages.append(("user", RESTORE_SUMMARY_MESSAGE))
             result = await run.io_bound(_restore)
@@ -228,10 +349,11 @@ class ConversationState:
         self.is_sending = True
         self.error = None
         conversation_id = self.conversation_id
+        liked_ids = _liked_ids(self.liked)
 
         def _send() -> object:
             with ui_db.get_session() as db:
-                return orchestrator.handle_message(db, conversation_id, trimmed)
+                return orchestrator.handle_message(db, conversation_id, trimmed, liked_model_ids=liked_ids)
 
         try:
             result = await run.io_bound(_send)
@@ -276,10 +398,13 @@ class ConversationState:
         self.is_sending = True
         self.error = None
         conversation_id = self.conversation_id
+        liked_ids = _liked_ids(self.liked)
 
         def _send() -> object:
             with ui_db.get_session() as db:
-                return orchestrator.handle_wizard_answers(db, conversation_id, requirements, summary_message)
+                return orchestrator.handle_wizard_answers(
+                    db, conversation_id, requirements, summary_message, liked_model_ids=liked_ids
+                )
 
         try:
             result = await run.io_bound(_send)
@@ -453,6 +578,13 @@ class CatalogState:
     fuel_type: FuelType | None = None
     drivetrain: Drivetrain | None = None
     brands: list[BrandRead] = field(default_factory=list)
+    # The page's likes - listed first in the default ("Doporučeno") order,
+    # see `catalog.list_vehicles`'s `preferred_model_ids`.
+    liked: LikedModelsState | None = None
+    # The likes as they were at `load_first_page`, reused by every
+    # `load_more` - liking a card mid-scroll must not reshuffle the order
+    # later pages are fetched in (that would duplicate or skip cars).
+    _preferred_model_ids: frozenset[int] = frozenset()
 
     @property
     def has_more(self) -> bool:
@@ -486,6 +618,7 @@ class CatalogState:
         """
         self.is_loading = True
         self.error = False
+        self._preferred_model_ids = _liked_ids(self.liked)
 
         def _load() -> object:
             with ui_db.get_session() as db:
@@ -495,6 +628,7 @@ class CatalogState:
                     fuel_type=self.fuel_type,
                     drivetrain=self.drivetrain,
                     sort=sort,
+                    preferred_model_ids=self._preferred_model_ids,
                     page=1,
                     page_size=self.page_size,
                 )
@@ -530,6 +664,7 @@ class CatalogState:
                     fuel_type=self.fuel_type,
                     drivetrain=self.drivetrain,
                     sort=sort,
+                    preferred_model_ids=self._preferred_model_ids,
                     page=next_page,
                     page_size=self.page_size,
                 )

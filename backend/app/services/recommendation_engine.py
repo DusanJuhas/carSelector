@@ -5,8 +5,12 @@ drivewise-ai-recommendations skill's guardrail: "the AI never reads or ranks
 the database directly."
 """
 
+from collections.abc import Collection
+
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models import Brand, CarModel
 from app.models.enums import FuelType
 from app.schemas.requirement import StructuredRequirements
 from app.schemas.vehicle import VehicleSummary
@@ -32,6 +36,14 @@ class RecommendationEngine:
     DRIVETRAIN_MATCH_WEIGHT = 20.0
     PRIORITY_MATCH_WEIGHT = 10.0
     BUDGET_HEADROOM_WEIGHT = 20.0
+    # Liked models (the heart on a results card, see
+    # app/services/liked_models.py) are a soft preference like drivetrain:
+    # they reorder the hard-filtered matches, never add or remove any. The
+    # brand bonus carries the taste over to other models of that brand, so
+    # a liked model that the current requirements rule out (e.g. a liked
+    # hatchback in an SUV search) still counts for something.
+    LIKED_MODEL_WEIGHT = 15.0
+    LIKED_BRAND_WEIGHT = 5.0
     BASE_SCORE = 50.0
 
     # The whole catalog is currently under 1,000 configurations (see
@@ -51,7 +63,13 @@ class RecommendationEngine:
     # rather than reintroducing a single-brand monoculture.
     CANDIDATE_POOL_SIZE = 5000
 
-    def _score(self, vehicle: VehicleSummary, requirements: StructuredRequirements) -> float:
+    def _score(
+        self,
+        vehicle: VehicleSummary,
+        requirements: StructuredRequirements,
+        liked_model_ids: Collection[int] = (),
+        liked_brands: Collection[str] = (),
+    ) -> float:
         """Computes a soft-preference match score for one already
         hard-filtered candidate vehicle.
 
@@ -59,12 +77,16 @@ class RecommendationEngine:
             vehicle: A candidate that already passed the hard filters
                 (body_type, budget, fuel_type) in `catalog.list_vehicles`.
             requirements: The structured requirements to score against.
+            liked_model_ids: Models the user has liked.
+            liked_brands: Brand names of those liked models.
 
         Returns:
             A score starting at `BASE_SCORE`, increased for a matching
-            drivetrain, each matched priority, and budget headroom (more
-            headroom scores higher, capped by `BUDGET_HEADROOM_WEIGHT`).
-            Not bounded to any fixed range beyond that.
+            drivetrain, each matched priority, budget headroom (more
+            headroom scores higher, capped by `BUDGET_HEADROOM_WEIGHT`),
+            and a liked model (`LIKED_MODEL_WEIGHT`) or, failing that, a
+            liked model's brand (`LIKED_BRAND_WEIGHT`). Not bounded to any
+            fixed range beyond that.
         """
         score = self.BASE_SCORE
 
@@ -80,6 +102,11 @@ class RecommendationEngine:
             headroom = (requirements.budget_max.amount - vehicle.price.amount) / requirements.budget_max.amount
             score += max(0.0, headroom) * self.BUDGET_HEADROOM_WEIGHT
 
+        if vehicle.model_id in liked_model_ids:
+            score += self.LIKED_MODEL_WEIGHT
+        elif vehicle.brand in liked_brands:
+            score += self.LIKED_BRAND_WEIGHT
+
         return score
 
     def recommend(
@@ -89,13 +116,15 @@ class RecommendationEngine:
         *,
         market: str = catalog.DEFAULT_MARKET,
         limit: int | None = None,
+        liked_model_ids: Collection[int] = (),
     ) -> list[VehicleSummary]:
         """Filters the catalog on hard constraints, then scores and ranks
         the rest.
 
         Hard constraints: body_type, budget, fuel_type (hard-filtered via
         `catalog.list_vehicles`). Soft preferences: drivetrain,
-        priorities, budget headroom (scored by `_score`). `min_seats` is
+        priorities, budget headroom, liked models and their brands (scored
+        by `_score`). `min_seats` is
         accepted on the contract's `StructuredRequirements` but has no
         backing data yet - see `catalog.list_vehicles`'s docstring - so
         it's a no-op here too.
@@ -123,6 +152,9 @@ class RecommendationEngine:
                 AI-generated explanation, not how many are returned to the
                 user) should truncate on their own end instead of asking
                 this method to hide genuine matches.
+            liked_model_ids: Models the user has liked (see
+                `app/services/liked_models.py`) - boosts their ranking,
+                never filters.
 
         Returns:
             Vehicles ranked best-first (highest score to lowest), each
@@ -148,8 +180,21 @@ class RecommendationEngine:
             page_size=self.CANDIDATE_POOL_SIZE,
         ).items
 
+        liked_brands: set[str] = set()
+        if liked_model_ids:
+            liked_brands = set(
+                db.scalars(
+                    select(Brand.name).join(CarModel, CarModel.brand_id == Brand.id).where(
+                        CarModel.id.in_(list(liked_model_ids))
+                    )
+                )
+            )
+
         scored = sorted(
-            ((self._score(vehicle, requirements), vehicle) for vehicle in candidates),
+            (
+                (self._score(vehicle, requirements, liked_model_ids, liked_brands), vehicle)
+                for vehicle in candidates
+            ),
             key=lambda pair: pair[0],
             reverse=True,
         )[:limit]

@@ -7,6 +7,7 @@ from app.models.car_model import CarModel
 from app.models.color import Color
 from app.models.configuration import Configuration
 from app.models.configuration_color import ConfigurationColor
+from app.models.liked_model import LikedModel
 from app.models.login_code import LoginCode
 from app.models.option_availability import OptionAvailability
 from app.models.option_item import OptionItem
@@ -23,6 +24,7 @@ __all__ = [
     "Color",
     "Configuration",
     "ConfigurationColor",
+    "LikedModel",
     "LoginCode",
     "OptionAvailability",
     "OptionItem",

@@ -8,6 +8,7 @@ from app.ui.sort import sort_cars
 def _car(configuration_id: int, brand: str, model: str, trim: str, amount: float) -> VehicleSummary:
     return VehicleSummary(
         configuration_id=configuration_id,
+        model_id=configuration_id,
         brand=brand,
         model=model,
         trim=trim,

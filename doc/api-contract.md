@@ -53,6 +53,7 @@ renders it directly, field names as-is (`price` is a real `Money` object, `id` i
 | field | type | null? | notes |
 |---|---|---|---|
 | configuration_id | integer | no | |
+| model_id | integer | no | the `models` row this configuration belongs to — what the UI's like (heart) button targets |
 | brand | string | no | |
 | model | string | no | |
 | trim | string | no | |

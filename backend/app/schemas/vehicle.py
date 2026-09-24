@@ -46,6 +46,9 @@ class VehicleSummary(BaseModel):
     """
 
     configuration_id: int
+    # The `models` row this configuration belongs to - what a card's
+    # like (heart) button targets, see app/services/liked_models.py.
+    model_id: int
     brand: str
     model: str
     trim: str

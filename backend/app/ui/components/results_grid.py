@@ -1,6 +1,6 @@
 """Port of frontend/src/components/ResultsGrid.tsx + CarCard.tsx + SortControl.tsx."""
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
 from nicegui import ui
 
@@ -10,6 +10,70 @@ from app.ui.money import format_money
 from app.ui.sort import SORT_OPTIONS
 
 DRAG_HANDLE_CLASS = "drag-handle"
+
+
+class LikeButtons:
+    """The heart (like) button on every result card, kept in sync per car
+    *model*: liking one card of a model fills the heart on every rendered
+    card of that model, since a like targets the model, not the
+    configuration (see `app/models/liked_model.py`).
+
+    One instance per page (see `app/ui/pages.py`) - it outlives every
+    `results_grid` rebuild, so it keeps a registry of the buttons currently
+    on screen per model and prunes the ones a rebuild deleted.
+    """
+
+    def __init__(self, is_liked: Callable[[int], bool], on_toggle: Callable[[int], Awaitable[bool]]) -> None:
+        """Args:
+        is_liked: Returns whether a model is currently liked - read
+            when a card is rendered.
+        on_toggle: Flips a model's like and returns the new state (see
+            `LikedModelsState.toggle`).
+        """
+        self._is_liked = is_liked
+        self._on_toggle = on_toggle
+        self._buttons: dict[int, list[ui.button]] = {}
+
+    @staticmethod
+    def _apply(button: ui.button, liked: bool) -> None:
+        button.props(f"icon={'favorite' if liked else 'favorite_border'}")
+        button.props(f'aria-pressed={"true" if liked else "false"}')
+        button.classes(
+            add="text-flag" if liked else "text-subtext", remove="text-subtext" if liked else "text-flag"
+        )
+
+    def render(self, model_id: int) -> ui.button:
+        """Builds the heart button for one card of `model_id`.
+
+        Args:
+            model_id: The `models` row the card belongs to.
+
+        Returns:
+            The button (already registered for syncing).
+        """
+        button = (
+            # `color=None`: no Quasar `text-primary`, so the Tailwind
+            # colors `_apply` sets actually show.
+            ui.button(on_click=lambda: self._toggle(model_id), color=None)
+            .props("flat round dense")
+            .classes("bg-panel/85 shadow-card")
+            .tooltip(t("car.like"))
+            .mark(f"like-{model_id}")
+        )
+        # The card itself opens the detail on click - the heart must not.
+        # A separate listener (not `on_click`) so the `.stop` modifier only
+        # affects the browser's propagation, not how the click is handled.
+        button.on("click.stop", js_handler="() => {}")
+        self._apply(button, self._is_liked(model_id))
+        self._buttons.setdefault(model_id, []).append(button)
+        return button
+
+    async def _toggle(self, model_id: int) -> None:
+        liked = await self._on_toggle(model_id)
+        alive = [button for button in self._buttons.get(model_id, []) if not button.is_deleted]
+        self._buttons[model_id] = alive
+        for button in alive:
+            self._apply(button, liked)
 
 
 def sort_control(value: str, on_change: Callable[[str], None]) -> None:
@@ -27,14 +91,17 @@ def sort_control(value: str, on_change: Callable[[str], None]) -> None:
         ).props("borderless dense options-dense")
 
 
-def _car_card(car: VehicleSummary, on_select: Callable[[VehicleSummary], None] | None) -> None:
+def _car_card(
+    car: VehicleSummary, on_select: Callable[[VehicleSummary], None] | None, like: LikeButtons | None = None
+) -> None:
     """Renders one result card - make/model/trim, price, match score,
-    spec tags, and an optional flag/AI-explanation line.
+    spec tags, an optional flag/AI-explanation line, and the like heart.
 
     Args:
         car: Vehicle to render.
         on_select: Called with `car` when clicked/Enter-activated; the
             card is only interactive (clickable, focusable) when given.
+        like: Renders the heart button over the photo, if given.
     """
     is_high_score = car.match_score is not None and car.match_score >= 90
     border_class = "border-accent" if car.top_pick else "border-border"
@@ -54,12 +121,14 @@ def _car_card(car: VehicleSummary, on_select: Callable[[VehicleSummary], None] |
             )
 
         with ui.element("div").classes(
-            "flex h-[110px] sm:h-[140px] w-full items-center justify-center px-3 text-center font-mono text-[11px] text-subtext"
+            "relative flex h-[110px] sm:h-[140px] w-full items-center justify-center px-3 text-center font-mono text-[11px] text-subtext"
         ).style(
             "background-image: repeating-linear-gradient(45deg, var(--color-panel-2), var(--color-panel-2) 10px, "
             "var(--color-border) 10px, var(--color-border) 20px)"
         ):
             ui.label(t("car.photoPlaceholder", make=car.brand, model=car.model))
+            if like is not None:
+                like.render(car.model_id).classes("absolute bottom-2 right-2")
 
         with ui.column().classes("w-full gap-2.5 p-4 pt-3.5"):
             with ui.row().classes("w-full items-start justify-between gap-2"):
@@ -85,7 +154,12 @@ def _car_card(car: VehicleSummary, on_select: Callable[[VehicleSummary], None] |
                 ui.label(car.explanation).classes("w-full text-[12px] italic leading-relaxed text-subtext")
 
 
-def _card_slot(car: VehicleSummary, on_select: Callable[[VehicleSummary], None], reorderable: bool) -> None:
+def _card_slot(
+    car: VehicleSummary,
+    on_select: Callable[[VehicleSummary], None],
+    reorderable: bool,
+    like: LikeButtons | None = None,
+) -> None:
     """Renders one card in its grid slot (the `relative w-[230px]` wrapper -
     full-width on phones - plus the optional drag handle) - the loop body shared by `results_grid`
     and `append_car_cards`.
@@ -94,6 +168,7 @@ def _card_slot(car: VehicleSummary, on_select: Callable[[VehicleSummary], None],
         car: Vehicle to render.
         on_select: Called when the card is clicked/activated.
         reorderable: Shows the "⠿" drag handle when true.
+        like: Renders the card's like heart, if given.
     """
     with ui.column().classes("relative w-full sm:w-[230px] gap-0"):
         if reorderable:
@@ -104,7 +179,7 @@ def _card_slot(car: VehicleSummary, on_select: Callable[[VehicleSummary], None],
                 "justify-center rounded-full bg-panel-2/90 text-[13px] text-subtext "
                 "pointer-coarse:h-10 pointer-coarse:w-10 pointer-coarse:text-[18px]"
             ).tooltip(t("results.dragHint"))
-        _car_card(car, on_select)
+        _car_card(car, on_select, like)
 
 
 def results_grid(
@@ -112,6 +187,7 @@ def results_grid(
     on_select: Callable[[VehicleSummary], None],
     reorderable: bool,
     on_reorder: Callable[[list[int]], None] | None,
+    like: LikeButtons | None = None,
 ) -> ui.row | None:
     """Renders the responsive card grid, or an empty-state message.
 
@@ -130,6 +206,7 @@ def results_grid(
         on_reorder: Called with every card's configuration id in its new
             order once a drag completes. Required when `reorderable` is
             `True`.
+        like: Renders each card's like heart, if given.
 
     Returns:
         The card row container, so a caller doing infinite-scroll paging
@@ -148,7 +225,7 @@ def results_grid(
 
     with ui.row().classes("w-full gap-4") as container:
         for car in cars:
-            _card_slot(car, on_select, reorderable)
+            _card_slot(car, on_select, reorderable, like)
 
     if reorderable and on_reorder is not None:
         order = [car.configuration_id for car in cars]
@@ -168,7 +245,12 @@ def results_grid(
     return container
 
 
-def append_car_cards(container: ui.row, cars: list[VehicleSummary], on_select: Callable[[VehicleSummary], None]) -> None:
+def append_car_cards(
+    container: ui.row,
+    cars: list[VehicleSummary],
+    on_select: Callable[[VehicleSummary], None],
+    like: LikeButtons | None = None,
+) -> None:
     """Appends more cards into an already-rendered `results_grid` container,
     for infinite-scroll paging - without this, loading the next page would
     mean calling `results_grid` again with the *whole* accumulated list,
@@ -190,7 +272,8 @@ def append_car_cards(container: ui.row, cars: list[VehicleSummary], on_select: C
         cars: Only the newly-loaded page's cars, in display order - not
             the full accumulated list.
         on_select: Same callback passed to the original `results_grid` call.
+        like: Same `LikeButtons` passed to the original `results_grid` call.
     """
     with container:
         for car in cars:
-            _card_slot(car, on_select, reorderable=False)
+            _card_slot(car, on_select, reorderable=False, like=like)

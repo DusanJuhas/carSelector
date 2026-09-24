@@ -21,6 +21,33 @@ to one or more related commits.
 
 ---
 
+## 0.2.39 — 2026-09-24
+
+### Added
+- Like (heart) button on every result card. A like applies to the car
+  *model* (e.g. VW Tiguan), not to one trim/engine, so every card of that
+  model fills at once. Clicking the heart does not open the detail.
+  - Logged-in users: likes are saved to their account (`liked_models`
+    table, migration `0031bdd2429f`, `app/services/liked_models.py`) and
+    come back on the next visit.
+  - Anonymous users: likes last for the current page load. Logging in
+    merges them into the account; logging out clears the hearts.
+- Likes count in search, as a preference, never as a filter:
+  - AI chat / wizard recommendations: a liked model gets +15 to its match
+    score and other models of the same brand get +5
+    (`RecommendationEngine.LIKED_MODEL_WEIGHT`/`LIKED_BRAND_WEIGHT`).
+  - Catalog browsing in the default "Doporučeno" order lists liked models
+    first (`catalog.list_vehicles`'s `preferred_model_ids`). Explicit
+    sorts (price, alphabetical) ignore likes.
+  - Likes apply from the next search or filter change. Results already on
+    screen are not reshuffled when you click a heart.
+- `VehicleSummary.model_id` (API contract updated).
+- Tests: `tests/test_liked_models_service.py` (service, ranking, catalog
+  order), `tests/ui/test_liked_models.py` (heart sync, persistence,
+  login merge, logout).
+
+---
+
 ## 0.2.38 — 2026-09-24
 
 ### Added

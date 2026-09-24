@@ -5,7 +5,9 @@ there are only 5 read shapes and they don't share enough to be worth
 hiding behind an interface yet.
 """
 
-from sqlalchemy import and_, func, select
+from collections.abc import Collection
+
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import (
@@ -94,6 +96,7 @@ def _build_vehicle_summary(configuration: Configuration, price: Price) -> Vehicl
     model = trim.model
     return VehicleSummary(
         configuration_id=configuration.id,
+        model_id=model.id,
         brand=model.brand.name,
         model=model.name,
         trim=trim.name,
@@ -120,6 +123,7 @@ def list_vehicles(
     currency: str = "CZK",
     market: str = DEFAULT_MARKET,
     sort: str | None = None,
+    preferred_model_ids: Collection[int] = (),
     page: int = 1,
     page_size: int = 20,
 ) -> Page[VehicleSummary]:
@@ -149,6 +153,11 @@ def list_vehicles(
             "load more" flow needs live here - anything the client already
             has the full page for (e.g. the AI-narrowed shortlist) sorts
             client-side instead, see `frontend/src/utils/sortCars.ts`.
+        preferred_model_ids: Models to list first in the default order
+            (`sort=None`) - the user's liked models (see
+            `app/services/liked_models.py`), so browsing puts them on
+            the first page. Ignored by the explicit sorts, which the user
+            picked on purpose. Never filters anything out.
         page: 1-indexed page number.
         page_size: Rows per page.
 
@@ -185,6 +194,8 @@ def list_vehicles(
     total = db.scalar(select(func.count()).select_from(stmt.with_only_columns(Configuration.id).subquery()))
 
     order_by = _SORT_ORDER_BY.get(sort, (Configuration.id.asc(),))
+    if sort not in _SORT_ORDER_BY and preferred_model_ids:
+        order_by = (case((CarModel.id.in_(list(preferred_model_ids)), 0), else_=1), *order_by)
     stmt = stmt.order_by(*order_by).offset((page - 1) * page_size).limit(page_size)
     rows = db.execute(stmt).unique().all()
 

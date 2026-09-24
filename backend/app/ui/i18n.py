@@ -227,6 +227,7 @@ STRINGS: dict = {
     "car": {
         "photoPlaceholder": "fotka auta — {make} {model}",
         "topMatch": "Nejlepší shoda",
+        "like": "Líbí se mi — oblíbené modely mají přednost ve vyhledávání",
     },
     "requirements": {
         "subtitle": "Běžný jazyk, převedený na technické specifikace.",

@@ -10,6 +10,7 @@ decision (see doc/api-contract.md "open items").
 """
 
 import uuid
+from collections.abc import Collection
 from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
@@ -180,7 +181,9 @@ class ConversationOrchestrator:
             )
         return cards
 
-    def handle_message(self, db: Session, conversation_id: str, text: str) -> MessageResponse:
+    def handle_message(
+        self, db: Session, conversation_id: str, text: str, *, liked_model_ids: Collection[int] = ()
+    ) -> MessageResponse:
         """Processes one user message: extracts/merges requirements, then
         (once there's enough to search on) filters, ranks, and explains
         matching vehicles.
@@ -190,6 +193,8 @@ class ConversationOrchestrator:
             conversation_id: Id returned by an earlier `start_conversation`
                 call.
             text: The user's new message.
+            liked_model_ids: The user's liked models - a ranking boost,
+                see `RecommendationEngine.recommend`.
 
         Returns:
             The assistant's reply for this turn: either a follow-up
@@ -223,10 +228,16 @@ class ConversationOrchestrator:
                 searched=False,
             )
 
-        return self._apply_requirements(db, state, extraction.requirements, text)
+        return self._apply_requirements(db, state, extraction.requirements, text, liked_model_ids)
 
     def handle_wizard_answers(
-        self, db: Session, conversation_id: str, requirements: StructuredRequirements, summary_message: str
+        self,
+        db: Session,
+        conversation_id: str,
+        requirements: StructuredRequirements,
+        summary_message: str,
+        *,
+        liked_model_ids: Collection[int] = (),
     ) -> MessageResponse:
         """Applies requirements captured directly by the step-by-step
         wizard (see `app/ui/components/wizard.py`), skipping the AI
@@ -246,6 +257,8 @@ class ConversationOrchestrator:
             summary_message: Human-readable recap of the wizard's answers,
                 recorded as this turn's "user" transcript entry (there is
                 no free-text message to store instead).
+            liked_model_ids: The user's liked models - a ranking boost,
+                see `RecommendationEngine.recommend`.
 
         Returns:
             Same shape as `handle_message`'s narrowed-search branch:
@@ -259,10 +272,15 @@ class ConversationOrchestrator:
         if state is None:
             raise UnknownConversationError(conversation_id)
 
-        return self._apply_requirements(db, state, requirements, summary_message)
+        return self._apply_requirements(db, state, requirements, summary_message, liked_model_ids)
 
     def _apply_requirements(
-        self, db: Session, state: "_ConversationState", update: StructuredRequirements, source_message: str
+        self,
+        db: Session,
+        state: "_ConversationState",
+        update: StructuredRequirements,
+        source_message: str,
+        liked_model_ids: Collection[int] = (),
     ) -> MessageResponse:
         """Shared tail of `handle_message` and `handle_wizard_answers`:
         merges newly-known requirements into `state`, then filters,
@@ -278,6 +296,8 @@ class ConversationOrchestrator:
             source_message: Recorded as this turn's "user" transcript
                 entry and shown as the source quote on changed
                 requirement cards.
+            liked_model_ids: The user's liked models, passed through to
+                the recommendation engine's ranking.
 
         Returns:
             The assistant's reply for this turn - `searched=True`, though
@@ -287,7 +307,7 @@ class ConversationOrchestrator:
         state.requirements = merged
         state.history.append(ChatMessage(role="user", text=source_message))
 
-        vehicles = self._recommendation_engine.recommend(db, merged)
+        vehicles = self._recommendation_engine.recommend(db, merged, liked_model_ids=liked_model_ids)
 
         explained = []
         for index, vehicle in enumerate(vehicles):
