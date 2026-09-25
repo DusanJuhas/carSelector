@@ -117,23 +117,43 @@ class VariantRepository:
                     )
                 )
 
-            for raw_name, availability in extracted.equipment.items():
-                equipment = self._equipment.get_or_create(raw_name)
-                surcharge = extracted.equipment_surcharge.get(raw_name)
-                self._session.add(
-                    EquipmentAssignment(
-                        variant_id=variant.id,
-                        equipment_id=equipment.id,
-                        availability=availability,
-                        surcharge_amount=surcharge,
-                        currency="CZK" if surcharge is not None else None,
-                    )
-                )
-
+            self._add_equipment(variant, extracted)
             saved.append(variant)
 
         self._session.commit()
         return saved
+
+    def _add_equipment(self, variant: Variant, extracted: ExtractedVariant) -> None:
+        """Adds one `EquipmentAssignment` per item in `extracted.equipment`
+        to `variant` (not committed)."""
+        for raw_name, availability in extracted.equipment.items():
+            equipment = self._equipment.get_or_create(raw_name)
+            # `equipment_surcharge` is one flat dict per price list, so an
+            # item that's paid on one trim but standard on another (Elroq's
+            # heat pump) has a price there - a standard item never does.
+            surcharge = None if availability == "STANDARD" else extracted.equipment_surcharge.get(raw_name)
+            self._session.add(
+                EquipmentAssignment(
+                    variant_id=variant.id,
+                    equipment_id=equipment.id,
+                    availability=availability,
+                    surcharge_amount=surcharge,
+                    currency="CZK" if surcharge is not None else None,
+                )
+            )
+
+    def replace_equipment(self, variant: Variant, extracted: ExtractedVariant) -> None:
+        """Swaps `variant`'s equipment for `extracted`'s - for re-parsing an
+        already-stored document after a parser improvement (see
+        `scraper/reparse_equipment.py`). The variant and its price history
+        are left alone. Not committed.
+
+        Args:
+            variant: The stored variant to update.
+            extracted: Fresh parser output for the same variant.
+        """
+        self._session.query(EquipmentAssignment).filter(EquipmentAssignment.variant_id == variant.id).delete()
+        self._add_equipment(variant, extracted)
 
     def list_for_document(self, document_id: int) -> list[Variant]:
         """Args:

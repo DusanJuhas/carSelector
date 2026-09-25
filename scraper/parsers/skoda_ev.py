@@ -33,6 +33,7 @@ import pdfplumber
 
 from ._pdf_layout import column_for_x, extract_model_name, group_into_lines, line_text, looks_like_toc_legend
 from .base import BaseParser, ExtractedVariant
+from .skoda_standard_equipment import equipment_for_trim, parse_equipment
 
 _HEADER_CONTINUATION_TOLERANCE = 40
 
@@ -122,12 +123,15 @@ class SkodaEvParser(BaseParser):
 
         Returns:
             One `ExtractedVariant` per trim/battery/drivetrain
-            combination found, all with `powertrain="EV"`.
+            combination found, all with `powertrain="EV"`, with
+            `equipment`/`equipment_surcharge` filled in the same way as
+            `skoda_ice` (see `skoda_standard_equipment.parse_equipment`).
         """
         variants: list[ExtractedVariant] = []
 
         with pdfplumber.open(pdf_path) as pdf:
             model = extract_model_name(pdf)
+            equipment_by_trim, equipment_prices = parse_equipment(pdf)
 
             for page_index, page in enumerate(pdf.pages):
                 words = page.extract_words()
@@ -223,6 +227,8 @@ class SkodaEvParser(BaseParser):
                                 source_page=page_index + 1,
                                 raw_text=raw_text,
                                 powertrain=self.powertrain,
+                                equipment=equipment_for_trim(equipment_by_trim, trim_label),
+                                equipment_surcharge=equipment_prices,
                             )
                         )
 
