@@ -7,15 +7,20 @@ Backdrop-click and Escape-to-close come for free from `ui.dialog`'s
 default (non-`persistent`) behavior.
 """
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from nicegui import ui
+from nicegui import run, ui
 
-from app.schemas.vehicle import PowertrainSpec, VehicleDetail
+from app.schemas.vehicle import VehicleDetail
 from app.ui.i18n import t
 from app.ui.money import format_money
 from app.ui.state import fetch_vehicle_detail
+from app.ui.vehicle_format import co2_label, consumption_label, power_label
+from app.ui.vehicle_pdf import build_vehicle_pdf, pdf_filename
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -23,54 +28,6 @@ class _ModalState:
     detail: VehicleDetail | None = None
     is_loading: bool = False
     error: bool = False
-
-
-def _consumption_label(powertrain: PowertrainSpec) -> str | None:
-    """Args:
-        powertrain: Spec to read consumption fields from.
-
-    Returns:
-        e.g. `"5.4–6.1 l/100 km"` or `"5.4 l/100 km"` (min==max), or
-        `None` if either field is missing.
-    """
-    if powertrain.consumption_min is None or powertrain.consumption_unit is None:
-        return None
-    unit = t(f"vehicleDetail.enums.consumptionUnit.{powertrain.consumption_unit.value}")
-    if powertrain.consumption_max is not None and powertrain.consumption_max != powertrain.consumption_min:
-        value = f"{powertrain.consumption_min}–{powertrain.consumption_max}"
-    else:
-        value = f"{powertrain.consumption_min}"
-    return f"{value} {unit}"
-
-
-def _power_label(powertrain: PowertrainSpec) -> str | None:
-    """Args:
-        powertrain: Spec to read power fields from.
-
-    Returns:
-        e.g. `"110 kW (150 k)"`, or `None` if `power_kw` is missing.
-    """
-    if powertrain.power_kw is None:
-        return None
-    hp = f" ({powertrain.power_hp} k)" if powertrain.power_hp is not None else ""
-    return f"{powertrain.power_kw} kW{hp}"
-
-
-def _co2_label(powertrain: PowertrainSpec) -> str | None:
-    """Args:
-        powertrain: Spec to read CO2 fields from.
-
-    Returns:
-        e.g. `"120–135 g/km"` or `"120 g/km"`, or `None` if
-        `co2_min_g_km` is missing.
-    """
-    if powertrain.co2_min_g_km is None:
-        return None
-    if powertrain.co2_max_g_km is not None and powertrain.co2_max_g_km != powertrain.co2_min_g_km:
-        value = f"{powertrain.co2_min_g_km}–{powertrain.co2_max_g_km}"
-    else:
-        value = f"{powertrain.co2_min_g_km}"
-    return f"{value} g/km"
 
 
 def _detail_field(label: str, value: str | None) -> None:
@@ -102,6 +59,20 @@ def vehicle_detail_modal() -> Callable[[int], None]:
         "shadow-card animate-fade-in"
     ):
 
+        async def _export_pdf() -> None:
+            """Renders the shown vehicle as a PDF (off the event loop - see
+            `app/ui/vehicle_pdf.py`) and hands it to the browser as a download."""
+            detail = state.detail
+            if detail is None:
+                return
+            try:
+                content = await run.io_bound(build_vehicle_pdf, detail)
+            except Exception:
+                logger.exception("PDF export failed for configuration %s", detail.configuration_id)
+                ui.notify(t("vehicleDetail.exportPdfError"), type="negative")
+                return
+            ui.download.content(content, pdf_filename(detail), "application/pdf")
+
         @ui.refreshable
         def _content() -> None:
             if state.is_loading:
@@ -112,13 +83,19 @@ def vehicle_detail_modal() -> Callable[[int], None]:
                 return
 
             detail = state.detail
-            with ui.row().classes("w-full items-start justify-between gap-3"):
+            with ui.row().classes("w-full flex-wrap items-start justify-between gap-3"):
                 with ui.column().classes("gap-0"):
                     ui.label(f"{detail.brand} {detail.model} {detail.trim}").classes("text-[18px] font-bold text-text")
                     ui.label(format_money(detail.price)).classes("mt-0.5 text-[14px] text-subtext")
-                ui.button(t("vehicleDetail.close"), on_click=dialog.close).props("flat no-caps").classes(
-                    "shrink-0 rounded-control border border-border bg-panel-2 px-3 py-1.5 text-[13px] font-semibold text-text"
-                )
+                with ui.row().classes("shrink-0 items-center gap-2"):
+                    ui.button(t("vehicleDetail.exportPdf"), icon="picture_as_pdf", on_click=_export_pdf).props(
+                        "flat no-caps"
+                    ).classes(
+                        "rounded-control border border-border bg-panel-2 px-3 py-1.5 text-[13px] font-semibold text-text"
+                    ).mark("export-pdf")
+                    ui.button(t("vehicleDetail.close"), on_click=dialog.close).props("flat no-caps").classes(
+                        "rounded-control border border-border bg-panel-2 px-3 py-1.5 text-[13px] font-semibold text-text"
+                    )
 
             with ui.column().classes("mt-5 w-full gap-2"):
                 ui.label(t("vehicleDetail.sections.powertrain")).classes(
@@ -131,9 +108,9 @@ def vehicle_detail_modal() -> Callable[[int], None]:
                         t("vehicleDetail.fields.drivetrain"), t(f"vehicleDetail.enums.drivetrain.{pt.drivetrain.value}")
                     )
                     _detail_field(t("vehicleDetail.fields.transmission"), pt.transmission)
-                    _detail_field(t("vehicleDetail.fields.power"), _power_label(pt))
-                    _detail_field(t("vehicleDetail.fields.consumption"), _consumption_label(pt))
-                    _detail_field(t("vehicleDetail.fields.co2"), _co2_label(pt))
+                    _detail_field(t("vehicleDetail.fields.power"), power_label(pt))
+                    _detail_field(t("vehicleDetail.fields.consumption"), consumption_label(pt))
+                    _detail_field(t("vehicleDetail.fields.co2"), co2_label(pt))
 
             with ui.column().classes("mt-5 w-full gap-2"):
                 ui.label(t("vehicleDetail.sections.colors")).classes(

@@ -236,6 +236,8 @@ STRINGS: dict = {
     },
     "vehicleDetail": {
         "close": "Zavřít",
+        "exportPdf": "Stáhnout PDF",
+        "exportPdfError": "PDF se nepodařilo vytvořit.",
         "loading": "Načítám detail vozu…",
         "error": "Nepodařilo se načíst detail vozu.",
         "sections": {
@@ -257,6 +259,14 @@ STRINGS: dict = {
         "priceHistory": {
             "current": "aktuální",
             "lowestPrice30d": "nejnižší cena za 30 dní: {price}",
+        },
+        "pdf": {
+            "created": "Vytvořeno {date}",
+            "included": "v ceně",
+            "page": "Strana {page}/{total}",
+            "disclaimer": (
+                "Údaje vycházejí z ceníků výrobců a mohou se změnit. Závaznou nabídku vám dá prodejce."
+            ),
         },
         "noColors": "Žádné barevné varianty nejsou k dispozici.",
         "noOptionalEquipment": "Žádná volitelná výbava není k dispozici.",

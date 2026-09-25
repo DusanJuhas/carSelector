@@ -110,7 +110,7 @@ def _car_card(
         f"{border_class} {'cursor-pointer' if on_select else ''}"
     ) as card:
         if on_select is not None:
-            card.props("tabindex=0")
+            card.props("tabindex=0").mark(f"car-{car.configuration_id}")
             card.on("click", lambda: on_select(car))
             card.on("keydown.enter", lambda: on_select(car))
 

@@ -123,3 +123,10 @@ SMTP_PORT = int(os.getenv("SMTP_PORT") or {"starttls": 587, "ssl": 465, "none": 
 NICEGUI_STORAGE_PATH = os.environ.setdefault(
     "NICEGUI_STORAGE_PATH", str(Path(__file__).resolve().parents[3] / "storage" / "nicegui")
 )
+
+# Unicode TrueType fonts for the vehicle PDF export (app/ui/vehicle_pdf.py).
+# Optional: without them, DejaVu Sans / Arial is looked up in the usual
+# system font folders. Set these where neither exists (e.g. a slim Docker
+# image without fonts-dejavu-core), or the PDF loses Czech diacritics.
+PDF_FONT_PATH = os.getenv("PDF_FONT_PATH") or None
+PDF_FONT_BOLD_PATH = os.getenv("PDF_FONT_BOLD_PATH") or None
