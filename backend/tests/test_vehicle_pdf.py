@@ -32,7 +32,7 @@ def test_pdf_contains_vehicle_detail(seeded_session: SeededData) -> None:
     # pdfplumber reads the no-break spaces in money back as plain spaces.
     assert format_money(detail.price).replace(" ", " ") in text
     assert "Vytvořeno 25. 09. 2026" in text
-    assert "Motor a pohon" in text.replace("MOTOR A POHON", "Motor a pohon")
+    assert "MOTOR A POHON" in text
     assert detail.standard_equipment[0] in text
     assert detail.optional_equipment[0].name in text
     assert "Strana 1/" in text

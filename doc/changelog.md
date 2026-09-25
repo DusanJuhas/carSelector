@@ -21,6 +21,26 @@ to one or more related commits.
 
 ---
 
+## 0.2.40 — 2026-09-25
+
+### Added
+- PDF export of one car: a "Stáhnout PDF" button in the vehicle detail
+  dialog downloads an A4 PDF with the same content as the dialog: name,
+  price, powertrain, colors, standard and optional equipment, and price
+  history. The file is named after the car, e.g. `volkswagen-tiguan-r-line.pdf`.
+  - Generated server-side in Python with the new `fpdf2` dependency
+    (`app/ui/vehicle_pdf.py`), with no Node.js or system libraries needed.
+  - Czech text needs a Unicode TrueType font. DejaVu Sans or Arial is
+    found automatically in the usual Linux/Windows/macOS font folders, or
+    you can set `PDF_FONT_PATH`/`PDF_FONT_BOLD_PATH`. With no such font,
+    the PDF is still produced, without diacritics.
+- Powertrain labels (power, consumption, CO₂) moved to
+  `app/ui/vehicle_format.py`, so the dialog and the PDF format them the same way.
+- Tests: `tests/test_vehicle_pdf.py` (content, no-font fallback, file
+  name), `tests/ui/test_vehicle_pdf_export.py` (button → PDF download).
+
+---
+
 ## 0.2.39 — 2026-09-24
 
 ### Added
