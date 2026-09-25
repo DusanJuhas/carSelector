@@ -21,6 +21,17 @@ to one or more related commits.
 
 ---
 
+## 0.2.43 — 2026-09-25
+
+### Changed
+- Wizard, question 7 (annual mileage): the field starts at 15 000 km
+  (roughly the Czech average) and its arrows change the value by 1 000 km
+  instead of 1. "Nevím / přeskočit" still leaves the mileage unset; the
+  pre-filled value only counts when you click "Další".
+- Test: `tests/ui/test_wizard_mileage.py`.
+
+---
+
 ## 0.2.42 — 2026-09-25
 
 ### Added

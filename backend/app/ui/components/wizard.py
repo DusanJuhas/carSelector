@@ -20,6 +20,11 @@ _BODY_TYPE_OPTIONS = ("Hatchback", "Kombi", "SUV", "MPV")
 _FUEL_OPTIONS = ("electric", "hybrid", "diesel", "petrol")
 _CARGO_OPTIONS = ("stroller", "sports", "tools", "trailer", "none")
 _PRIORITY_OPTIONS = ("cost", "repairs", "power", "comfort")
+# Pre-filled annual mileage: roughly the average for a Czech passenger car,
+# so the arrows start from a realistic value instead of 0. Only the input
+# is pre-filled - "Přeskočit" still leaves `annual_km` unset.
+DEFAULT_ANNUAL_KM = 15_000
+ANNUAL_KM_STEP = 1_000
 
 _OPTION_BUTTON_CLASSES = "w-full rounded-control border px-4 py-2.5 text-left text-[13px] font-semibold "
 _OPTION_SELECTED = "border-accent bg-accent text-accent-text"
@@ -203,8 +208,14 @@ def wizard_dialog(
             elif step == 6:
                 ui.label(t("wizard.questions.mileage.title")).classes("mb-3 text-[14px] font-semibold text-text")
                 mileage_input = (
-                    ui.number(placeholder=t("wizard.questions.mileage.placeholder"), value=wizard.annual_km, min=0)
-                    .props("borderless dense")
+                    ui.number(
+                        placeholder=t("wizard.questions.mileage.placeholder"),
+                        value=wizard.annual_km if wizard.annual_km is not None else DEFAULT_ANNUAL_KM,
+                        min=0,
+                        step=ANNUAL_KM_STEP,
+                    )
+                    .props('borderless dense suffix="km"')
+                    .mark("mileage-input")
                     .classes("w-full rounded-control border border-border bg-panel-2 px-3.5 py-2.5 text-[14px] text-text")
                 )
 
