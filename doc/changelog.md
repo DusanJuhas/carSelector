@@ -21,6 +21,40 @@ to one or more related commits.
 
 ---
 
+## 0.2.41 — 2026-09-25
+
+### Added
+- Škoda standard equipment: the scraper now reads the per-trim
+  "Standardní výbava" pages of every Škoda price list, for combustion
+  models and EVs alike (`scraper/parsers/skoda_standard_equipment.py`).
+  A trim page lists only what it adds to its base trim ("navíc oproti
+  výbavovému stupni X"), so each trim gets its base's items plus its own.
+  Footnotes and group labels ("Asistovaná jízda") are skipped. Items on
+  several lines are joined into one.
+- `python -m scraper.reparse_equipment --brand <brand> [--dry-run]`
+  re-parses already-downloaded price lists and refreshes only their
+  equipment (prices and price history untouched). Needed because
+  `scraper.main` never re-parses an unchanged document.
+- Tests: `scraper/tests/test_skoda_standard_equipment.py`,
+  `scraper/tests/test_reparse_equipment.py`.
+
+### Fixed
+- Škoda EVs (Elroq, Enyaq, Epiq, Peaq) had no equipment at all. The EV
+  parser now also reads the paid standalone items, like the combustion one.
+- Epiq/Peaq trims whose price-table name is shorter than on the equipment
+  pages ("First" vs "First Edition") now find their equipment (only when
+  exactly one name matches).
+- A standard item no longer carries a price in `scraper.db` (an item paid
+  on one trim but standard on another, e.g. the Elroq L&K heat pump,
+  used to keep the paid price). The import failed on such rows.
+
+### Known gaps
+- Octavia/Fabia promo trims Classic and Dynamic: their page describes
+  two trims side by side and is skipped, so they have no standard equipment.
+- Colors are still not scraped for any brand.
+
+---
+
 ## 0.2.40 — 2026-09-25
 
 ### Added
