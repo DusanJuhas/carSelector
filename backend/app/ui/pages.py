@@ -4,6 +4,7 @@ routed screens).
 """
 
 import asyncio
+import logging
 from dataclasses import dataclass
 
 from nicegui import app, ui
@@ -21,11 +22,19 @@ from app.ui.components.header import app_header
 from app.ui.components.login_dialog import login_dialog
 from app.ui.components.requirements_drawer import requirements_drawer
 from app.ui.components.results_grid import LikeButtons, append_car_cards, results_grid, sort_control
+from app.ui.components.share_dialog import share_dialog
 from app.ui.components.vehicle_detail_modal import vehicle_detail_modal
 from app.ui.components.wizard import wizard_dialog
 from app.ui.i18n import STRINGS, t, t_count
 from app.ui.sort import BACKEND_SORT_OPTIONS, sort_cars
-from app.ui.state import PAGE_SIZE, CatalogState, ConversationState, LikedModelsState, WizardState
+from app.ui.state import (
+    PAGE_SIZE,
+    CatalogState,
+    ConversationState,
+    LikedModelsState,
+    WizardState,
+    create_shared_snapshot,
+)
 from app.ui.styles import register_styles
 
 CUSTOM_ORDER_KEY = "custom_car_order"
@@ -112,6 +121,8 @@ MOBILE_HIDDEN = "max-md:hidden!"
 # bottom tab bar pads itself with; `interactive-widget=resizes-content`
 # makes Android Chrome shrink the page (not overlay it) when the on-screen
 # keyboard opens, keeping the chat input in view.
+logger = logging.getLogger(__name__)
+
 MOBILE_VIEWPORT = "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
 
 
@@ -187,7 +198,30 @@ async def index() -> None:
         cars = displayed_cars()
         return cars[: narrowed_paging.shown] if conv.has_narrowed else cars
 
-    open_detail = vehicle_detail_modal()
+    open_share = share_dialog()
+
+    async def share(cars: list[VehicleSummary]) -> None:
+        """Stores a read-only snapshot of `cars` (plus the current
+        requirements) and shows its link - see `app/services/sharing.py`."""
+        try:
+            snapshot = await create_shared_snapshot(conv.requirements, cars, conv.user_id)
+        except Exception:
+            logger.exception("Creating a shared snapshot failed")
+            ui.notify(t("share.error"), type="negative")
+            return
+        open_share(snapshot)
+
+    async def share_results() -> None:
+        await share(displayed_cars())
+
+    async def share_vehicle(detail: VehicleSummary) -> None:
+        # The card's own summary carries what the detail lacks (match
+        # score, AI explanation) - fall back to the detail itself when
+        # the car isn't among the current results.
+        card = next((car for car in displayed_cars() if car.configuration_id == detail.configuration_id), None)
+        await share([card or VehicleSummary.model_validate(detail.model_dump(include=set(VehicleSummary.model_fields)))])
+
+    open_detail = vehicle_detail_modal(share_vehicle)
 
     def refresh_all() -> None:
         chrome.refresh()
@@ -467,6 +501,13 @@ async def index() -> None:
                             ui.label(t("results.updated") if conv.has_narrowed else t("results.startPrompt")).classes(
                                 "mt-0.5 text-[13px] text-subtext"
                             )
+                        if cars:
+                            ui.button(t("share.button"), icon="share", on_click=share_results).props(
+                                "flat no-caps"
+                            ).classes(
+                                "shrink-0 rounded-control border border-border bg-panel-2 px-3 py-1.5 text-[13px] "
+                                "font-semibold text-text"
+                            ).mark("share-results")
                         ui.button(
                             t("results.controlsToggle"),
                             icon="tune",

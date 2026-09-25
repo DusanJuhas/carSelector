@@ -14,7 +14,7 @@ Odhad rozsahu: **S** = do dne, **M** = pár dní, **L** = týden a víc.
 | 2 | Kalkulačka TCO | Rozhodování | M | kvalita dat o spotřebě | ❌ |
 | 3 | Oblíbené vozy | Rozhodování | S–M | přihlášení (hotové) | ✅ (0.2.39) |
 | 4 | Chat k jednomu vozu | AI | M | — | ❌ |
-| 5 | Sdílení a PDF export | AI / výstup | M | — | ❌ |
+| 5 | Sdílení a PDF export | AI / výstup | M | — | ✅ (0.2.40 PDF, 0.2.42 sdílení A + F) |
 | 6 | Hlídač cen a akcí | Data | M | 3 (Oblíbené), 8 (Plánovaný scraping) | ❌ |
 | 7 | Fotky vozů | Data | L | — | ❌ |
 | 8 | Plánovaný scraping | Data | M | persistentní DB na nasazení | ❌ |
@@ -110,6 +110,41 @@ AI vysvětlení) a nabídne stažení PDF se stejným obsahem.
 **Návaznost:** snapshot jako nová tabulka s náhodným ID (ne sekvenčním) a expirací. PDF se
 generuje server-side v Pythonu (bez Node.js, viz tech stack). Sdílený odkaz nesmí prozradit
 e-mail ani identitu autora.
+
+**Stav:** PDF export jednoho vozu hotový (0.2.40). Sdílení variantami A + F hotové (0.2.42).
+Zbývá: C („Pokračuj odsud“), D (společný seznam), přehled „Moje sdílení“ se zrušením odkazu.
+
+### Varianty sdílení (rozpracováno 2026-09-25)
+
+Co se dá sdílet: konkrétní vůz (detail/PDF), výsledek hledání (požadavky + top N vozů +
+vysvětlení), oblíbené modely, požadavky jako výchozí bod pro další hledání.
+
+| | Varianta | Pro koho | Rozsah | Rozhodnutí |
+|---|---|---|---|---|
+| A | Odkaz jen pro čtení (snapshot) | kdokoli, bez účtu | S–M | ✅ hotovo (0.2.42) |
+| B | Živý odkaz na seznam | kdokoli | M | ❌ pokryje ho D |
+| C | „Pokračuj odsud“ | kdokoli, bez účtu | S | později, jako tlačítko na stránce z A |
+| D | Společný seznam („garáž“) | účty, pozvánka e-mailem | L | až po #6 Hlídač cen |
+| E | Odeslat e-mailem z aplikace | kdokoli | S–M | jen při poptávce |
+| F | Sdílení přes systém telefonu + QR kód | kdokoli | XS–S | ✅ hotovo (0.2.42) |
+
+- **A) Snapshot:** tlačítko „Sdílet“ uloží zmrazenou kopii (požadavky, vozy a ceny k danému
+  dni, vysvětlení) a vrátí odkaz `/s/<token>`. Ceny jsou zmrazené i s datem, což se hodí do
+  autosalonu. Snapshot má expiraci.
+- **B) Živý odkaz:** ukazuje aktuální stav (např. oblíbené). Je vždy aktuální, ale autor musí
+  vědět, že sdílí průběžně, a potřebuje přehled odkazů s možností je zrušit.
+- **C) „Pokračuj odsud“:** odkaz předvyplní požadavky odesílatele do vlastní relace příjemce,
+  který pak hledá dál. Originál se nemění.
+- **D) Společný seznam:** více členů, hlasování a komentáře. Pozvánka e-mailem zároveň založí
+  účet (přihlášení kódem). Vyžaduje nový datový model (seznamy, členství) a řešení GDPR u
+  pozvaných.
+- **E) E-mail z aplikace:** hrozí, že se aplikace stane rozesílačem spamu. Je potřeba omezit
+  počet odeslání a adresu příjemce neukládat.
+- **F) Systémové sdílení + QR:** na mobilu nativní nabídka „Sdílet“ (Web Share API), jinak
+  kopírování odkazu. QR kód pro ukázání v autosalonu. Obsahem je odkaz z A.
+
+Platí pro všechny varianty: odkaz neprozradí autora (náhodný token, žádný e-mail), stránka má
+`noindex`, expirace (30 dní), vytvořit snapshot může i nepřihlášený uživatel.
 
 ## 6. Hlídač cen a akcí
 

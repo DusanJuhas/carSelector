@@ -130,3 +130,12 @@ NICEGUI_STORAGE_PATH = os.environ.setdefault(
 # image without fonts-dejavu-core), or the PDF loses Czech diacritics.
 PDF_FONT_PATH = os.getenv("PDF_FONT_PATH") or None
 PDF_FONT_BOLD_PATH = os.getenv("PDF_FONT_BOLD_PATH") or None
+
+# How long a shared result link (/s/<token>, app/services/sharing.py)
+# stays valid.
+SHARE_TTL_DAYS = int(os.getenv("SHARE_TTL_DAYS", "30"))
+
+# Public origin used to build shared links and their QR codes, e.g.
+# https://rovis.example.cz. Unset: taken from the incoming request, which
+# is right for local runs but may be an internal address behind a proxy.
+PUBLIC_BASE_URL = (os.getenv("PUBLIC_BASE_URL") or "").rstrip("/") or None

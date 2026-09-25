@@ -91,7 +91,7 @@ def sort_control(value: str, on_change: Callable[[str], None]) -> None:
         ).props("borderless dense options-dense")
 
 
-def _car_card(
+def car_card(
     car: VehicleSummary, on_select: Callable[[VehicleSummary], None] | None, like: LikeButtons | None = None
 ) -> None:
     """Renders one result card - make/model/trim, price, match score,
@@ -179,7 +179,7 @@ def _card_slot(
                 "justify-center rounded-full bg-panel-2/90 text-[13px] text-subtext "
                 "pointer-coarse:h-10 pointer-coarse:w-10 pointer-coarse:text-[18px]"
             ).tooltip(t("results.dragHint"))
-        _car_card(car, on_select, like)
+        car_card(car, on_select, like)
 
 
 def results_grid(

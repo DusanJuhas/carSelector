@@ -8,7 +8,7 @@ default (non-`persistent`) behavior.
 """
 
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from nicegui import run, ui
@@ -45,8 +45,14 @@ def _detail_field(label: str, value: str | None) -> None:
         )
 
 
-def vehicle_detail_modal() -> Callable[[int], None]:
+def vehicle_detail_modal(
+    on_share: Callable[[VehicleDetail], Awaitable[None]] | None = None,
+) -> Callable[[int], None]:
     """Builds the (initially closed) vehicle detail dialog.
+
+    Args:
+        on_share: Called with the shown vehicle when its "Sdílet" button
+            is clicked; no button without it.
 
     Returns:
         A function to call with a configuration id to load and open it.
@@ -88,6 +94,12 @@ def vehicle_detail_modal() -> Callable[[int], None]:
                     ui.label(f"{detail.brand} {detail.model} {detail.trim}").classes("text-[18px] font-bold text-text")
                     ui.label(format_money(detail.price)).classes("mt-0.5 text-[14px] text-subtext")
                 with ui.row().classes("shrink-0 items-center gap-2"):
+                    if on_share is not None:
+                        ui.button(t("share.button"), icon="share", on_click=lambda: on_share(detail)).props(
+                            "flat no-caps"
+                        ).classes(
+                            "rounded-control border border-border bg-panel-2 px-3 py-1.5 text-[13px] font-semibold text-text"
+                        ).mark("share-vehicle")
                     ui.button(t("vehicleDetail.exportPdf"), icon="picture_as_pdf", on_click=_export_pdf).props(
                         "flat no-caps"
                     ).classes(

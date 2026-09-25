@@ -26,6 +26,8 @@ babel>=2.14,<3.0
 certifi>=2024.2.2
 # Vehicle PDF export (app/ui/vehicle_pdf.py) - pure Python, no system deps.
 fpdf2>=2.8,<3.0
+# QR codes for shared result links (app/ui/components/share_dialog.py) - pure Python, SVG output.
+segno>=1.6,<2.0
 
 # --- scraper/ (standalone price-list scraper) ---
 # Skutečně používané závislosti (ověřeno grepem přes scraper/ 19.7.2026).

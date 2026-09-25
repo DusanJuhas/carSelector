@@ -22,8 +22,9 @@ from app.models.enums import Drivetrain, FuelType
 from app.schemas.catalog import BrandRead
 from app.schemas.common import Money
 from app.schemas.requirement import StructuredRequirements, UserRequirement
+from app.schemas.sharing import SharedSnapshot
 from app.schemas.vehicle import VehicleDetail, VehicleSummary
-from app.services import catalog, liked_models, saved_requirements
+from app.services import catalog, liked_models, saved_requirements, sharing
 from app.services.conversation import orchestrator
 from app.ui import db as ui_db
 
@@ -694,5 +695,41 @@ async def fetch_vehicle_detail(configuration_id: int) -> VehicleDetail | None:
     def _load() -> VehicleDetail | None:
         with ui_db.get_session() as db:
             return catalog.get_vehicle_detail(db, configuration_id)
+
+    return await run.io_bound(_load)
+
+
+async def create_shared_snapshot(
+    requirements: list[UserRequirement], vehicles: list[VehicleSummary], user_id: int | None
+) -> SharedSnapshot:
+    """Stores a read-only snapshot for a shared link (see `app/services/sharing.py`).
+
+    Args:
+        requirements: Requirement lines to include.
+        vehicles: Cars to include, in display order.
+        user_id: The sharing user, if logged in.
+
+    Returns:
+        The stored snapshot, with the token for its link.
+    """
+
+    def _create() -> SharedSnapshot:
+        with ui_db.get_session() as db:
+            return sharing.create(db, requirements, vehicles, user_id)
+
+    return await run.io_bound(_create)
+
+
+async def fetch_shared_snapshot(token: str) -> SharedSnapshot | None:
+    """Args:
+        token: The token from a shared link.
+
+    Returns:
+        The snapshot, or `None` if unknown or expired.
+    """
+
+    def _load() -> SharedSnapshot | None:
+        with ui_db.get_session() as db:
+            return sharing.get(db, token)
 
     return await run.io_bound(_load)

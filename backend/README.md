@@ -174,6 +174,20 @@ conversation.py` and the two AI modules already is Czech — that part went unve
 since nothing rendered it live until a real UI was wired to this logic, not a scripted mock with
 its own separately-authored Czech copy.
 
+### Shared links
+
+"Sdílet" (results header, vehicle detail) stores a frozen, read-only copy of the result and gives a
+link `/s/<token>` that works without an account (`app/services/sharing.py`,
+`app/ui/shared_page.py`). The link carries no author identity; the page is `noindex`.
+
+```
+PUBLIC_BASE_URL=https://rovis.example.cz   # origin for links/QR codes; unset = the request's own origin
+SHARE_TTL_DAYS=30                          # how long a link stays valid
+```
+
+Set `PUBLIC_BASE_URL` wherever the app runs behind a proxy, or the links may point at an internal
+address.
+
 ## Database
 
 SQLite (a local file, `storage/drivewise.db`, gitignored) is the default for now, so the app runs

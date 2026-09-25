@@ -234,6 +234,37 @@ STRINGS: dict = {
         "empty": "Zatím nebyly zachyceny žádné požadavky.",
         "close": "Zavřít",
     },
+    "share": {
+        "button": "Sdílet",
+        "creating": "Připravuji odkaz…",
+        "error": "Odkaz se nepodařilo vytvořit. Zkuste to prosím znovu.",
+        "title": "Sdílet výběr",
+        "description": (
+            "Kdokoli s tímto odkazem uvidí tento výběr, i bez účtu. Odkaz platí do {date} "
+            "a neobsahuje vaše jméno ani e-mail."
+        ),
+        "copy": "Kopírovat odkaz",
+        "copied": "Odkaz zkopírován",
+        "native": "Sdílet…",
+        "nativeTitle": "Výběr aut z Rovis",
+        "qrHint": "Naskenujte telefonem, třeba v autosalonu.",
+        "close": "Zavřít",
+        "pageTitle": "Sdílený výběr aut · Rovis",
+        "heading": {
+            "one": "Sdílený výběr: {count} vůz",
+            "few": "Sdílený výběr: {count} vozy",
+            "other": "Sdílený výběr: {count} vozů",
+        },
+        "asOf": "Ceny k {created} · odkaz platí do {expires}",
+        "requirements": "Požadavky",
+        "priceNote": (
+            "Ceny jsou z ceníků výrobců ke dni sdílení a mezitím se mohly změnit. "
+            "Aktuální nabídku najdete v aplikaci nebo u prodejce."
+        ),
+        "findOwn": "Najít vlastní auto",
+        "notFound": "Odkaz neexistuje nebo už vypršel.",
+        "notFoundHint": "Sdílené odkazy platí omezenou dobu. Požádejte o nový, nebo si auto najděte sami.",
+    },
     "vehicleDetail": {
         "close": "Zavřít",
         "exportPdf": "Stáhnout PDF",

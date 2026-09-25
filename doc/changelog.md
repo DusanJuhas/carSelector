@@ -21,6 +21,32 @@ to one or more related commits.
 
 ---
 
+## 0.2.42 — 2026-09-25
+
+### Added
+- Shared links: a "Sdílet" button in the results header and in the
+  vehicle detail dialog saves a read-only copy of the result and shows a
+  link `/s/<token>` that anyone can open, no account needed.
+  - The copy is frozen: the cars (up to 10) and prices stay as they were
+    on the day of sharing, and the page says "Ceny k …". Requirements are
+    included as label/value only, without the user's own chat words.
+  - The link doesn't reveal who shared it. The token is random (128 bits),
+    the page is `noindex`, and links expire after 30 days
+    (`SHARE_TTL_DAYS`). Expired and unknown links show the same message.
+    Expired rows are deleted when a new link is created.
+  - Works for anonymous users too. The sharer's account id is stored
+    (for a future "my shared links" list) but never shown.
+  - New table `shared_snapshots` (migration `cc2daa920742`),
+    `app/services/sharing.py`, `app/ui/shared_page.py`.
+- Share dialog (`app/ui/components/share_dialog.py`): copy the link, the
+  phone's own share sheet (Web Share API, shown only where the browser
+  supports it) and a QR code (new `segno` dependency, pure Python).
+- `PUBLIC_BASE_URL` sets the origin used in links and QR codes. Without
+  it, the request's own origin is used, which can be wrong behind a proxy.
+- Tests: `tests/test_sharing_service.py`, `tests/ui/test_sharing.py`.
+
+---
+
 ## 0.2.41 — 2026-09-25
 
 ### Added
