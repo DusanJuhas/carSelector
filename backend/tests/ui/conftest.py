@@ -9,6 +9,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 
 import pytest
+from nicegui.storage import Storage
 from nicegui.testing import User
 from sqlalchemy.orm import Session
 
@@ -17,6 +18,37 @@ from app.core import config
 from app.services.auth import auth_service
 from app.services.mailer import EmailSender
 from tests.conftest import SeededData, seeded_session  # noqa: F401 - re-exported fixture
+
+
+_original_storage_clear = Storage.clear
+
+
+def _storage_clear_with_retry(self: Storage) -> None:
+    """Wraps NiceGUI's `Storage.clear`, which the `user` fixture's teardown
+    calls (via `app.reset()`) and which ends in `path.rmdir()`. On Windows
+    its best-effort unlink of `storage-*.json.tmp` files (an interrupted
+    `app.storage.user` backup - `log_in` writes it) is `suppress(OSError)`'d,
+    so an empty `.tmp` can survive and make `rmdir` raise WinError 145. Even
+    unlinking it isn't enough: a cancelled backup can leak the open handle,
+    leaving the file delete-pending (still listed) until it's released.
+    The directory is session-wide (`pytest_configure` creates it once and
+    registers an `atexit` rmtree), so on failure sweep what we can and leave
+    removing the directory itself to that `atexit` hook.
+
+    Args:
+        self: The `app.storage` instance being cleared.
+    """
+    try:
+        _original_storage_clear(self)
+    except OSError:
+        for leftover in self.path.iterdir():
+            try:
+                leftover.unlink(missing_ok=True)
+            except OSError:
+                pass  # still held open - the atexit rmtree gets it
+
+
+Storage.clear = _storage_clear_with_retry
 
 
 @pytest.fixture()
