@@ -21,6 +21,19 @@ to one or more related commits.
 
 ---
 
+## 0.2.46 — 2026-10-07
+
+### Fixed
+- Opening the app sometimes failed with "500 Server error … longer than
+  the response_timeout of 3.0 seconds", mostly for logged-in users (e.g.
+  coming back from `/admin`). On load, the saved result was rebuilt, which
+  asks the AI for an explanation of each car, before the page was sent.
+  The page is now sent first and fills in once loaded. Until then the
+  results title says "Katalog vozů" instead of "0 vozů v katalogu".
+- Test: `tests/ui/test_page_load.py`.
+
+---
+
 ## 0.2.45 — 2026-10-07
 
 ### Changed

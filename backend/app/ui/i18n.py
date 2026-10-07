@@ -240,6 +240,9 @@ STRINGS: dict = {
         "emptyState": "Zatím nic nevyhovuje vašim požadavkům — zkuste je v konverzaci upravit.",
         "loadingMore": "Načítám další…",
         "loadingCatalog": "Načítám katalog…",
+        # Results title while the first catalog page is still loading -
+        # instead of a misleading "0 vozů v katalogu".
+        "loadingTitle": "Katalog vozů",
         "catalogError": "Nepodařilo se načíst katalog vozů.",
         "sortBy": "Seřadit podle",
         "sort": {

@@ -160,6 +160,10 @@ async def index() -> None:
     await liked.load()
     conv.liked = liked
     catalog_state = CatalogState(liked=liked)
+    # Both load only after the page is sent (see the end of this
+    # function); until then the first render shows their loading states.
+    conv.is_loading = True
+    catalog_state.is_loading = True
     like_buttons = LikeButtons(liked.is_liked, liked.toggle)
     wizard_state = WizardState()
     sort_state = _SortState()
@@ -492,11 +496,12 @@ async def index() -> None:
 
                     with ui.row().classes("mb-3 md:mb-4.5 w-full flex-wrap items-start justify-between gap-3"):
                         with ui.column().classes("gap-0 max-md:min-w-0 max-md:flex-1"):
-                            title = (
-                                t_count("results.title", len(cars))
-                                if conv.has_narrowed
-                                else t_count("results.browsingTitle", catalog_state.total)
-                            )
+                            if conv.has_narrowed:
+                                title = t_count("results.title", len(cars))
+                            elif catalog_state.is_loading:
+                                title = t("results.loadingTitle")
+                            else:
+                                title = t_count("results.browsingTitle", catalog_state.total)
                             ui.label(title).classes("text-[17px] md:text-[19px] font-bold text-text")
                             ui.label(t("results.updated") if conv.has_narrowed else t("results.startPrompt")).classes(
                                 "mt-0.5 text-[13px] text-subtext"
@@ -627,6 +632,16 @@ async def index() -> None:
 
         mobile_tabs()
 
+    # Everything below can be slow - for a logged-in user `conv.begin()`
+    # rebuilds the saved result, which asks the AI for one explanation per
+    # car. NiceGUI only sends the page once this function returns (or
+    # awaits `connected()`), and fails it with a 500 after
+    # `response_timeout` (3 s), so send the page first - showing the
+    # loading states set above - and load into it afterwards.
+    try:
+        await ui.context.client.connected()
+    except TimeoutError:
+        return  # the browser never connected - nobody to load for
     await conv.begin()
     await catalog_state.load_brands()
     await catalog_state.load_first_page(backend_sort())
