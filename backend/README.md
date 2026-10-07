@@ -293,6 +293,18 @@ login prompt and regular accounts a "no admin rights" note instead of the consol
 The header's "Admin" link is only shown to admins, but the real check is on the page itself (an
 unprivileged browser never receives the job buttons at all).
 
+The console's **"AI komunikace"** tab is a complete trace of the LLM traffic (Groq or Anthropic,
+whichever `AI_PROVIDER` selects): one entry per call with its purpose (requirement extraction /
+recommendation explanation), model, latency, token usage and OK/error status, expandable to the
+exact request payload sent to the SDK, the reply text, and the full raw response JSON (or the
+provider's error body). It updates live. Recorded by `app/ai/trace.py` from inside `app/ai/llm.py`,
+kept in process memory only (never on disk, cleared on restart, per worker process) because it
+contains users' chat text. API keys are never part of it.
+
+```
+LLM_TRACE_MAX_ENTRIES=200   # optional, calls kept (oldest dropped first); 0 turns tracing off
+```
+
 ## Tests
 
 ```bash

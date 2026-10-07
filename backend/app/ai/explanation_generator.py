@@ -8,6 +8,7 @@ NOTE: untested against a live API - see requirement_interpreter.py.
 
 from app.ai.client import get_client
 from app.ai.llm import LlmClient
+from app.ai.trace import llm_purpose
 from app.schemas.requirement import StructuredRequirements
 from app.schemas.vehicle import VehicleSummary
 
@@ -76,7 +77,8 @@ class ExplanationGenerator:
             f"Specs: {', '.join(vehicle.specs)}\n"
             f"User priorities: {', '.join(requirements.priorities) or 'none stated'}\n"
         )
-        return client.complete(system=SYSTEM_PROMPT, user_content=facts, max_tokens=100).strip()
+        with llm_purpose("explanation"):
+            return client.complete(system=SYSTEM_PROMPT, user_content=facts, max_tokens=100).strip()
 
 
 # Shared instance for callers that don't need a custom client (e.g. tests

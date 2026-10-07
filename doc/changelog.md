@@ -21,6 +21,28 @@ to one or more related commits.
 
 ---
 
+## 0.2.44 — 2026-10-07
+
+### Added
+- Admin console (`/admin`) now has two tabs. "Data" holds the existing
+  scraper and import jobs. "AI komunikace" is a new tab with a complete
+  trace of the communication with Groq (and Anthropic, when selected):
+  - One entry per AI call: time, purpose (extraction of requirements /
+    recommendation explanation), model, duration, tokens, OK or error code.
+  - Opening an entry shows the conversation as sent (system prompt and
+    user message), the reply text, the error if the call failed, and the
+    raw request and response as JSON.
+  - Updates live every 2 s (can be turned off), plus "Obnovit" and
+    "Vymazat" buttons.
+  - Kept in server memory only, the last `LLM_TRACE_MAX_ENTRIES` calls
+    (default 200, `0` turns it off). It is lost on restart and never
+    written to disk, because it contains what users typed into the chat.
+    API keys are not included. Admin-only, like the rest of the console.
+  - `app/ai/trace.py`, `app/ui/components/llm_trace_panel.py`.
+- Tests: `tests/test_llm_trace.py`, `tests/ui/test_admin_llm_trace.py`.
+
+---
+
 ## 0.2.43 — 2026-09-25
 
 ### Changed

@@ -20,6 +20,7 @@ from pydantic import BaseModel, ValidationError
 
 from app.ai.client import get_client
 from app.ai.llm import LlmClient
+from app.ai.trace import llm_purpose
 from app.schemas.conversation import ChatMessage
 from app.schemas.requirement import StructuredRequirements
 
@@ -137,7 +138,8 @@ class RequirementInterpreter:
         transcript = "\n".join(f"{m.role}: {m.text}" for m in history)
         user_content = f"Conversation so far:\n{transcript}\n\nLatest message:\n{latest_message}"
 
-        raw_text = client.complete(system=SYSTEM_PROMPT, user_content=user_content, max_tokens=1024)
+        with llm_purpose("requirement_extraction"):
+            raw_text = client.complete(system=SYSTEM_PROMPT, user_content=user_content, max_tokens=1024)
 
         try:
             payload = json.loads(self._strip_code_fences(raw_text))

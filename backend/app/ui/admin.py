@@ -1,6 +1,9 @@
-"""Admin console (`/admin`): lets a developer trigger the scraper and the
-scraper -> catalog import from the browser instead of a terminal, with
-live streamed output.
+"""Admin console (`/admin`), two tabs:
+
+- "Data": lets a developer trigger the scraper and the scraper -> catalog
+  import from the browser instead of a terminal, with live streamed output.
+- "AI komunikace": the full trace of LLM (Groq / Anthropic) requests and
+  responses - see `app/ui/components/llm_trace_panel.py`.
 
 Deliberately subprocess-based - `python -m scraper.main` and
 `python scripts/import_scraper_data.py` via `sys.executable` - rather than
@@ -31,6 +34,7 @@ from pathlib import Path
 from nicegui import ui
 
 from app.ui.auth import AuthState
+from app.ui.components.llm_trace_panel import llm_trace_panel
 from app.ui.components.login_dialog import login_dialog
 from app.ui.i18n import t
 from app.ui.styles import register_styles
@@ -222,21 +226,40 @@ def register_admin_page() -> None:
                 ui.label("Rovis — Admin").classes("text-xl font-bold text-text")
                 ui.link("← Zpět na appku", "/").classes("text-[13px] text-accent")
 
-            with ui.column().classes("w-full max-w-[720px] gap-6"):
-                _sources_table()
+            with ui.tabs().props("no-caps align=left").classes("text-text") as tabs:
+                data_tab = ui.tab(t("admin.tabs.data"))
+                trace_tab = ui.tab(t("admin.tabs.aiTrace"))
 
-                _job_section(
-                    "1. Spustit scraper",
-                    "Stáhne a zpracuje nové ceníky ze všech aktivních zdrojů do storage/scraper.db. "
-                    "Samo o sobě nemění katalog, který appka zobrazuje - k tomu slouží krok níže.",
-                    scraper_state,
-                    SCRAPER_COMMAND,
-                )
-                _job_section(
-                    "2. Naimportovat do katalogu",
-                    "Přenese nově zparsovaná data ze storage/scraper.db do katalogu (storage/drivewise.db) "
-                    "- teprve po tomto kroku se nové/aktualizované vozy objeví v appce. Bezpečné spouštět "
-                    "opakovaně.",
-                    import_state,
-                    IMPORT_COMMAND,
-                )
+            with ui.tab_panels(tabs, value=data_tab).classes("w-full bg-transparent"):
+                with ui.tab_panel(data_tab).classes("p-0"):
+                    _data_panel(scraper_state, import_state)
+                with ui.tab_panel(trace_tab).classes("p-0"):
+                    with ui.column().classes("w-full max-w-[1100px]"):
+                        llm_trace_panel()
+
+
+def _data_panel(scraper_state: JobState, import_state: JobState) -> None:
+    """The "Data" tab: configured sources plus the scraper and import jobs.
+
+    Args:
+        scraper_state: State of the scraper job (fresh per page load).
+        import_state: State of the catalog import job (fresh per page load).
+    """
+    with ui.column().classes("w-full max-w-[720px] gap-6"):
+        _sources_table()
+
+        _job_section(
+            "1. Spustit scraper",
+            "Stáhne a zpracuje nové ceníky ze všech aktivních zdrojů do storage/scraper.db. "
+            "Samo o sobě nemění katalog, který appka zobrazuje - k tomu slouží krok níže.",
+            scraper_state,
+            SCRAPER_COMMAND,
+        )
+        _job_section(
+            "2. Naimportovat do katalogu",
+            "Přenese nově zparsovaná data ze storage/scraper.db do katalogu (storage/drivewise.db) "
+            "- teprve po tomto kroku se nové/aktualizované vozy objeví v appce. Bezpečné spouštět "
+            "opakovaně.",
+            import_state,
+            IMPORT_COMMAND,
+        )

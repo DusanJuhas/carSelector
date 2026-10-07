@@ -19,6 +19,41 @@ STRINGS: dict = {
         "logout": "Odhlásit",
         "menu": "Menu",
     },
+    "admin": {
+        "tabs": {
+            "data": "Data",
+            "aiTrace": "AI komunikace",
+        },
+        "trace": {
+            "title": "Komunikace s AI ({provider})",
+            "description": (
+                "Kompletní záznam každého volání AI API — přesně odeslaný požadavek, celá odpověď "
+                "nebo chyba, tokeny a doba trvání. Drží se jen v paměti serveru (posledních {max} "
+                "volání), po restartu zmizí. Obsahuje texty, které uživatelé napsali do chatu."
+            ),
+            "disabled": "Záznam je vypnutý (LLM_TRACE_MAX_ENTRIES=0).",
+            "summary": "{count} volání · {errors} chyb · {tokens} tokenů",
+            "autoRefresh": "Živě obnovovat",
+            "refresh": "Obnovit",
+            "clear": "Vymazat",
+            "empty": "Zatím žádné volání. Napište něco do chatu v appce a záznam se tu objeví.",
+            "ok": "OK",
+            "failed": "Chyba: {code}",
+            "tokens": "{input} → {output} tokenů",
+            "noUsage": "tokeny neuvedeny",
+            "request": "Požadavek",
+            "reply": "Odpověď (text)",
+            "error": "Chyba",
+            "rawRequest": "Surový požadavek (JSON)",
+            "rawResponse": "Surová odpověď (JSON)",
+            "emptyReply": "(prázdná odpověď)",
+            "purposes": {
+                "requirement_extraction": "Extrakce požadavků",
+                "explanation": "Vysvětlení doporučení",
+                "unknown": "Neurčeno",
+            },
+        },
+    },
     "mobileTabs": {
         "chat": "Konverzace",
         "results": "Výsledky",

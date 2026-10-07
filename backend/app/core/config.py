@@ -44,6 +44,12 @@ CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
+# How many LLM request/response exchanges app/ai/trace.py keeps in memory
+# for the admin console's "AI komunikace" tab (oldest dropped first). The
+# entries contain users' chat text, so they are never written to disk and
+# are lost on restart. 0 turns tracing off.
+LLM_TRACE_MAX_ENTRIES = int(os.getenv("LLM_TRACE_MAX_ENTRIES", "200"))
+
 # Origins an external client (not the bundled UI, which is served from this
 # same origin - see app/ui/ - and never needs CORS) can call this API from.
 # Kept, unchanged, for anything that hits /api/* directly (tooling, a
