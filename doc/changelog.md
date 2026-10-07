@@ -21,6 +21,16 @@ to one or more related commits.
 
 ---
 
+## 0.2.45 — 2026-10-07
+
+### Changed
+- Vehicle detail dialog: the header with the car name, price and the
+  "Sdílet", "Stáhnout PDF" and "Zavřít" buttons stays pinned to the top of
+  the dialog while the specs and equipment scroll underneath it, on
+  desktop and on phones.
+
+---
+
 ## 0.2.44 — 2026-10-07
 
 ### Added

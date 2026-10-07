@@ -89,7 +89,18 @@ def vehicle_detail_modal(
                 return
 
             detail = state.detail
-            with ui.row().classes("w-full flex-wrap items-start justify-between gap-3"):
+            # Sticky header: the card itself is the scroll container, so the
+            # title and the buttons stay pinned to its top while the specs
+            # scroll underneath. The negative margins pull the header's
+            # background over the card's padding, so no text shows through
+            # beside it. The negative `top` does the same above it: a sticky
+            # element's offset is measured from inside the scroll container's
+            # padding, so `top-0` would leave a padding-high gap.
+            with ui.row().classes(
+                "sticky -top-4 md:-top-6 z-10 -mx-4 -mt-4 w-[calc(100%+2rem)] flex-wrap items-start justify-between gap-3 "
+                "border-b border-border bg-panel px-4 pb-3 pt-4 "
+                "md:-mx-6 md:-mt-6 md:w-[calc(100%+3rem)] md:px-6 md:pt-6"
+            ).mark("vehicle-detail-header"):
                 with ui.column().classes("gap-0"):
                     ui.label(f"{detail.brand} {detail.model} {detail.trim}").classes("text-[18px] font-bold text-text")
                     ui.label(format_money(detail.price)).classes("mt-0.5 text-[14px] text-subtext")
