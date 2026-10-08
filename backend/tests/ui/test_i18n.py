@@ -60,3 +60,64 @@ def test_invalid_key_error_does_not_point_non_admins_at_the_admin_only_button() 
     non_admin_text = error_message("ai_invalid_key", is_admin=False)
     assert non_admin_text == STRINGS["chat"]["errors"]["ai_invalid_key_user"]
     assert "AI klíč" not in non_admin_text
+
+
+def _leaf_paths(node: dict, prefix: str = "") -> set[str]:
+    paths: set[str] = set()
+    for key, value in node.items():
+        path = f"{prefix}{key}"
+        if isinstance(value, dict):
+            paths |= _leaf_paths(value, f"{path}.")
+        else:
+            paths.add(path)
+    return paths
+
+
+def _without_czech_only_plurals(paths: set[str]) -> set[str]:
+    # English has no `few` plural form - see `plural_key`.
+    return {path for path in paths if not path.endswith(".few")}
+
+
+def test_english_has_exactly_the_czech_keys() -> None:
+    from app.ui.i18n import STRINGS
+    from app.ui.i18n_en import STRINGS_EN
+
+    assert _without_czech_only_plurals(_leaf_paths(STRINGS)) == _leaf_paths(STRINGS_EN)
+
+
+def test_english_strings_use_the_same_placeholders() -> None:
+    import string
+
+    from app.ui.i18n import STRINGS
+    from app.ui.i18n_en import STRINGS_EN
+
+    def placeholders(path: str, locale: dict) -> set[str]:
+        node = locale
+        for part in path.split("."):
+            node = node[part]
+        return {name for _, name, _, _ in string.Formatter().parse(node) if name}
+
+    for path in _leaf_paths(STRINGS_EN):
+        assert placeholders(path, STRINGS_EN) == placeholders(path, STRINGS), path
+
+
+def test_t_defaults_to_czech_outside_a_ui_context() -> None:
+    assert t("chat.send") == "Odeslat"
+
+
+def test_t_takes_an_explicit_language() -> None:
+    assert t("chat.send", lang="en") == "Send"
+
+
+def test_use_language_overrides_the_current_language() -> None:
+    from app.ui.i18n import current_language, use_language
+
+    with use_language("en"):
+        assert current_language() == "en"
+        assert t("chat.send") == "Send"
+    assert current_language() == "cs"
+
+
+@pytest.mark.parametrize(("count", "expected"), [(0, "0 matches for you"), (1, "1 match for you"), (3, "3 matches for you")])
+def test_t_count_english(count: int, expected: str) -> None:
+    assert t_count("results.title", count, lang="en") == expected

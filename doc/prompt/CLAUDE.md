@@ -64,8 +64,10 @@ ostatní):
   (žádný zvláštní DTO/wire-format překlad, na rozdíl od bývalého `frontend/src/types`)
 - Side-effecty (DB/service volání) v UI vrstvě jdou přes `app/ui/db.py`'s `get_session()` +
   `nicegui.run.io_bound`, nikdy přímo synchronně v event handleru (viz `app/ui/state.py`)
-- UI text uživatele je vždy česky, přes `t()`/`t_count()` proti `app/ui/i18n.py`'s `STRINGS`
-  slovníku — žádné natvrdo napsané řetězce v komponentách
+- UI text uživatele jde vždy přes `t()`/`t_count()` proti `app/ui/i18n.py`'s `STRINGS` (čeština,
+  výchozí) a `app/ui/i18n_en.py`'s `STRINGS_EN` (angličtina, přepínač v hlavičce) — žádné natvrdo
+  napsané řetězce v komponentách; nový klíč vždy do obou slovníků (hlídá `tests/ui/test_i18n.py`).
+  Kód v `run.io_bound` vlákně nevidí jazyk prohlížeče — obalit přes `use_language()`
 - Ceny vždy jako `Money` (`{ amount, currency }`), formátované přes `format_money()`
   (`app/ui/money.py`) — currency je `'CZK'`, nikdy natvrdo `$`/`Kč` v textu
 

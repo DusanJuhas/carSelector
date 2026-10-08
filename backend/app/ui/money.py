@@ -19,9 +19,9 @@ def format_money(money: Money, locale: str = "cs_CZ") -> str:
 
     Args:
         money: Amount + ISO 4217 currency code to format.
-        locale: Babel locale to format for. 'cs_CZ' is the only locale
-            this app ships today - see `app/ui/i18n.py`'s module docstring
-            for why there's no language switcher yet.
+        locale: Babel locale to format for. Stays 'cs_CZ' even in the
+            English UI: the catalog only covers the Czech market, so prices
+            keep their local look ("824 900 Kč").
 
     Returns:
         The formatted string, e.g. "824 900 Kč".

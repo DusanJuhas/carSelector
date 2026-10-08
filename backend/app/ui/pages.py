@@ -25,7 +25,7 @@ from app.ui.components.results_grid import LikeButtons, append_car_cards, result
 from app.ui.components.share_dialog import share_dialog
 from app.ui.components.vehicle_detail_modal import vehicle_detail_modal
 from app.ui.components.wizard import wizard_dialog
-from app.ui.i18n import STRINGS, t, t_count
+from app.ui.i18n import LANGUAGES, STRINGS, current_language, set_language, t, t_count
 from app.ui.sort import BACKEND_SORT_OPTIONS, sort_cars
 from app.ui.state import (
     PAGE_SIZE,
@@ -152,7 +152,7 @@ async def index() -> None:
     auth_state = AuthState()
     await auth_state.refresh()
 
-    conv = ConversationState()
+    conv = ConversationState(language=current_language())
     conv.user_id = auth_state.user.id if auth_state.is_logged_in else None
     # Loaded before anything is built, like `auth_state`, so the first
     # catalog page and the first render already know the user's likes.
@@ -291,6 +291,16 @@ async def index() -> None:
         liked.on_logout()
         chrome.refresh()
         refresh_results()  # empty the hearts that belonged to the account
+
+    def switch_language() -> None:
+        """Flips between the supported languages and reloads, so every
+        already-built element (dialogs included) is rebuilt in the new one
+        and a fresh conversation starts in it. A logged-in user's saved
+        requirements are restored by the reload; an anonymous chat in
+        progress starts over."""
+        language = current_language()
+        set_language(LANGUAGES[(LANGUAGES.index(language) + 1) % len(LANGUAGES)])
+        ui.navigate.reload()
 
     def open_wizard() -> None:
         wizard_state.open_wizard()
@@ -465,6 +475,7 @@ async def index() -> None:
                 auth_state.user,
                 open_login_dialog,
                 logout,
+                switch_language,
             )
 
         chrome()

@@ -33,7 +33,22 @@ from app.core import config
 
 logger = logging.getLogger(__name__)
 
-LOGIN_CODE_SUBJECT = "Váš přihlašovací kód do Rovis"
+# Login-code email copy per language ("cs" | "en"), picked by the UI
+# language the code was requested from.
+_LOGIN_CODE_TEXT = {
+    "cs": {
+        "subject": "Váš přihlašovací kód do Rovis",
+        "intro": "Váš přihlašovací kód:",
+        "validity": "Kód platí {minutes} minut a jde použít jen jednou.",
+        "ignore": "Pokud jste se nepřihlašovali, tento e-mail můžete ignorovat.",
+    },
+    "en": {
+        "subject": "Your Rovis login code",
+        "intro": "Your login code:",
+        "validity": "The code is valid for {minutes} minutes and can only be used once.",
+        "ignore": "If you didn't try to log in, you can ignore this email.",
+    },
+}
 SMTP_TIMEOUT_SECONDS = 15
 _SECURITY_MODES = ("starttls", "ssl", "none")
 
@@ -57,25 +72,40 @@ class EmailDeliveryError(Exception):
     """
 
 
-def login_code_body(code: str, ttl_minutes: int) -> str:
-    """Builds the plain-text body of the login-code email (Czech, like all
-    user-facing text - see doc/prompt/CLAUDE.md).
+def _login_code_text(language: str) -> dict[str, str]:
+    return _LOGIN_CODE_TEXT.get(language, _LOGIN_CODE_TEXT["cs"])
+
+
+def login_code_subject(language: str = "cs") -> str:
+    """Args:
+        language: `"cs"` or `"en"`.
+
+    Returns:
+        The login-code email's subject line.
+    """
+    return _login_code_text(language)["subject"]
+
+
+def login_code_body(code: str, ttl_minutes: int, language: str = "cs") -> str:
+    """Builds the plain-text body of the login-code email.
 
     Args:
         code: The one-time code to show.
         ttl_minutes: How long the code stays valid, quoted in the text.
+        language: `"cs"` or `"en"`.
 
     Returns:
         The message body.
     """
+    text = _login_code_text(language)
     return (
-        f"Váš přihlašovací kód: {code}\n\n"
-        f"Kód platí {ttl_minutes} minut a jde použít jen jednou.\n"
-        "Pokud jste se nepřihlašovali, tento e-mail můžete ignorovat.\n"
+        f"{text['intro']} {code}\n\n"
+        f"{text['validity'].format(minutes=ttl_minutes)}\n"
+        f"{text['ignore']}\n"
     )
 
 
-def login_code_html(code: str, ttl_minutes: int) -> str:
+def login_code_html(code: str, ttl_minutes: int, language: str = "cs") -> str:
     """Builds the HTML alternative of the login-code email: the same text,
     with the code large enough to read at a glance. Inline styles only -
     mail clients strip `<style>` blocks.
@@ -83,16 +113,19 @@ def login_code_html(code: str, ttl_minutes: int) -> str:
     Args:
         code: The one-time code to show.
         ttl_minutes: How long the code stays valid, quoted in the text.
+        language: `"cs"` or `"en"`.
 
     Returns:
         A small self-contained HTML document.
     """
+    lang = language if language in _LOGIN_CODE_TEXT else "cs"
+    text = _login_code_text(lang)
     return (
-        '<!doctype html><html lang="cs"><body style="font-family:Arial,Helvetica,sans-serif;color:#222">'
-        "<p>Váš přihlašovací kód:</p>"
+        f'<!doctype html><html lang="{lang}"><body style="font-family:Arial,Helvetica,sans-serif;color:#222">'
+        f"<p>{text['intro']}</p>"
         f'<p style="font-size:30px;font-weight:bold;letter-spacing:6px;margin:8px 0">{html.escape(code)}</p>'
-        f"<p>Kód platí {int(ttl_minutes)} minut a jde použít jen jednou.</p>"
-        '<p style="color:#666;font-size:13px">Pokud jste se nepřihlašovali, tento e-mail můžete ignorovat.</p>'
+        f"<p>{text['validity'].format(minutes=int(ttl_minutes))}</p>"
+        f'<p style="color:#666;font-size:13px">{text["ignore"]}</p>'
         "</body></html>"
     )
 
@@ -101,7 +134,7 @@ class EmailSender(ABC):
     """Delivers a login code to an address."""
 
     @abstractmethod
-    def send_login_code(self, to_address: str, code: str, ttl_minutes: int) -> None:
+    def send_login_code(self, to_address: str, code: str, ttl_minutes: int, language: str = "cs") -> None:
         """Sends `code` to `to_address`.
 
         Args:
@@ -109,6 +142,7 @@ class EmailSender(ABC):
             code: The plaintext one-time code - the only place besides the
                 user's inbox it ever exists (the DB stores just a hash).
             ttl_minutes: Validity, quoted in the message.
+            language: `"cs"` or `"en"` - the message's language.
 
         Raises:
             EmailDeliveryError: The message could not be sent.
@@ -121,7 +155,7 @@ class ConsoleEmailSender(EmailSender):
     production - anyone with log access could read every login code.
     """
 
-    def send_login_code(self, to_address: str, code: str, ttl_minutes: int) -> None:
+    def send_login_code(self, to_address: str, code: str, ttl_minutes: int, language: str = "cs") -> None:
         """Logs the code at WARNING level (visible under uvicorn's default
         logging config, which would hide INFO from app loggers).
 
@@ -129,6 +163,7 @@ class ConsoleEmailSender(EmailSender):
             to_address: Recipient the code is for.
             code: The one-time code.
             ttl_minutes: Unused here; kept for interface parity.
+            language: Unused here; kept for interface parity.
         """
         logger.warning("LOGIN CODE for %s: %s  (EMAIL_BACKEND=console - development only)", to_address, code)
 
@@ -172,7 +207,7 @@ class SmtpEmailSender(EmailSender):
         self._from_name = from_name
         self._ssl_context = ssl_context
 
-    def _build_message(self, to_address: str, code: str, ttl_minutes: int) -> EmailMessage:
+    def _build_message(self, to_address: str, code: str, ttl_minutes: int, language: str = "cs") -> EmailMessage:
         """Builds the login-code message: plain text plus an HTML
         alternative, with the `Date` and `Message-ID` headers that
         `smtplib` does not add itself and spam filters look for.
@@ -181,12 +216,13 @@ class SmtpEmailSender(EmailSender):
             to_address: Recipient.
             code: The one-time code.
             ttl_minutes: Validity, quoted in the message.
+            language: `"cs"` or `"en"`.
 
         Returns:
             The ready-to-send message.
         """
         message = EmailMessage()
-        message["Subject"] = LOGIN_CODE_SUBJECT
+        message["Subject"] = login_code_subject(language)
         message["From"] = formataddr((self._from_name, self._from_address)) if self._from_name else self._from_address
         message["To"] = to_address
         message["Date"] = formatdate(localtime=False)
@@ -194,17 +230,18 @@ class SmtpEmailSender(EmailSender):
         # Tells auto-responders (out-of-office etc.) not to answer a mail
         # nobody is reading.
         message["Auto-Submitted"] = "auto-generated"
-        message.set_content(login_code_body(code, ttl_minutes))
-        message.add_alternative(login_code_html(code, ttl_minutes), subtype="html")
+        message.set_content(login_code_body(code, ttl_minutes, language))
+        message.add_alternative(login_code_html(code, ttl_minutes, language), subtype="html")
         return message
 
-    def send_login_code(self, to_address: str, code: str, ttl_minutes: int) -> None:
+    def send_login_code(self, to_address: str, code: str, ttl_minutes: int, language: str = "cs") -> None:
         """Sends the login-code email.
 
         Args:
             to_address: Recipient.
             code: The one-time code.
             ttl_minutes: Validity, quoted in the message.
+            language: `"cs"` or `"en"` - the message's language.
 
         Raises:
             EmailDeliveryError: Connection, TLS (including a certificate
@@ -212,7 +249,7 @@ class SmtpEmailSender(EmailSender):
                 failure - anything `smtplib`/`ssl`/`OSError` raises. The
                 message names the failure (never the code or password).
         """
-        message = self._build_message(to_address, code, ttl_minutes)
+        message = self._build_message(to_address, code, ttl_minutes, language)
         context = self._ssl_context or _default_ssl_context()
 
         try:

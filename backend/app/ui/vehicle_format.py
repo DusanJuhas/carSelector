@@ -34,7 +34,7 @@ def power_label(powertrain: PowertrainSpec) -> str | None:
     """
     if powertrain.power_kw is None:
         return None
-    hp = f" ({powertrain.power_hp} k)" if powertrain.power_hp is not None else ""
+    hp = f" ({powertrain.power_hp} {t('vehicleDetail.units.hp')})" if powertrain.power_hp is not None else ""
     return f"{powertrain.power_kw} kW{hp}"
 
 

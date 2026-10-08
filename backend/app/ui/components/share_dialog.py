@@ -62,7 +62,7 @@ def share_dialog() -> Callable[[SharedSnapshot], None]:
             if snapshot is None:
                 return
             url = shared_url(snapshot.token)
-            expires = snapshot.expires_at.strftime("%d. %m. %Y")
+            expires = snapshot.expires_at.strftime(t("common.dateFormat"))
 
             with ui.row().classes("w-full flex-nowrap items-start justify-between gap-3"):
                 ui.label(t("share.title")).classes("text-[17px] font-bold text-text")

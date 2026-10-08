@@ -8,13 +8,13 @@ NOTE: untested against a live API - see requirement_interpreter.py.
 
 from app.ai.client import get_client
 from app.ai.llm import LlmClient
+from app.ai.requirement_interpreter import LANGUAGE_NAMES
 from app.ai.trace import llm_purpose
 from app.schemas.requirement import StructuredRequirements
 from app.schemas.vehicle import VehicleSummary
 
-SYSTEM_PROMPT = """You explain a car recommendation in one short sentence (max ~25 words), in Czech
-- the user and the rest of the conversation are in Czech (see doc/prompt/CLAUDE.md's language
-convention).
+SYSTEM_PROMPT = """You explain a car recommendation in one short sentence (max ~25 words), in {language}
+- the user and the rest of the conversation are in {language}.
 Ground the explanation only in the vehicle facts given to you - never invent a feature, spec, or
 price the vehicle doesn't have. Plain, factual tone, no marketing language.
 """
@@ -53,7 +53,7 @@ class ExplanationGenerator:
         # take effect without a restart.
         return self._client if self._client is not None else get_client()
 
-    def explain(self, vehicle: VehicleSummary, requirements: StructuredRequirements) -> str:
+    def explain(self, vehicle: VehicleSummary, requirements: StructuredRequirements, *, language: str = "cs") -> str:
         """Generates a one-sentence explanation for why `vehicle` was
         recommended, grounded only in its own listed specs and the
         user's stated priorities.
@@ -65,6 +65,7 @@ class ExplanationGenerator:
             requirements: The structured requirements this vehicle was
                 matched against; `priorities` is included as context so
                 the explanation can reference what the user said mattered.
+            language: `"cs"` or `"en"` - the language of the sentence.
 
         Returns:
             A short (~25 words), factual explanation sentence with
@@ -78,7 +79,8 @@ class ExplanationGenerator:
             f"User priorities: {', '.join(requirements.priorities) or 'none stated'}\n"
         )
         with llm_purpose("explanation"):
-            return client.complete(system=SYSTEM_PROMPT, user_content=facts, max_tokens=100).strip()
+            system = SYSTEM_PROMPT.replace("{language}", LANGUAGE_NAMES.get(language, "Czech"))
+            return client.complete(system=system, user_content=facts, max_tokens=100).strip()
 
 
 # Shared instance for callers that don't need a custom client (e.g. tests

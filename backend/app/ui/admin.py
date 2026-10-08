@@ -103,7 +103,7 @@ def _sources_table() -> None:
     """
     sources = SourceRegistry().load_all()
     with ui.column().classes("w-full gap-2"):
-        ui.label("Zdroje (config/sources.yaml)").classes("text-[13px] font-bold uppercase tracking-wide text-subtext")
+        ui.label(t("admin.sources")).classes("text-[13px] font-bold uppercase tracking-wide text-subtext")
         with ui.column().classes("w-full gap-1.5"):
             for source in sources:
                 _source_row(source)
@@ -120,7 +120,7 @@ def _source_row(source: Source) -> None:
         + ("bg-accent-soft text-accent" if source.active else "bg-panel-2 text-subtext")
     )
     with ui.row().classes("w-full items-center gap-3 rounded-control border border-border bg-panel px-3.5 py-2.5"):
-        ui.label("aktivní" if source.active else "neaktivní").classes(status_classes)
+        ui.label(t("admin.active") if source.active else t("admin.inactive")).classes(status_classes)
         with ui.column().classes("gap-0"):
             ui.label(f"{source.brand} ({source.parser_key})").classes("text-[13px] font-semibold text-text")
             ui.label(", ".join(source.models) or "—").classes("text-[11.5px] text-subtext")
@@ -146,7 +146,7 @@ def _job_section(title: str, description: str, state: JobState, command: list[st
         def content() -> None:
             with ui.row().classes("items-center gap-2.5"):
                 button = ui.button(
-                    "Běží…" if state.is_running else "Spustit",
+                    t("admin.running") if state.is_running else t("admin.run"),
                     on_click=lambda: state.run(command, content.refresh),
                 ).props("no-caps unelevated").classes(
                     "rounded-control bg-accent px-4 py-2 text-[13px] font-semibold text-accent-text"
@@ -154,7 +154,7 @@ def _job_section(title: str, description: str, state: JobState, command: list[st
                 button.set_enabled(not state.is_running)
                 if state.return_code is not None:
                     ok = state.return_code == 0
-                    ui.label("Hotovo" if ok else f"Chyba (kód {state.return_code})").classes(
+                    ui.label(t("admin.done") if ok else t("admin.failed", code=state.return_code)).classes(
                         "text-[12.5px] font-semibold " + ("text-accent" if ok else "text-flag")
                     )
 
@@ -192,7 +192,7 @@ def _access_denied(auth_state: AuthState) -> None:
     open_login_dialog = login_dialog(auth_state, reload_page)
 
     with ui.column().classes("min-h-screen w-full items-start bg-bg text-text gap-4 p-8"):
-        ui.label("Rovis — Admin").classes("text-xl font-bold text-text")
+        ui.label(t("admin.title")).classes("text-xl font-bold text-text")
         if auth_state.user is None:
             ui.label(t("auth.adminOnly")).classes("text-[13px] text-subtext")
             ui.button(t("header.login"), icon="login", on_click=open_login_dialog).props("no-caps unelevated").classes(
@@ -223,8 +223,8 @@ def register_admin_page() -> None:
 
         with ui.column().classes("min-h-screen w-full bg-bg text-text gap-6 p-8"):
             with ui.row().classes("w-full items-center justify-between"):
-                ui.label("Rovis — Admin").classes("text-xl font-bold text-text")
-                ui.link("← Zpět na appku", "/").classes("text-[13px] text-accent")
+                ui.label(t("admin.title")).classes("text-xl font-bold text-text")
+                ui.link(t("auth.backToApp"), "/").classes("text-[13px] text-accent")
 
             with ui.tabs().props("no-caps align=left").classes("text-text") as tabs:
                 data_tab = ui.tab(t("admin.tabs.data"))
@@ -249,17 +249,14 @@ def _data_panel(scraper_state: JobState, import_state: JobState) -> None:
         _sources_table()
 
         _job_section(
-            "1. Spustit scraper",
-            "Stáhne a zpracuje nové ceníky ze všech aktivních zdrojů do storage/scraper.db. "
-            "Samo o sobě nemění katalog, který appka zobrazuje - k tomu slouží krok níže.",
+            t("admin.jobs.scraper.title"),
+            t("admin.jobs.scraper.description"),
             scraper_state,
             SCRAPER_COMMAND,
         )
         _job_section(
-            "2. Naimportovat do katalogu",
-            "Přenese nově zparsovaná data ze storage/scraper.db do katalogu (storage/drivewise.db) "
-            "- teprve po tomto kroku se nové/aktualizované vozy objeví v appce. Bezpečné spouštět "
-            "opakovaně.",
+            t("admin.jobs.import.title"),
+            t("admin.jobs.import.description"),
             import_state,
             IMPORT_COMMAND,
         )

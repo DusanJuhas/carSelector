@@ -27,6 +27,7 @@ from app.schemas.vehicle import VehicleDetail, VehicleSummary
 from app.services import catalog, liked_models, saved_requirements, sharing
 from app.services.conversation import orchestrator
 from app.ui import db as ui_db
+from app.ui.i18n import DEFAULT_LANGUAGE, t
 
 # Mirrors frontend/src/types/conversation.ts's ChatMessage.
 ChatMessage = tuple[str, str]  # (role, text) - role is "user" | "assistant"
@@ -35,13 +36,6 @@ logger = logging.getLogger(__name__)
 
 PAGE_SIZE = 20
 
-# Stands in for a real chat message when restoring a logged-in user's
-# saved requirements (see `ConversationState._restore_saved_requirements`)
-# - shown as the "user" bubble right before the assistant's reply, the
-# same way a wizard-answer summary does, since `orchestrator.
-# handle_wizard_answers` needs *some* source_message to attribute the
-# turn to.
-RESTORE_SUMMARY_MESSAGE = "Moje uložené požadavky z minulé relace."
 
 
 @dataclass
@@ -201,6 +195,11 @@ class ConversationState:
     # The page's likes, passed to every search as a ranking boost - see
     # `LikedModelsState`. `None` means "no likes" (e.g. in tests).
     liked: LikedModelsState | None = None
+    # Language of the assistant's replies and AI-generated text ("cs" |
+    # "en") - set by `app/ui/pages.py` from the browser's choice (see
+    # `app/ui/i18n.py`'s `current_language`). Fixed for one conversation:
+    # switching language reloads the page, which starts a new one.
+    language: str = DEFAULT_LANGUAGE
 
     async def begin(self) -> None:
         """Starts a new conversation and seeds the transcript with its
@@ -213,7 +212,7 @@ class ConversationState:
         self.is_loading = True
         self.error = None
         try:
-            conversation_id, intro_message = orchestrator.start_conversation()
+            conversation_id, intro_message = orchestrator.start_conversation(self.language)
             self.conversation_id = conversation_id
             self.messages = [("assistant", intro_message)]
             if self.user_id is not None:
@@ -245,14 +244,19 @@ class ConversationState:
                 return
             conversation_id = self.conversation_id
             liked_ids = _liked_ids(self.liked)
+            # Stands in for a real chat message - shown as the "user" bubble
+            # right before the assistant's reply, the same way a wizard-answer
+            # summary does, since `orchestrator.handle_wizard_answers` needs
+            # *some* source_message to attribute the turn to.
+            summary_message = t("chat.restoreSummary", lang=self.language)
 
             def _restore() -> object:
                 with ui_db.get_session() as db:
                     return orchestrator.handle_wizard_answers(
-                        db, conversation_id, saved, RESTORE_SUMMARY_MESSAGE, liked_model_ids=liked_ids
+                        db, conversation_id, saved, summary_message, liked_model_ids=liked_ids
                     )
 
-            self.messages.append(("user", RESTORE_SUMMARY_MESSAGE))
+            self.messages.append(("user", summary_message))
             result = await run.io_bound(_restore)
             self.messages.append(("assistant", result.assistant_text))
             self.requirements = result.requirements
@@ -543,9 +547,9 @@ class WizardState:
 
         notes_parts = []
         if self.brand_pref.strip():
-            notes_parts.append(f"Preference značky: {self.brand_pref.strip()}")
+            notes_parts.append(t("wizard.notes.brandPref", value=self.brand_pref.strip()))
         if self.annual_km is not None:
-            notes_parts.append(f"Roční nájezd přibližně {self.annual_km} km")
+            notes_parts.append(t("wizard.notes.annualKm", km=self.annual_km))
 
         return StructuredRequirements(
             body_type=self.body_type,

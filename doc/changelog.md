@@ -21,6 +21,28 @@ to one or more related commits.
 
 ---
 
+## 0.2.47 — 2026-10-08
+
+### Added
+- English version of the whole UI. A "EN"/"CS" toggle in the header switches
+  the language; the choice is remembered per browser and Czech stays the
+  default. Covers the main page, wizard, car detail and its PDF export,
+  share dialog and shared page, login dialog and login-code email, and the
+  admin console (its previously hardcoded Czech labels moved into the i18n
+  dictionary). The assistant's fixed chat replies and requirement-card
+  labels, and the AI's follow-up questions and per-car explanations, follow
+  the selected language too. Prices stay in CZK - the catalog only covers
+  the Czech market; catalog data itself (equipment names, colours) stays as
+  published in the Czech price lists.
+- Switching reloads the page and starts a fresh conversation in the new
+  language (a logged-in user's saved requirements are restored).
+- English copy lives in `backend/app/ui/i18n_en.py`; key and placeholder
+  parity with the Czech `STRINGS` is enforced by `tests/ui/test_i18n.py`.
+  Tests: `tests/ui/test_language_switch.py`, English orchestrator tests in
+  `tests/test_conversation_orchestrator.py`.
+
+---
+
 ## 0.2.46 — 2026-10-07
 
 ### Fixed

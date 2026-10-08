@@ -18,7 +18,7 @@ class RecordingSender(EmailSender):
         self.sent: list[tuple[str, str]] = []
         self.fail = False
 
-    def send_login_code(self, to_address: str, code: str, ttl_minutes: int) -> None:
+    def send_login_code(self, to_address: str, code: str, ttl_minutes: int, language: str = "cs") -> None:
         if self.fail:
             raise EmailDeliveryError("smtp down")
         self.sent.append((to_address, code))

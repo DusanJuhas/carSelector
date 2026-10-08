@@ -185,7 +185,7 @@ def build_vehicle_pdf(detail: VehicleDetail, today: date | None = None) -> bytes
     pdf.set_text_color(*_TEXT)
     pdf.use_font(8.5)
     pdf.set_text_color(*_SUBTEXT)
-    created = (today or date.today()).strftime("%d. %m. %Y")
+    created = (today or date.today()).strftime(t("common.dateFormat"))
     pdf.cell(0, 5, pdf.clean(t("vehicleDetail.pdf.created", date=created)), new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(*_TEXT)
 

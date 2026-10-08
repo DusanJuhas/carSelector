@@ -1,0 +1,408 @@
+"""English UI copy - a key-for-key translation of `app/ui/i18n.py`'s Czech
+`STRINGS` (the parity is enforced by `tests/ui/test_i18n.py`). Selected per
+browser via the header's language toggle - see `i18n.current_language`.
+
+Prices stay in the local currency (CZK) in both languages: the catalog
+only covers the Czech market.
+"""
+
+STRINGS_EN: dict = {
+    "header": {
+        "brand": "Rovis",
+        "tagline": "Describe your lifestyle. We'll find you a car.",
+        "restart": "Start over",
+        "technicalRequirements": "Technical requirements",
+        "startWizard": "Selection guide",
+        "apiKey": "AI key",
+        "apiKeyMissing": "AI key missing",
+        "login": "Log in",
+        "logout": "Log out",
+        "menu": "Menu",
+        "admin": "Admin",
+        "switchLanguage": "CS",
+        "switchLanguageTooltip": "Přepnout do češtiny",
+    },
+    "common": {
+        "dateFormat": "%d/%m/%Y",
+    },
+    "admin": {
+        "title": "Rovis — Admin",
+        "sources": "Sources (config/sources.yaml)",
+        "active": "active",
+        "inactive": "inactive",
+        "run": "Run",
+        "running": "Running…",
+        "done": "Done",
+        "failed": "Failed (exit code {code})",
+        "jobs": {
+            "scraper": {
+                "title": "1. Run the scraper",
+                "description": (
+                    "Downloads and parses new price lists from all active sources into storage/scraper.db. "
+                    "On its own it doesn't change the catalog the app shows - that's what the next step is for."
+                ),
+            },
+            "import": {
+                "title": "2. Import into the catalog",
+                "description": (
+                    "Copies newly parsed data from storage/scraper.db into the catalog (storage/drivewise.db) "
+                    "- only after this step do new/updated cars show up in the app. Safe to run "
+                    "repeatedly."
+                ),
+            },
+        },
+        "tabs": {
+            "data": "Data",
+            "aiTrace": "AI communication",
+        },
+        "trace": {
+            "title": "Communication with the AI ({provider})",
+            "description": (
+                "A complete record of every AI API call — the exact request sent, the full response "
+                "or error, tokens and duration. Kept only in server memory (the last {max} calls), "
+                "gone after a restart. Contains text users typed into the chat."
+            ),
+            "disabled": "Tracing is turned off (LLM_TRACE_MAX_ENTRIES=0).",
+            "summary": "{count} calls · {errors} errors · {tokens} tokens",
+            "autoRefresh": "Live refresh",
+            "refresh": "Refresh",
+            "clear": "Clear",
+            "empty": "No calls yet. Type something into the app's chat and the record will show up here.",
+            "ok": "OK",
+            "failed": "Error: {code}",
+            "tokens": "{input} → {output} tokens",
+            "noUsage": "tokens not reported",
+            "request": "Request",
+            "reply": "Reply (text)",
+            "error": "Error",
+            "rawRequest": "Raw request (JSON)",
+            "rawResponse": "Raw response (JSON)",
+            "emptyReply": "(empty reply)",
+            "purposes": {
+                "requirement_extraction": "Requirement extraction",
+                "explanation": "Recommendation explanation",
+                "unknown": "Unspecified",
+            },
+        },
+    },
+    "mobileTabs": {
+        "chat": "Conversation",
+        "results": "Results",
+    },
+    "auth": {
+        "title": "Log in",
+        "emailDescription": (
+            "Enter your email — we'll send you a one-time code. An account is created automatically, "
+            "no password needed."
+        ),
+        "emailLabel": "Email",
+        "sendCode": "Send code",
+        "sending": "Sending…",
+        "codeDescription": "We sent a six-digit code to {email}. It is valid for {minutes} minutes.",
+        "codeLabel": "Code from the email",
+        "verify": "Confirm",
+        "verifying": "Verifying…",
+        "consoleNotice": (
+            "Development mode: no email is sent, the code is printed in the server log. "
+            "For real emails set EMAIL_BACKEND=smtp and SMTP_* (see the README)."
+        ),
+        "resend": "Send a new code",
+        "changeEmail": "Change email",
+        "cancel": "Cancel",
+        "adminOnly": "This page is for administrators only.",
+        "adminOnlyLoggedIn": "You are logged in as {email}, but this account doesn't have administrator rights.",
+        "backToApp": "← Back to the app",
+        "errors": {
+            "invalid_email": "Please enter a valid email address.",
+            "rate_limited": "Too many code requests. Please try again in a moment.",
+            "email_delivery_failed": "The email couldn't be sent. Please try again in a moment.",
+            "email_not_configured": "Sending emails isn't set up (EMAIL_BACKEND / SMTP_* on the server).",
+            "invalid_code": "The code is wrong or has expired.",
+            "too_many_attempts": "Too many wrong attempts. Please request a new code.",
+            "account_disabled": "This account is blocked.",
+            "unknown_error": "Something went wrong. Please try again.",
+        },
+    },
+    "apiKey": {
+        "title": "API key for the AI ({provider})",
+        "description": (
+            "The key is kept only in the running application's memory — never on disk or in the source code. "
+            "After the application restarts it has to be entered again."
+        ),
+        "label": "API key",
+        "getKey": "You can get a key for free at {url}.",
+        "configured": "The AI key is set.",
+        "save": "Save",
+        "cancel": "Cancel",
+        "clear": "Remove key",
+        "empty": "Please enter a key.",
+        "invalid": (
+            "The key contains a disallowed character “{char}” at position {position}. A real key "
+            "consists only of letters, digits and underscores, without spaces — try pasting it again (Ctrl+V)."
+        ),
+    },
+    "chat": {
+        "typePlaceholder": "Type your answer…",
+        "send": "Send",
+        "sending": "Thinking…",
+        "aiNotConfigured": (
+            "The AI layer isn't set up yet (missing API key) — the conversation works, "
+            "but without understanding requirements or making recommendations."
+        ),
+        "genericError": "Something went wrong. Please try again.",
+        "restoreSummary": "My saved requirements from the last session.",
+        "errors": {
+            "ai_invalid_key": (
+                "The AI service rejected the API key (invalid or revoked). "
+                "Enter it again using the “AI key” button in the header."
+            ),
+            "ai_invalid_key_user": (
+                "The AI service is temporarily unavailable (invalid API key on the server side). "
+                "Please let the administrator know."
+            ),
+            "ai_rate_limited": "The AI service's request limit was exceeded. Please try again in a moment.",
+            "ai_model_unavailable": (
+                "The selected AI model isn't available. Check the model setting (GROQ_MODEL / CLAUDE_MODEL)."
+            ),
+            "ai_unreachable": "Couldn't connect to the AI service. Check your internet connection.",
+            "ai_error": "The AI service returned an error. Please try again.",
+        },
+    },
+    "wizard": {
+        "title": "Car selection guide",
+        "subtitle": "Ten short questions — at the end we'll show you right away what in the catalog fits.",
+        "progress": "Question {step} of {total}",
+        "back": "Back",
+        "next": "Next",
+        "skip": "Not sure / skip",
+        "finish": "Show recommendations",
+        "close": "Close",
+        "summaryIntro": "I filled in the guide",
+        "notes": {
+            "brandPref": "Brand preference: {value}",
+            "annualKm": "Annual mileage approx. {km} km",
+        },
+        "questions": {
+            "budget": {
+                "title": "What is your budget for a new car?",
+                "placeholder": "E.g. 800000",
+                "unit": "CZK",
+                "summary": "budget up to {amount} CZK",
+            },
+            "usage": {
+                "title": "What will you use the car for most?",
+                "options": {
+                    "commute": "Commuting to work",
+                    "family": "Family trips",
+                    "cargo": "Carrying cargo",
+                    "mixed": "A mix of everything",
+                },
+            },
+            "seats": {
+                "title": "How many people will the car regularly carry?",
+                "placeholder": "E.g. 5",
+                "summary": "at least {count} seats",
+            },
+            "bodyType": {
+                "title": "What should the car look like and how big should it be?",
+                "hint": (
+                    "A smaller city car, a practical estate for frequent trips, a taller SUV with a better "
+                    "view, or a large family car for 7 people."
+                ),
+                "options": {
+                    "Hatchback": "Smaller city car",
+                    "Kombi": "Practical estate",
+                    "SUV": "Taller SUV",
+                    "MPV": "Large family car (7 seats)",
+                },
+            },
+            "awd": {
+                "title": "Do you also drive where there's mud, snow or rough roads (cottage, mountains, fields)?",
+                "hint": "If so, a car with all-wheel drive is a good fit – it grips better on slippery surfaces.",
+                "yes": "Yes, often",
+                "no": "No, I mostly drive on roads",
+            },
+            "fuel": {
+                "title": "What does your typical driving look like?",
+                "options": {
+                    "electric": "Mostly short trips around town, I can charge at home or at work",
+                    "hybrid": "A mix of town driving and frequent longer trips",
+                    "diesel": "I drive a lot and over long distances (motorways, business trips)",
+                    "petrol": "I drive little or irregularly and want to keep it simple",
+                },
+            },
+            "mileage": {
+                "title": "Roughly how many kilometres do you drive per year?",
+                "placeholder": "E.g. 15000",
+                "summary": "annual mileage approx. {km} km",
+            },
+            "cargo": {
+                "title": "Do you often carry something bulky?",
+                "options": {
+                    "stroller": "A pram",
+                    "sports": "Sports equipment",
+                    "tools": "Tools",
+                    "trailer": "I tow a trailer or a boat",
+                    "none": "None of these",
+                },
+            },
+            "brand": {
+                "title": "Do you prefer a particular brand, or want to rule one out?",
+                "placeholder": "E.g. I prefer Škoda, no Fiat",
+            },
+            "priority": {
+                "title": "What would annoy you most about a badly chosen car?",
+                "options": {
+                    "cost": "High running costs",
+                    "repairs": "Frequent repairs",
+                    "power": "Lack of power",
+                    "comfort": "Discomfort on long trips",
+                },
+            },
+        },
+    },
+    "results": {
+        "title": {
+            "one": "{count} match for you",
+            "other": "{count} matches for you",
+        },
+        "browsingTitle": {
+            "one": "{count} car in the catalog",
+            "other": "{count} cars in the catalog",
+        },
+        "updated": "Updated based on your last message",
+        "startPrompt": "Start a conversation and the AI will narrow the catalog down to your needs.",
+        "emptyState": "Nothing matches your requirements yet — try adjusting them in the conversation.",
+        "loadingMore": "Loading more…",
+        "loadingCatalog": "Loading the catalog…",
+        "loadingTitle": "Car catalog",
+        "catalogError": "Couldn't load the car catalog.",
+        "sortBy": "Sort by",
+        "sort": {
+            "recommended": "Recommended",
+            "price_asc": "Price: low to high",
+            "price_desc": "Price: high to low",
+            "alpha": "Alphabetical",
+            "custom": "My order",
+        },
+        "dragHint": "Drag to reorder",
+        "dragHintTouch": "Reorder by dragging a card by its ⠿ handle.",
+        "controlsToggle": "Sort & filters",
+        "filters": {
+            "all": "All",
+            "brand": "Manufacturer",
+            "fuelType": "Engine type",
+            "drivetrain": "Drive",
+        },
+    },
+    "car": {
+        "photoPlaceholder": "car photo — {make} {model}",
+        "topMatch": "Top match",
+        "like": "I like it — favourite models get priority in search",
+    },
+    "requirements": {
+        "subtitle": "Plain language, translated into technical specifications.",
+        "empty": "No requirements captured yet.",
+        "close": "Close",
+    },
+    "share": {
+        "button": "Share",
+        "creating": "Preparing the link…",
+        "error": "The link couldn't be created. Please try again.",
+        "title": "Share selection",
+        "description": (
+            "Anyone with this link will see this selection, even without an account. The link is valid "
+            "until {date} and doesn't contain your name or email."
+        ),
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "native": "Share…",
+        "nativeTitle": "Car selection from Rovis",
+        "qrHint": "Scan it with your phone, e.g. at the dealership.",
+        "close": "Close",
+        "pageTitle": "Shared car selection · Rovis",
+        "heading": {
+            "one": "Shared selection: {count} car",
+            "other": "Shared selection: {count} cars",
+        },
+        "asOf": "Prices as of {created} · link valid until {expires}",
+        "requirements": "Requirements",
+        "priceNote": (
+            "Prices come from manufacturers' price lists as of the sharing date and may have changed since. "
+            "You'll find the current offer in the app or at a dealer."
+        ),
+        "findOwn": "Find your own car",
+        "notFound": "The link doesn't exist or has already expired.",
+        "notFoundHint": "Shared links are valid for a limited time. Ask for a new one, or find a car yourself.",
+    },
+    "vehicleDetail": {
+        "close": "Close",
+        "exportPdf": "Download PDF",
+        "exportPdfError": "The PDF couldn't be created.",
+        "loading": "Loading car details…",
+        "error": "Couldn't load the car details.",
+        "sections": {
+            "powertrain": "Engine & drivetrain",
+            "colors": "Colours",
+            "standardEquipment": "Standard equipment",
+            "optionalEquipment": "Optional equipment",
+            "priceHistory": "Price history",
+        },
+        "fields": {
+            "fuelType": "Fuel",
+            "transmission": "Transmission",
+            "drivetrain": "Drive",
+            "power": "Power",
+            "consumption": "Consumption",
+            "co2": "CO₂ emissions",
+            "noData": "Not available",
+        },
+        "units": {
+            "hp": "hp",
+        },
+        "priceHistory": {
+            "current": "current",
+            "lowestPrice30d": "lowest price in 30 days: {price}",
+        },
+        "pdf": {
+            "created": "Created {date}",
+            "included": "included",
+            "page": "Page {page}/{total}",
+            "disclaimer": (
+                "Data comes from manufacturers' price lists and may change. A dealer will give you a binding offer."
+            ),
+        },
+        "noColors": "No colour options available.",
+        "noOptionalEquipment": "No optional equipment available.",
+        "enums": {
+            "fuelType": {
+                "petrol": "Petrol",
+                "diesel": "Diesel",
+                "hybrid": "Hybrid",
+                "mild_hybrid": "Mild hybrid",
+                "phev": "Plug-in hybrid",
+                "electric": "Electric",
+            },
+            "drivetrain": {
+                "fwd": "Front-wheel drive",
+                "rwd": "Rear-wheel drive",
+                "awd": "All-wheel drive (4×4)",
+            },
+            "consumptionUnit": {
+                "l_100km": "l/100 km",
+                "kwh_100km": "kWh/100 km",
+            },
+            "colorFinish": {
+                "solid": "Solid",
+                "metallic": "Metallic",
+                "pearlescent": "Pearlescent",
+            },
+            "optionCategory": {
+                "equipment": "Equipment",
+                "package": "Package",
+                "warranty": "Warranty",
+                "service": "Service",
+            },
+        },
+    },
+}

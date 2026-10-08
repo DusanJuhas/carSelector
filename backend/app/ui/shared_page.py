@@ -55,8 +55,8 @@ def register_shared_page() -> None:
                         ui.label(
                             t(
                                 "share.asOf",
-                                created=snapshot.created_at.strftime("%d. %m. %Y"),
-                                expires=snapshot.expires_at.strftime("%d. %m. %Y"),
+                                created=snapshot.created_at.strftime(t("common.dateFormat")),
+                                expires=snapshot.expires_at.strftime(t("common.dateFormat")),
                             )
                         ).classes("mt-0.5 text-[13px] text-subtext")
                     ui.button(t("share.button"), icon="share", on_click=lambda: open_share(snapshot)).props(

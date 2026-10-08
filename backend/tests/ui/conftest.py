@@ -86,7 +86,7 @@ class CodeInbox(EmailSender):
     def __init__(self) -> None:
         self.sent: list[tuple[str, str]] = []
 
-    def send_login_code(self, to_address: str, code: str, ttl_minutes: int) -> None:
+    def send_login_code(self, to_address: str, code: str, ttl_minutes: int, language: str = "cs") -> None:
         self.sent.append((to_address, code))
 
     @property

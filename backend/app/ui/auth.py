@@ -27,6 +27,7 @@ from app.core import config
 from app.schemas.auth import UserRead
 from app.services.auth import AuthError, auth_service
 from app.ui import db as ui_db
+from app.ui.i18n import current_language
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +114,11 @@ class AuthState:
             `EMAIL_BACKEND` is misconfigured) or `"unknown_error"`.
         """
         ip = _client_ip()
+        language = current_language()
 
         def _request() -> None:
             with ui_db.get_session() as db:
-                auth_service.request_code(db, email, ip)
+                auth_service.request_code(db, email, ip, language)
 
         try:
             await run.io_bound(_request)

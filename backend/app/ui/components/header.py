@@ -18,6 +18,7 @@ def app_header(
     user: UserRead | None,
     on_login: Callable[[], None],
     on_logout: Callable[[], None],
+    on_switch_language: Callable[[], None],
 ) -> None:
     """Builds the top bar: brand/tagline on the left, restart + wizard +
     requirements-drawer toggle and the login/logout control on the right.
@@ -46,6 +47,7 @@ def app_header(
         on_login: Called when "Přihlásit se" is clicked - opens
             `app/ui/components/login_dialog.py`.
         on_logout: Called when "Odhlásit" is clicked.
+        on_switch_language: Called when the CS/EN toggle is clicked.
     """
     is_admin = user is not None and user.is_admin
     with ui.row().classes(
@@ -97,13 +99,17 @@ def app_header(
 
                 return _run
 
+            ui.button(t("header.switchLanguage"), on_click=on_switch_language).props("flat no-caps").classes(
+                "rounded-control border border-border px-2.5 py-2 text-[13px] font-semibold text-subtext"
+            ).tooltip(t("header.switchLanguageTooltip")).mark("language-toggle")
+
             ui.button(icon="menu", on_click=_toggle_menu).props("flat round").classes(
                 "text-text md:hidden!"
             ).tooltip(t("header.menu"))
 
             with secondary:
                 if is_admin:
-                    ui.link("Admin", "/admin").classes(
+                    ui.link(t("header.admin"), "/admin").classes(
                         "text-[12.5px] text-subtext underline-offset-2 hover:underline touch-underline max-md:px-3.5 "
                         "max-md:py-2"
                     )

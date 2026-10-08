@@ -21,26 +21,57 @@ from app.schemas.conversation import ChatMessage, MessageResponse
 from app.schemas.requirement import StructuredRequirements, UserRequirement
 from app.services.recommendation_engine import RecommendationEngine, engine as default_engine
 
-# Czech, like every other user-facing string in this module - see
-# doc/prompt/CLAUDE.md's language convention. This one in particular went
-# unnoticed as English for a while: nothing rendered it live until the
-# frontend was wired to the real API (frontend/src/api/conversation.ts) -
-# the scripted frontend mock it replaced had its own separately-authored
-# Czech copy, so a wrong language here was invisible until then.
-INTRO_MESSAGE = (
-    "Ahoj! Řekněte mi, jak budete své nové auto využívat — kde jezdíte, kdo s vámi jezdí, "
-    "co je pro vás nejdůležitější — a já to přetavím do konkrétních parametrů a vyberu vám "
-    "reálné vozy k porovnání."
-)
+DEFAULT_LANGUAGE = "cs"
 
+# The assistant's fixed (non-AI) chat copy, per conversation language
+# ("cs" | "en" - see `ConversationOrchestrator.start_conversation`). Lives
+# here rather than in `app/ui/i18n.py` because the REST API
+# (`app/api/conversations.py`) returns it too, not just the UI.
+_MESSAGES = {
+    "cs": {
+        "intro": (
+            "Ahoj! Řekněte mi, jak budete své nové auto využívat — kde jezdíte, kdo s vámi jezdí, "
+            "co je pro vás nejdůležitější — a já to přetavím do konkrétních parametrů a vyberu vám "
+            "reálné vozy k porovnání."
+        ),
+        "follow_up": "Můžete mi prosím říct trochu více o tom, co potřebujete?",
+        "updated": (
+            "Na základě toho, co jste mi řekli, jsem aktualizoval váš výběr — aktuálně vyhovuje {count} vozů."
+        ),
+        "no_match": "Aktualizoval jsem vaše požadavky, ale v katalogu zatím nic nevyhovuje — chcete něco uvolnit?",
+    },
+    "en": {
+        "intro": (
+            "Hi! Tell me how you'll use your new car — where you drive, who rides with you, "
+            "what matters most to you — and I'll turn that into concrete parameters and pick "
+            "real cars for you to compare."
+        ),
+        "follow_up": "Could you tell me a bit more about what you need?",
+        "updated": "Based on what you've told me, I've updated your selection — {count} cars currently match.",
+        "no_match": "I've updated your requirements, but nothing in the catalog matches yet — want to relax something?",
+    },
+}
+
+# Requirement-card labels, in display order.
 _FIELD_LABELS = {
-    "body_type": "Karoserie",
-    "min_seats": "Počet míst",
-    "budget_max": "Rozpočet",
-    "fuel_type": "Palivo",
-    "drivetrain": "Pohon",
-    "priorities": "Priority",
-    "notes": "Poznámky",
+    "cs": {
+        "body_type": "Karoserie",
+        "min_seats": "Počet míst",
+        "budget_max": "Rozpočet",
+        "fuel_type": "Palivo",
+        "drivetrain": "Pohon",
+        "priorities": "Priority",
+        "notes": "Poznámky",
+    },
+    "en": {
+        "body_type": "Body type",
+        "min_seats": "Seats",
+        "budget_max": "Budget",
+        "fuel_type": "Fuel",
+        "drivetrain": "Drive",
+        "priorities": "Priorities",
+        "notes": "Notes",
+    },
 }
 
 
@@ -48,6 +79,7 @@ _FIELD_LABELS = {
 class _ConversationState:
     history: list[ChatMessage] = field(default_factory=list)
     requirements: StructuredRequirements = field(default_factory=StructuredRequirements)
+    language: str = DEFAULT_LANGUAGE
 
 
 class UnknownConversationError(KeyError):
@@ -98,8 +130,13 @@ class ConversationOrchestrator:
         self._explanation_generator = explanation_generator or default_generator
         self._conversations: dict[str, _ConversationState] = {}
 
-    def start_conversation(self) -> tuple[str, str]:
+    def start_conversation(self, language: str = DEFAULT_LANGUAGE) -> tuple[str, str]:
         """Creates a new, empty conversation.
+
+        Args:
+            language: `"cs"` or `"en"` - the language of every assistant
+                reply in this conversation, AI-generated text included.
+                Anything else falls back to `DEFAULT_LANGUAGE`.
 
         Returns:
             A `(conversation_id, intro_message)` pair - `conversation_id`
@@ -108,8 +145,10 @@ class ConversationOrchestrator:
             show the user immediately.
         """
         conversation_id = str(uuid.uuid4())
-        self._conversations[conversation_id] = _ConversationState()
-        return conversation_id, INTRO_MESSAGE
+        if language not in _MESSAGES:
+            language = DEFAULT_LANGUAGE
+        self._conversations[conversation_id] = _ConversationState(language=language)
+        return conversation_id, _MESSAGES[language]["intro"]
 
     @staticmethod
     def _merge_requirements(
@@ -141,7 +180,10 @@ class ConversationOrchestrator:
 
     @staticmethod
     def _to_user_requirements(
-        requirements: StructuredRequirements, changed: set[str], source_message: str
+        requirements: StructuredRequirements,
+        changed: set[str],
+        source_message: str,
+        language: str = DEFAULT_LANGUAGE,
     ) -> list[UserRequirement]:
         """Builds the human-readable "requirements drawer" cards for one
         turn's requirements snapshot.
@@ -153,13 +195,14 @@ class ConversationOrchestrator:
                 (drives the UI's flash-on-update animation).
             source_message: The user message these requirements were
                 extracted from, shown as the card's quoted source.
+            language: Language of the card labels.
 
         Returns:
             One `UserRequirement` card per populated field of
             `requirements`, in `_FIELD_LABELS`'s display order.
         """
         cards = []
-        for field_name, label in _FIELD_LABELS.items():
+        for field_name, label in _FIELD_LABELS[language].items():
             value = getattr(requirements, field_name)
             if value in (None, [], ""):
                 continue
@@ -214,15 +257,15 @@ class ConversationOrchestrator:
         if state is None:
             raise UnknownConversationError(conversation_id)
 
-        extraction = self._requirement_interpreter.interpret(state.history, text)
+        extraction = self._requirement_interpreter.interpret(state.history, text, language=state.language)
 
         if extraction.requirements is None:
             state.history.append(ChatMessage(role="user", text=text))
-            assistant_text = extraction.follow_up_question or "Můžete mi prosím říct trochu více o tom, co potřebujete?"
+            assistant_text = extraction.follow_up_question or _MESSAGES[state.language]["follow_up"]
             state.history.append(ChatMessage(role="assistant", text=assistant_text))
             return MessageResponse(
                 assistant_text=assistant_text,
-                requirements=self._to_user_requirements(state.requirements, set(), text),
+                requirements=self._to_user_requirements(state.requirements, set(), text, state.language),
                 structured_requirements=state.requirements,
                 vehicles=[],
                 searched=False,
@@ -315,24 +358,20 @@ class ConversationOrchestrator:
                 explained.append(vehicle)
                 continue
             try:
-                explanation = self._explanation_generator.explain(vehicle, merged)
+                explanation = self._explanation_generator.explain(vehicle, merged, language=state.language)
             except RuntimeError:
                 # AI layer not configured (no ANTHROPIC_API_KEY) - degrade to
                 # an unexplained result rather than failing the whole request.
                 explanation = None
             explained.append(vehicle.model_copy(update={"explanation": explanation}) if explanation else vehicle)
 
-        assistant_text = (
-            f"Na základě toho, co jste mi řekli, jsem aktualizoval váš výběr — aktuálně vyhovuje "
-            f"{len(explained)} vozů."
-            if explained
-            else "Aktualizoval jsem vaše požadavky, ale v katalogu zatím nic nevyhovuje — chcete něco uvolnit?"
-        )
+        messages = _MESSAGES[state.language]
+        assistant_text = messages["updated"].format(count=len(explained)) if explained else messages["no_match"]
         state.history.append(ChatMessage(role="assistant", text=assistant_text))
 
         return MessageResponse(
             assistant_text=assistant_text,
-            requirements=self._to_user_requirements(merged, changed, source_message),
+            requirements=self._to_user_requirements(merged, changed, source_message, state.language),
             structured_requirements=merged,
             vehicles=explained,
             searched=True,

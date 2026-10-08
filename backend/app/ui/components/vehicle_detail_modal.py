@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from nicegui import run, ui
 
 from app.schemas.vehicle import VehicleDetail
-from app.ui.i18n import t
+from app.ui.i18n import current_language, t, use_language
 from app.ui.money import format_money
 from app.ui.state import fetch_vehicle_detail
 from app.ui.vehicle_format import co2_label, consumption_label, power_label
@@ -72,7 +72,14 @@ def vehicle_detail_modal(
             if detail is None:
                 return
             try:
-                content = await run.io_bound(build_vehicle_pdf, detail)
+                # The worker thread can't see this browser's language choice.
+                language = current_language()
+
+                def _build() -> bytes:
+                    with use_language(language):
+                        return build_vehicle_pdf(detail)
+
+                content = await run.io_bound(_build)
             except Exception:
                 logger.exception("PDF export failed for configuration %s", detail.configuration_id)
                 ui.notify(t("vehicleDetail.exportPdfError"), type="negative")

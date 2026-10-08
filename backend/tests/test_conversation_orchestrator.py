@@ -106,7 +106,7 @@ class _CountingExplanationGenerator:
     def __init__(self) -> None:
         self.calls = 0
 
-    def explain(self, vehicle: VehicleSummary, requirements: StructuredRequirements) -> str:
+    def explain(self, vehicle: VehicleSummary, requirements: StructuredRequirements, *, language: str = "cs") -> str:
         self.calls += 1
         return "stub explanation"
 
@@ -194,3 +194,23 @@ def test_handle_wizard_answers_caps_ai_explanations_not_result_count(seeded_sess
     assert fake_generator.calls == conversation_module.ConversationOrchestrator.EXPLANATION_LIMIT
     explained_count = sum(1 for v in result.vehicles if v.explanation == "stub explanation")
     assert explained_count == conversation_module.ConversationOrchestrator.EXPLANATION_LIMIT
+
+
+def test_english_conversation_greets_and_labels_in_english(seeded_session: SeededData) -> None:
+    orchestrator = ConversationOrchestrator(explanation_generator=_CountingExplanationGenerator())
+    conversation_id, intro = orchestrator.start_conversation("en")
+    assert intro.startswith("Hi!")
+
+    response = orchestrator.handle_wizard_answers(
+        seeded_session.session,
+        conversation_id,
+        StructuredRequirements(budget_max=Money(amount=1_100_000, currency="CZK")),
+        "I filled in the guide",
+    )
+    assert {card.label for card in response.requirements} == {"Budget"}
+    assert response.assistant_text.startswith("Based on what you've told me")
+
+
+def test_unknown_language_falls_back_to_czech() -> None:
+    _, intro = ConversationOrchestrator().start_conversation("de")
+    assert intro.startswith("Ahoj!")

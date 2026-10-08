@@ -131,7 +131,8 @@ def login_dialog(auth: AuthState, on_logged_in: Callable[[], None]) -> Callable[
                 )
 
             if form.error is not None:
-                message = STRINGS["auth"]["errors"].get(form.error, STRINGS["auth"]["errors"]["unknown_error"])
+                error_code = form.error if form.error in STRINGS["auth"]["errors"] else "unknown_error"
+                message = t(f"auth.errors.{error_code}")
                 ui.label(message).classes("text-[12.5px] text-flag")
 
             with ui.row().classes("w-full items-center justify-end gap-2"):

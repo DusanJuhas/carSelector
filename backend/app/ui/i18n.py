@@ -1,10 +1,30 @@
-"""Czech UI copy, ported verbatim from the former frontend's
-`src/i18n/locales/cs.json`. Czech is the only language that ever shipped
-(the React app's `en.json` existed but was never wired to a switcher) - see
-`doc/prompt/CLAUDE.md`'s language convention. No i18n library: a plain
-nested dict plus a small lookup/pluralization helper is enough for one
-fixed language and keeps the UI layer dependency-free.
+"""UI copy and the lookup helpers over it. `STRINGS` below is the Czech
+copy (ported verbatim from the former frontend's `src/i18n/locales/cs.json`);
+`app/ui/i18n_en.py`'s `STRINGS_EN` is its key-for-key English translation.
+No i18n library: plain nested dicts plus a small lookup/pluralization helper
+are enough for two fixed languages and keep the UI layer dependency-free.
+
+The language is chosen per browser by the header's toggle and remembered in
+`app.storage.user` (see `current_language`/`set_language`); Czech is the
+default. Prices stay in CZK in both languages - the catalog only covers the
+Czech market.
 """
+
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
+
+from nicegui import app
+
+from app.ui.i18n_en import STRINGS_EN
+
+DEFAULT_LANGUAGE = "cs"
+LANGUAGE_STORAGE_KEY = "language"
+
+# Set by `use_language` - for code that runs where `app.storage.user` can't
+# be read (a `run.io_bound` worker thread, a test), so it has to be told
+# the language explicitly instead.
+_language_override: ContextVar[str | None] = ContextVar("ui_language_override", default=None)
 
 STRINGS: dict = {
     "header": {
@@ -18,8 +38,42 @@ STRINGS: dict = {
         "login": "Přihlásit se",
         "logout": "Odhlásit",
         "menu": "Menu",
+        "admin": "Admin",
+        # Labelled in the language it switches TO, so it's recognizable
+        # to someone who can't read the current one.
+        "switchLanguage": "EN",
+        "switchLanguageTooltip": "Switch to English",
+    },
+    "common": {
+        # strftime pattern for dates shown to the user (share links, PDF).
+        "dateFormat": "%d. %m. %Y",
     },
     "admin": {
+        "title": "Rovis — Admin",
+        "sources": "Zdroje (config/sources.yaml)",
+        "active": "aktivní",
+        "inactive": "neaktivní",
+        "run": "Spustit",
+        "running": "Běží…",
+        "done": "Hotovo",
+        "failed": "Chyba (kód {code})",
+        "jobs": {
+            "scraper": {
+                "title": "1. Spustit scraper",
+                "description": (
+                    "Stáhne a zpracuje nové ceníky ze všech aktivních zdrojů do storage/scraper.db. "
+                    "Samo o sobě nemění katalog, který appka zobrazuje - k tomu slouží krok níže."
+                ),
+            },
+            "import": {
+                "title": "2. Naimportovat do katalogu",
+                "description": (
+                    "Přenese nově zparsovaná data ze storage/scraper.db do katalogu (storage/drivewise.db) "
+                    "- teprve po tomto kroku se nové/aktualizované vozy objeví v appce. Bezpečné spouštět "
+                    "opakovaně."
+                ),
+            },
+        },
         "tabs": {
             "data": "Data",
             "aiTrace": "AI komunikace",
@@ -116,6 +170,9 @@ STRINGS: dict = {
             "ale bez rozpoznávání požadavků a doporučení."
         ),
         "genericError": "Něco se nepovedlo. Zkuste to prosím znovu.",
+        # Stands in for the user's chat bubble when a logged-in user's saved
+        # requirements are restored (see app/ui/state.py).
+        "restoreSummary": "Moje uložené požadavky z minulé relace.",
         "errors": {
             "ai_invalid_key": (
                 "AI služba odmítla API klíč (neplatný nebo zrušený). "
@@ -145,6 +202,12 @@ STRINGS: dict = {
         "finish": "Zobrazit doporučení",
         "close": "Zavřít",
         "summaryIntro": "Vyplnil(a) jsem průvodce",
+        # Lines recorded in the requirements' `notes` field (see
+        # `WizardState.to_structured_requirements`).
+        "notes": {
+            "brandPref": "Preference značky: {value}",
+            "annualKm": "Roční nájezd přibližně {km} km",
+        },
         "questions": {
             "budget": {
                 "title": "Jaký je váš rozpočet na nové auto?",
@@ -325,6 +388,10 @@ STRINGS: dict = {
             "co2": "Emise CO₂",
             "noData": "Údaj není k dispozici",
         },
+        "units": {
+            # Horsepower abbreviation, as in "110 kW (150 k)".
+            "hp": "k",
+        },
         "priceHistory": {
             "current": "aktuální",
             "lowestPrice30d": "nejnižší cena za 30 dní: {price}",
@@ -373,12 +440,66 @@ STRINGS: dict = {
 }
 
 
-def t(path: str, **kwargs: object) -> str:
+LOCALES: dict[str, dict] = {"cs": STRINGS, "en": STRINGS_EN}
+LANGUAGES = tuple(LOCALES)
+
+
+def current_language() -> str:
+    """The language UI text should be rendered in right now.
+
+    Returns:
+        `use_language`'s override if one is active, else the language this
+        browser picked (`app.storage.user`), else `DEFAULT_LANGUAGE` -
+        including outside any UI context (no request to read storage from).
+    """
+    override = _language_override.get()
+    if override is not None:
+        return override
+    try:
+        language = app.storage.user.get(LANGUAGE_STORAGE_KEY)
+    except (RuntimeError, AssertionError, KeyError):
+        return DEFAULT_LANGUAGE
+    return language if language in LOCALES else DEFAULT_LANGUAGE
+
+
+def set_language(language: str) -> None:
+    """Remembers `language` for this browser (all its tabs, across reloads).
+
+    Args:
+        language: One of `LANGUAGES`.
+
+    Raises:
+        ValueError: `language` isn't one of `LANGUAGES`.
+    """
+    if language not in LOCALES:
+        raise ValueError(f"Unsupported language {language!r}")
+    app.storage.user[LANGUAGE_STORAGE_KEY] = language
+
+
+@contextmanager
+def use_language(language: str) -> Iterator[None]:
+    """Makes `t()` render in `language` inside the `with` block, whatever
+    the browser picked - e.g. inside a `run.io_bound` worker thread, which
+    has no UI context to read the browser's choice from.
+
+    Args:
+        language: One of `LANGUAGES`.
+    """
+    token = _language_override.set(language)
+    try:
+        yield
+    finally:
+        _language_override.reset(token)
+
+
+def t(path: str, *, lang: str | None = None, **kwargs: object) -> str:
     """Looks up one string by dotted path and formats it.
 
     Args:
-        path: Dotted key path into `STRINGS`, e.g. `"chat.send"` or
+        path: Dotted key path into the locale dict, e.g. `"chat.send"` or
             `"vehicleDetail.enums.fuelType.petrol"`.
+        lang: Language to use; `None` (the default) means
+            `current_language()`.
         **kwargs: Values to interpolate into the string via `str.format`,
             e.g. `t("car.photoPlaceholder", make="Mazda", model="CX-5")`.
 
@@ -386,9 +507,9 @@ def t(path: str, **kwargs: object) -> str:
         The formatted string.
 
     Raises:
-        KeyError: `path` doesn't resolve to a string in `STRINGS`.
+        KeyError: `path` doesn't resolve to a string in the locale.
     """
-    node: object = STRINGS
+    node: object = LOCALES.get(lang or current_language(), STRINGS)
     for part in path.split("."):
         if not isinstance(node, dict) or part not in node:
             raise KeyError(f"No i18n string at {path!r}")
@@ -398,37 +519,40 @@ def t(path: str, **kwargs: object) -> str:
     return node.format(**kwargs) if kwargs else node
 
 
-def plural_key(count: int) -> str:
-    """Picks the Czech plural form key for a count.
+def plural_key(count: int, lang: str = DEFAULT_LANGUAGE) -> str:
+    """Picks the plural form key for a count.
 
     Czech distinguishes exactly three forms for this kind of count: 1 (`one`),
     2-4 (`few`), and 0 or 5+ (`other`) - the fourth i18next form (`many`, for
     fractional counts) never applies here since these are always integer
-    item counts.
+    item counts. English only has `one` and `other`.
 
     Args:
         count: The number being displayed (e.g. a result count).
+        lang: Language whose plural rules apply.
 
     Returns:
-        `"one"`, `"few"`, or `"other"` - a key under `results.title`/
-        `results.browsingTitle` in `STRINGS`.
+        `"one"`, `"few"` (Czech only), or `"other"` - a key under
+        `results.title`/`results.browsingTitle` in the locale dict.
     """
     if count == 1:
         return "one"
-    if 2 <= count <= 4:
+    if lang == "cs" and 2 <= count <= 4:
         return "few"
     return "other"
 
 
-def t_count(path: str, count: int) -> str:
-    """Looks up a pluralized string (one with `one`/`few`/`other` sub-keys)
-    and formats it with `count`.
+def t_count(path: str, count: int, *, lang: str | None = None) -> str:
+    """Looks up a pluralized string (one with `one`/`few`/`other` sub-keys,
+    or just `one`/`other` in English) and formats it with `count`.
 
     Args:
         path: Dotted path to the pluralized group, e.g. `"results.title"`.
         count: The count to pick a plural form for and interpolate.
+        lang: Language to use; `None` means `current_language()`.
 
     Returns:
         The formatted string for `count`'s plural form.
     """
-    return t(f"{path}.{plural_key(count)}", count=count)
+    language = lang or current_language()
+    return t(f"{path}.{plural_key(count, language)}", lang=language, count=count)

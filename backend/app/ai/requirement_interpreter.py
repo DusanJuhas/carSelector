@@ -44,11 +44,25 @@ Rules:
 - If the latest message refines a requirement already established earlier in the conversation
   (e.g. "actually make it cheaper"), merge it with what's already known rather than starting over.
 - Never invent a value the user didn't state or clearly imply.
-- The conversation is in Czech, and the user expects Czech throughout: write "follow_up_question"
-  in Czech. JSON keys and the values of body_type/fuel_type/drivetrain stay in English (they're
-  internal identifiers, not shown to the user as-is) - only "follow_up_question" is free text a
-  person actually reads.
+- The conversation is in {language}, and the user expects {language} throughout: write
+  "follow_up_question" in {language}. JSON keys and the values of body_type/fuel_type/drivetrain stay
+  in English (they're internal identifiers, not shown to the user as-is) - only "follow_up_question"
+  is free text a person actually reads.
 """
+
+# Language codes the orchestrator passes in -> the name the prompts use.
+LANGUAGE_NAMES = {"cs": "Czech", "en": "English"}
+
+_FALLBACK_QUESTIONS = {
+    "cs": (
+        "Můžete mi prosím říct trochu více o tom, jak budete auto využívat — kdo s "
+        "vámi pojede, kde nejčastěji jezdíte a jaký je váš přibližný rozpočet?"
+    ),
+    "en": (
+        "Could you tell me a bit more about how you'll use the car — who will ride with you, "
+        "where you drive most often and roughly what your budget is?"
+    ),
+}
 
 
 class RequirementExtractionResult(BaseModel):
@@ -109,7 +123,7 @@ class RequirementInterpreter:
         return text.strip()
 
     def interpret(
-        self, history: list[ChatMessage], latest_message: str
+        self, history: list[ChatMessage], latest_message: str, *, language: str = "cs"
     ) -> RequirementExtractionResult:
         """Extracts structured requirements from a conversation turn, or
         produces a follow-up question when there isn't enough to search
@@ -126,6 +140,8 @@ class RequirementInterpreter:
                 not include `latest_message`.
             latest_message: The user's newest message, extracted (and
                 merged with prior turns) into requirements.
+            language: `"cs"` or `"en"` - the language the follow-up
+                question is written in.
 
         Returns:
             A `RequirementExtractionResult` with exactly one of
@@ -139,17 +155,18 @@ class RequirementInterpreter:
         user_content = f"Conversation so far:\n{transcript}\n\nLatest message:\n{latest_message}"
 
         with llm_purpose("requirement_extraction"):
-            raw_text = client.complete(system=SYSTEM_PROMPT, user_content=user_content, max_tokens=1024)
+            raw_text = client.complete(
+                system=SYSTEM_PROMPT.replace("{language}", LANGUAGE_NAMES.get(language, "Czech")),
+                user_content=user_content,
+                max_tokens=1024,
+            )
 
         try:
             payload = json.loads(self._strip_code_fences(raw_text))
             return RequirementExtractionResult.model_validate(payload)
         except (json.JSONDecodeError, ValidationError):
             return RequirementExtractionResult(
-                follow_up_question=(
-                    "Můžete mi prosím říct trochu více o tom, jak budete auto využívat — kdo s "
-                    "vámi pojede, kde nejčastěji jezdíte a jaký je váš přibližný rozpočet?"
-                )
+                follow_up_question=_FALLBACK_QUESTIONS.get(language, _FALLBACK_QUESTIONS["cs"])
             )
 
 

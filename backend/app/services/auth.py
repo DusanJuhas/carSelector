@@ -120,7 +120,7 @@ class AuthService:
         """
         return hmac.new(config.AUTH_SECRET.encode(), f"{address}:{code}".encode(), hashlib.sha256).hexdigest()
 
-    def request_code(self, db: Session, email: str, ip: str | None = None) -> None:
+    def request_code(self, db: Session, email: str, ip: str | None = None, language: str = "cs") -> None:
         """Generates a login code and emails it, invalidating any earlier
         outstanding code for the address.
 
@@ -132,6 +132,7 @@ class AuthService:
             db: Session to write through; committed here.
             email: Address as typed (normalized here).
             ip: Requesting client's IP for per-IP rate limiting, if known.
+            language: `"cs"` or `"en"` - the email's language.
 
         Raises:
             AuthError: `"invalid_email"`, `"rate_limited"` (too many
@@ -176,7 +177,7 @@ class AuthService:
         db.commit()
 
         try:
-            self._sender().send_login_code(address, code, config.LOGIN_CODE_TTL_MINUTES)
+            self._sender().send_login_code(address, code, config.LOGIN_CODE_TTL_MINUTES, language)
         except EmailDeliveryError as exc:
             # The code never reached the user - burn it. It still counts
             # toward the rate limit, which is the honest outcome for a
