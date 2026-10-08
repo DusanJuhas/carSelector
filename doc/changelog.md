@@ -21,6 +21,27 @@ to one or more related commits.
 
 ---
 
+## 0.2.50 — 2026-10-08
+
+### Changed
+- Header decluttered: only the two car-finding actions ("Průvodce výběrem",
+  "Technické požadavky") and a restart icon stay in the bar; email, Admin,
+  AI key, language and login/logout moved into one account menu behind a
+  round avatar button (the email's initial when logged in, a person icon
+  otherwise). For admins a missing AI key puts a dot on the avatar and
+  highlights the menu item. The same layout serves phones - the old
+  hamburger dropdown is gone; on phones the requirements button shrinks to
+  an icon with the count as a corner bubble.
+- The language switch is now a menu item named in the target language
+  ("English" / "Čeština").
+
+### Fixed
+- Tests no longer depend on `backend/.env`: a real AI key there made the
+  "no key configured" tests call the live provider and fail. A suite-wide
+  fixture (`tests/conftest.py`) now runs every test without a key.
+
+---
+
 ## 0.2.49 — 2026-10-08
 
 ### Added

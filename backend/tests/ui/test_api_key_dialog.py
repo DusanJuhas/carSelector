@@ -35,7 +35,7 @@ async def test_entering_key_in_dialog_configures_ai(user: User, log_in) -> None:
     await log_in(user, ADMIN, admin=True)
     await user.should_see("AI klíč chybí")
 
-    user.find("AI klíč chybí").click()
+    user.find(marker="menu-api-key").click()
     await user.should_see("API klíč pro AI")
     user.find(kind=ui.input).type("gsk-typed-in-ui")
     user.find("Uložit").click()
@@ -48,7 +48,7 @@ async def test_entering_key_in_dialog_configures_ai(user: User, log_in) -> None:
 async def test_blank_key_is_rejected(user: User, log_in) -> None:
     await user.open("/")
     await log_in(user, ADMIN, admin=True)
-    user.find("AI klíč chybí").click()
+    user.find(marker="menu-api-key").click()
     user.find("Uložit").click()
 
     await user.should_see("Zadejte prosím klíč.")
@@ -76,7 +76,7 @@ async def test_rejected_key_shows_specific_message_in_chat(
 async def test_key_with_diacritics_is_rejected_with_explanation(user: User, log_in) -> None:
     await user.open("/")
     await log_in(user, ADMIN, admin=True)
-    user.find("AI klíč chybí").click()
+    user.find(marker="menu-api-key").click()
     user.find(kind=ui.input).type("gsk_věc")
     user.find("Uložit").click()
 
@@ -99,7 +99,7 @@ async def test_rejected_key_tells_non_admins_to_contact_the_administrator(
     user.find("Napište odpověď…").type("Chci rodinné auto do 900 tisíc.").trigger("keydown.enter")
 
     await user.should_see("Dejte prosím vědět administrátorovi")
-    await user.should_not_see("tlačítko „AI klíč“")
+    await user.should_not_see("„AI klíč“ v nabídce účtu")
 
 
 async def test_forged_save_event_from_a_non_admin_does_not_change_the_key(user: User) -> None:

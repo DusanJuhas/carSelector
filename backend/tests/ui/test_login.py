@@ -72,7 +72,7 @@ async def test_logout_returns_to_anonymous(user: User, log_in) -> None:
     await user.open("/")
     await log_in(user, "boss@example.cz", admin=True)
 
-    user.find("Odhlásit").click()
+    user.find(marker="logout").click()
 
     await user.should_see("Přihlásit se")
     await user.should_not_see("AI klíč")
@@ -82,7 +82,7 @@ async def test_logout_returns_to_anonymous(user: User, log_in) -> None:
 
 async def test_wrong_code_is_rejected_and_login_does_not_happen(user: User, inbox: CodeInbox) -> None:
     await user.open("/")
-    user.find("Přihlásit se").click()
+    user.find(marker="login").click()
     user.find("E-mail").type("jana@example.cz")
     user.find("Poslat kód").click()
     await user.should_see("Poslali jsme šestimístný kód")
@@ -96,7 +96,7 @@ async def test_wrong_code_is_rejected_and_login_does_not_happen(user: User, inbo
 
 async def test_invalid_email_is_rejected(user: User, inbox: CodeInbox) -> None:
     await user.open("/")
-    user.find("Přihlásit se").click()
+    user.find(marker="login").click()
     user.find("E-mail").type("not-an-email")
     user.find("Poslat kód").click()
 
@@ -185,7 +185,7 @@ async def test_logging_in_from_the_admin_page_reveals_the_console(user: User, lo
 async def test_login_dialog_says_no_email_is_sent_in_console_mode(user: User, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(config, "EMAIL_BACKEND", "console")
     await user.open("/")
-    user.find("Přihlásit se").click()
+    user.find(marker="login").click()
 
     await user.should_see("e-mail se neodesílá")
 
@@ -193,7 +193,7 @@ async def test_login_dialog_says_no_email_is_sent_in_console_mode(user: User, mo
 async def test_login_dialog_has_no_dev_notice_when_mail_is_really_sent(user: User, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(config, "EMAIL_BACKEND", "smtp")
     await user.open("/")
-    user.find("Přihlásit se").click()
+    user.find(marker="login").click()
 
     await user.should_see("Přihlášení")
     await user.should_not_see("e-mail se neodesílá")

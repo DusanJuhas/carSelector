@@ -63,8 +63,8 @@ Groq (https://console.groq.com) has a free, no-credit-card developer tier - usef
 without spending Anthropic credits, at the cost of a different (generally less instruction-precise)
 model family; see the verification note below, which applies per-provider, not just to Claude.
 
-Instead of putting a key in `.env`, an **admin** can enter it in the running app: the header's "AI
-klíč" button (shown to admins only, see Login below) opens a dialog whose value is kept in process
+Instead of putting a key in `.env`, an **admin** can enter it in the running app: the "AI
+klíč" item in the header's account menu (shown to admins only, see Login below) opens a dialog whose value is kept in process
 memory only (never written to disk) and overrides the environment's key. It has to be re-entered
 after every restart, and it is process-wide (every visitor's AI calls use it) - which is why it is
 admin-only.
@@ -88,7 +88,7 @@ NICEGUI_STORAGE_SECRET=...   # optional locally - see app/core/config.py; set a 
 Anyone can use the catalog, chat and wizard without an account. Logging in is by **email only, no
 password**: enter an address, receive a 6-digit code, type it in (`app/services/auth.py`,
 `app/ui/components/login_dialog.py`). Any address can create a regular account this way - the first
-successful login creates it. **Admin rights** (the `/admin` console, the "AI klíč" button) are never
+successful login creates it. **Admin rights** (the `/admin` console, the "AI klíč" menu item) are never
 self-service: an address becomes admin only by being listed in `ADMIN_EMAILS` (applied at its next
 login, grant-only - removing an address from the list does not demote anyone) or by having
 `users.is_admin` set in the database.
@@ -160,7 +160,7 @@ unauthenticated; login only gates the UI.
 reload or a new login session: `app/services/saved_requirements.py` keeps one JSON snapshot of
 `StructuredRequirements` per user (`saved_requirements` table), restored on `ConversationState.
 begin()` and overwritten after every chat/wizard turn. Logged-out browsing is unaffected - nothing
-is saved, and `ConversationState.restart()` (the header's "Restartovat") also deletes the saved
+is saved, and `ConversationState.restart()` (the header's restart icon) also deletes the saved
 snapshot server-side rather than leaving a reload silently bring it back.
 
 **The AI layer (`app/ai/requirement_interpreter.py`, `app/ai/explanation_generator.py`) was
@@ -290,7 +290,7 @@ code - keeps that boundary a real process boundary, so a scraper crash can't tak
 Running the scraper alone does **not** update the catalog the chat UI shows - run the import step
 afterward for that (see the on-page description of each). **Admin-only**: anonymous visitors get a
 login prompt and regular accounts a "no admin rights" note instead of the console - see Login above.
-The header's "Admin" link is only shown to admins, but the real check is on the page itself (an
+The account menu's "Admin" item is only shown to admins, but the real check is on the page itself (an
 unprivileged browser never receives the job buttons at all).
 
 The console's **"AI komunikace"** tab is a complete trace of the LLM traffic (Groq or Anthropic,

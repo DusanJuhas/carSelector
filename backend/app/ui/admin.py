@@ -432,7 +432,7 @@ def _access_denied(auth_state: AuthState) -> None:
             ui.label(t("auth.adminOnly")).classes("text-[13px] text-subtext")
             ui.button(t("header.login"), icon="login", on_click=open_login_dialog).props("no-caps unelevated").classes(
                 "rounded-control bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-text"
-            )
+            ).mark("login")
         else:
             ui.label(t("auth.adminOnly")).classes("text-[13px] text-subtext")
             ui.label(t("auth.adminOnlyLoggedIn", email=auth_state.user.email)).classes("text-[13px] text-subtext")

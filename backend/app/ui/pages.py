@@ -45,8 +45,8 @@ def error_message(error: str, is_admin: bool = True) -> str:
     the AI failures (`ai_not_configured` and every `AiProviderError.code`),
     the generic one for anything else.
 
-    `is_admin` matters for `ai_invalid_key`: the fix (the header's "AI
-    klíč" button) is admin-only, so everyone else gets text that doesn't
+    `is_admin` matters for `ai_invalid_key`: the fix (the account menu's
+    "AI klíč" item) is admin-only, so everyone else gets text that doesn't
     point at a control they can't see."""
     if error == "ai_not_configured":
         return t("chat.aiNotConfigured")

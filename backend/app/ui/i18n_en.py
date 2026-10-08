@@ -17,10 +17,9 @@ STRINGS_EN: dict = {
         "apiKeyMissing": "AI key missing",
         "login": "Log in",
         "logout": "Log out",
-        "menu": "Menu",
+        "account": "Account",
         "admin": "Admin",
-        "switchLanguage": "CS",
-        "switchLanguageTooltip": "Přepnout do češtiny",
+        "switchLanguage": "Čeština",
     },
     "common": {
         "dateFormat": "%d/%m/%Y",
@@ -163,7 +162,7 @@ STRINGS_EN: dict = {
         "errors": {
             "ai_invalid_key": (
                 "The AI service rejected the API key (invalid or revoked). "
-                "Enter it again using the “AI key” button in the header."
+                "Enter it again via “AI key” in the account menu at the top right."
             ),
             "ai_invalid_key_user": (
                 "The AI service is temporarily unavailable (invalid API key on the server side). "

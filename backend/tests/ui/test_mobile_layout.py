@@ -71,13 +71,13 @@ async def test_sort_and_filters_toggle_open_on_mobile(user: User) -> None:
     assert MOBILE_HIDDEN not in _classes(user, "sort-controls")
 
 
-async def test_header_keeps_secondary_actions_behind_menu_button(user: User) -> None:
+async def test_header_keeps_account_actions_in_the_account_menu(user: User) -> None:
     await user.open("/")
     # Each control exists once (not a duplicated mobile copy) - `find`
     # would otherwise match two buttons and the click would fail.
-    user.find("Restartovat").click()
+    user.find(marker="restart").click()
+    await user.should_see(marker="account-menu")
     await user.should_see("Přihlásit se")
-    await user.should_see("menu")
 
 
 async def test_requirements_drawer_has_close_button(user: User) -> None:

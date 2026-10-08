@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.ai import client as ai_client
 from app.api.deps import get_db
 from app.db.base import Base
 from app.db.seed import seed_demo_data
@@ -21,6 +22,20 @@ class SeededData:
     vw_model_id: int
     config_people_fwd_id: int
     config_rline_awd_id: int
+
+
+@pytest.fixture(autouse=True)
+def _no_ai_key(monkeypatch: pytest.MonkeyPatch):
+    """Runs every test as if no AI API key were configured, whatever the
+    developer's backend/.env says - tests that need the AI layer inject a
+    fake client or set a key themselves. Without this, a real key in .env
+    made the "no key" tests call the live provider and fail.
+    """
+    monkeypatch.setattr(ai_client, "ANTHROPIC_API_KEY", None)
+    monkeypatch.setattr(ai_client, "GROQ_API_KEY", None)
+    ai_client.set_runtime_api_key(None)
+    yield
+    ai_client.set_runtime_api_key(None)
 
 
 @pytest.fixture()

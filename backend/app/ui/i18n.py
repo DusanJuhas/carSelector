@@ -37,12 +37,11 @@ STRINGS: dict = {
         "apiKeyMissing": "AI klíč chybí",
         "login": "Přihlásit se",
         "logout": "Odhlásit",
-        "menu": "Menu",
+        "account": "Účet",
         "admin": "Admin",
-        # Labelled in the language it switches TO, so it's recognizable
-        # to someone who can't read the current one.
-        "switchLanguage": "EN",
-        "switchLanguageTooltip": "Switch to English",
+        # Named in the language it switches TO, so it's recognizable to
+        # someone who can't read the current one.
+        "switchLanguage": "English",
     },
     "common": {
         # strftime pattern for dates shown to the user (share links, PDF).
@@ -185,10 +184,10 @@ STRINGS: dict = {
         "errors": {
             "ai_invalid_key": (
                 "AI služba odmítla API klíč (neplatný nebo zrušený). "
-                "Zadejte ho znovu přes tlačítko „AI klíč“ v záhlaví."
+                "Zadejte ho znovu přes „AI klíč“ v nabídce účtu vpravo nahoře."
             ),
             # Shown instead of ai_invalid_key to non-admins, who can't reach the
-            # "AI klíč" button (admin-only) that message points at.
+            # "AI klíč" menu item (admin-only) that message points at.
             "ai_invalid_key_user": (
                 "AI služba je dočasně nedostupná (neplatný API klíč na straně serveru). "
                 "Dejte prosím vědět administrátorovi."

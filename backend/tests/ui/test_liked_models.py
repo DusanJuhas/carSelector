@@ -118,6 +118,6 @@ async def test_logout_clears_the_accounts_hearts(user: User, log_in, seeded_sess
     user.find(marker=f"like-{vw}").click()
     await _wait_for_icons(user, vw, "favorite")
 
-    user.find("Odhlásit").click()
+    user.find(marker="logout").click()
 
     assert await _wait_for_icons(user, vw, "favorite_border") == ["favorite_border", "favorite_border"]

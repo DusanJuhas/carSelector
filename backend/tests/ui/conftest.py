@@ -116,7 +116,7 @@ def log_in(inbox: CodeInbox, monkeypatch: pytest.MonkeyPatch):
     async def _log_in(user: User, email: str, *, admin: bool = False, expect: str = "Odhlásit") -> None:
         if admin:
             monkeypatch.setattr(config, "ADMIN_EMAILS", frozenset({email}))
-        user.find("Přihlásit se").click()
+        user.find(marker="login").click()
         await user.should_see("Přihlášení")
         user.find("E-mail").type(email)
         user.find("Poslat kód").click()
