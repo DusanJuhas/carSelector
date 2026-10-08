@@ -70,6 +70,12 @@ class AuthState:
         """True if the logged-in user has admin rights."""
         return self.user is not None and self.user.is_admin
 
+    @property
+    def can_write_articles(self) -> bool:
+        """True if the logged-in user may write articles (an author or an
+        admin - see `UserRead.can_write_articles`)."""
+        return self.user is not None and self.user.can_write_articles
+
     async def refresh(self) -> None:
         """Loads the user the session claims to be, dropping the session
         if it has expired or the account no longer exists / is disabled.

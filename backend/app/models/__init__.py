@@ -2,6 +2,8 @@
 Alembic autogenerate and for `Base.metadata.create_all()` to see all tables.
 """
 
+from app.models.article import Article, ArticleRecipient
+from app.models.author_request import AuthorRequest
 from app.models.brand import Brand
 from app.models.car_model import CarModel
 from app.models.color import Color
@@ -20,6 +22,9 @@ from app.models.trim import Trim
 from app.models.user import User
 
 __all__ = [
+    "Article",
+    "ArticleRecipient",
+    "AuthorRequest",
     "Brand",
     "CarModel",
     "Color",

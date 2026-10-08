@@ -1,6 +1,7 @@
 """Port of frontend/src/components/AppHeader.tsx."""
 
 from collections.abc import Callable
+from typing import Any
 
 from nicegui import ui
 
@@ -21,11 +22,12 @@ def app_header(
     on_login: Callable[[], None],
     on_logout: Callable[[], None],
     on_switch_language: Callable[[], None],
+    on_request_author: Callable[[], Any],
 ) -> None:
     """Builds the top bar: brand/tagline on the left; on the right the two
     car-finding actions (wizard, requirements drawer), a restart icon, and
     an account button whose menu holds everything about the user and the
-    app - email, admin link, API key, language, login/logout. The same
+    app - email, articles, admin link, API key, language, login/logout. The same
     layout serves desktop and mobile (the tagline and the requirements
     label just collapse below `md`), so there's no separate mobile menu.
 
@@ -49,6 +51,9 @@ def app_header(
             `app/ui/components/login_dialog.py`.
         on_logout: Called when "Odhlásit" is clicked.
         on_switch_language: Called when the language menu item is clicked.
+        on_request_author: Called when "Stát se autorem" is clicked - opens
+            `app/ui/components/author_request_dialog.py`. Offered only to
+            logged-in users who can't write articles yet.
     """
     is_admin = user is not None and user.is_admin
     key_missing = is_admin and not ai_configured
@@ -82,7 +87,9 @@ def app_header(
                 _ICON_BUTTON_CLASSES
             ).tooltip(t("header.restart")).mark("restart")
 
-            _account_menu(user, is_admin, key_missing, on_open_api_key, on_login, on_logout, on_switch_language)
+            _account_menu(
+                user, is_admin, key_missing, on_open_api_key, on_login, on_logout, on_switch_language, on_request_author
+            )
 
 
 def _account_menu(
@@ -93,6 +100,7 @@ def _account_menu(
     on_login: Callable[[], None],
     on_logout: Callable[[], None],
     on_switch_language: Callable[[], None],
+    on_request_author: Callable[[], Any],
 ) -> None:
     """The round account button and its dropdown - see `app_header`.
 
@@ -106,6 +114,7 @@ def _account_menu(
         on_login: See `app_header`.
         on_logout: See `app_header`.
         on_switch_language: See `app_header`.
+        on_request_author: See `app_header`.
     """
     avatar_classes = "relative shrink-0 rounded-full w-9 h-9 min-h-0 "
     if user is not None:
@@ -129,6 +138,11 @@ def _account_menu(
             if user is not None:
                 ui.label(user.email).classes("px-4 pt-2.5 pb-2 text-[12.5px] text-subtext break-all")
                 ui.separator()
+            _menu_item("article", t("header.articles"), lambda: ui.navigate.to("/articles")).mark("menu-articles")
+            if user is not None and user.can_write_articles:
+                _menu_item("edit_note", t("header.myArticles"), lambda: ui.navigate.to("/author")).mark("menu-my-articles")
+            elif user is not None:
+                _menu_item("history_edu", t("header.becomeAuthor"), on_request_author).mark("menu-become-author")
             if is_admin:
                 _menu_item("admin_panel_settings", t("header.admin"), lambda: ui.navigate.to("/admin")).mark("menu-admin")
                 _menu_item(
@@ -145,7 +159,7 @@ def _account_menu(
                 _menu_item("logout", t("header.logout"), on_logout).mark("logout")
 
 
-def _menu_item(icon: str, label: str, on_click: Callable[[], None], *, flagged: bool = False) -> ui.menu_item:
+def _menu_item(icon: str, label: str, on_click: Callable[[], Any], *, flagged: bool = False) -> ui.menu_item:
     """One account-menu row: icon + label. Tests click rows by marker -
     NiceGUI's test `User` matches text on the inner label, which (unlike in
     a browser) doesn't pass the click up to the item.

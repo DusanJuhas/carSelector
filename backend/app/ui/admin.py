@@ -1,4 +1,4 @@
-"""Admin console (`/admin`), three tabs:
+"""Admin console (`/admin`), four tabs:
 
 - "Data": the configured OEM sources (`config/sources.yaml`) - read-only.
 - "Ovládání" (Controls): lets a developer trigger the scraper and the
@@ -6,6 +6,8 @@
   live streamed output.
 - "AI komunikace": the full trace of LLM (Groq / Anthropic) requests and
   responses - see `app/ui/components/llm_trace_panel.py`.
+- "Autoři": author-role requests and current authors - see
+  `app/ui/components/authors_admin_panel.py`.
 
 Deliberately subprocess-based - `python -m scraper.main` and
 `python scripts/import_scraper_data.py` via `sys.executable` - rather than
@@ -42,6 +44,7 @@ from pathlib import Path
 from nicegui import app, ui
 
 from app.ui.auth import AuthState
+from app.ui.components.authors_admin_panel import authors_admin_panel
 from app.ui.components.llm_trace_panel import llm_trace_panel
 from app.ui.components.login_dialog import login_dialog
 from app.ui.i18n import t
@@ -465,6 +468,7 @@ def register_admin_page() -> None:
                 data_tab = ui.tab(t("admin.tabs.data"))
                 controls_tab = ui.tab(t("admin.tabs.controls"))
                 trace_tab = ui.tab(t("admin.tabs.aiTrace"))
+                authors_tab = ui.tab(t("admin.tabs.authors"))
 
             with ui.tab_panels(tabs, value=data_tab).classes("w-full bg-transparent"):
                 with ui.tab_panel(data_tab).classes("p-0"):
@@ -474,6 +478,8 @@ def register_admin_page() -> None:
                 with ui.tab_panel(trace_tab).classes("p-0"):
                     with ui.column().classes("w-full max-w-[1100px]"):
                         llm_trace_panel()
+                with ui.tab_panel(authors_tab).classes("p-0"):
+                    await authors_admin_panel(auth_state.user.id)
 
 
 def _data_panel() -> None:

@@ -13,3 +13,10 @@ class UserRead(BaseModel):
     id: int
     email: str
     is_admin: bool
+    is_author: bool = False
+    display_name: str | None = None
+
+    @property
+    def can_write_articles(self) -> bool:
+        """Authors write articles; so do admins, without needing the role."""
+        return self.is_author or self.is_admin

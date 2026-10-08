@@ -73,6 +73,55 @@ body {
   height: 100dvh;
 }
 
+/* Article text - both the reader's view and the editor's content area
+   (`app/ui/articles_page.py`), so the author sees what readers will. */
+.article-body {
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.article-body h2 {
+  margin: 1.4em 0 0.5em;
+  font-size: 1.45em;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.article-body h3 {
+  margin: 1.2em 0 0.4em;
+  font-size: 1.2em;
+  font-weight: 700;
+}
+.article-body p,
+.article-body ul,
+.article-body ol,
+.article-body blockquote {
+  margin: 0 0 0.9em;
+}
+.article-body ul {
+  list-style: disc;
+  padding-left: 1.5em;
+}
+.article-body ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
+.article-body blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 1em;
+  color: var(--color-subtext);
+}
+.article-body a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+.article-body img {
+  max-width: 100%;
+  height: auto;
+}
+.article-body hr {
+  margin: 1.5em 0;
+  border-color: var(--color-border);
+}
+
 /* Mobile (below Tailwind's `md` breakpoint). iOS Safari zooms the whole
    page when a focused input's font is under 16px - pin every form control
    to 16px there instead of each component's desktop 13px. */

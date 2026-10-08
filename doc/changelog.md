@@ -10,14 +10,47 @@ Internal versions use `0.y.z`:
 - The leading **`0`** is fixed for the whole pre-public-release phase. Public
   releases will start at `1.x.x`; the `0.` prefix is reserved so it never
   collides with those.
-- **`y`** (major) increments on a *big* change — a technology switch or a
-  fundamental shift in how the system is built (e.g. replacing the Node.js/
-  React frontend with a pure-Python UI).
-- **`z`** (minor) increments for everything else — new features, new scraper
-  brands, refactors, fixes, and documentation.
+- **`y`** (major) increments on a *big* change — either a technology switch
+  or fundamental shift in how the system is built (e.g. `0.2.0`: replacing
+  the Node.js/React frontend with a pure-Python UI), or a fundamental change
+  in what the product does (e.g. `0.3.0`: user roles and an articles portal
+  next to the car selector). A new `y` starts at `z = 0`.
+- **`z`** (minor) increments for everything else — ordinary new features
+  within the existing product, new scraper brands, refactors, fixes, and
+  documentation.
 
 There are no `x.y.z-alpha`/build-number suffixes; each entry below corresponds
 to one or more related commits.
+
+---
+
+## 0.3.0 — 2026-10-09
+
+### Added
+- Author role and articles portal:
+  - Logged-in users can ask for the author role from the account menu
+    ("Stát se autorem" - the byline they want to publish under plus an
+    optional note); a pending or rejected request is shown when the dialog
+    is reopened.
+  - New admin console tab "Autoři": approve/reject pending requests, list
+    authors with their article counts, revoke the role. A revoked author's
+    published articles stay readable, they just can't edit any more.
+    Admins may write articles without the role.
+  - "Moje články" (`/author`) lists the author's articles, drafts
+    included; `/author/new` and `/author/edit/{id}` hold a WYSIWYG editor
+    (NiceGUI `ui.editor`) with a visibility choice: only me (draft),
+    selected users (by email - also people without an account yet, who
+    see it after logging in with that address) or everyone.
+  - "Články" (`/articles`, `/articles/{id}`) for readers: public articles
+    for everyone incl. anonymous visitors, plus the ones shared with the
+    logged-in reader ("Sdíleno s vámi"). Article HTML is sanitized in the
+    browser (DOMPurify).
+  - Access is enforced in the services, not just the UI. Schema:
+    `users.is_author`, `users.display_name`, tables `author_requests`,
+    `articles`, `article_recipients` (migration `b7d2e8f41a90` - run
+    `alembic upgrade head`). Services `app/services/authors.py`,
+    `app/services/articles.py`. Tests: `tests/test_authors_service.py`,
+    `tests/test_articles_service.py`, `tests/ui/test_articles.py`.
 
 ---
 

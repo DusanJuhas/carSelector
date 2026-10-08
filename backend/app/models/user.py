@@ -20,6 +20,13 @@ class User(Base):
     # is a case-insensitive one too, on SQLite and Postgres alike.
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    # May write and publish articles (see `app/services/articles.py`).
+    # Granted only by an admin approving the user's request (see
+    # `app/services/authors.py`); admins can write regardless of this flag.
+    is_author: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+    # The byline under an author's articles - chosen in the author request,
+    # so an article never exposes its author's email address.
+    display_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     # False blocks login without deleting the account (and, later, its
     # saved conversations).
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
