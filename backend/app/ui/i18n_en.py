@@ -34,6 +34,14 @@ STRINGS_EN: dict = {
         "running": "Running…",
         "done": "Done",
         "failed": "Failed (exit code {code})",
+        "progress": {
+            "starting": "Starting…",
+            "step": "{step} / {steps} · {item}",
+            "sub": "({sub} / {subs})",
+            "elapsed": "Running {elapsed}",
+            "remaining": "about {remaining} left",
+            "lastRun": "Last successful run took {duration}",
+        },
         "jobs": {
             "scraper": {
                 "title": "1. Run the scraper",

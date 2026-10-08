@@ -21,6 +21,34 @@ to one or more related commits.
 
 ---
 
+## 0.2.49 — 2026-10-08
+
+### Added
+- Admin console → "Ovládání": the scraper and catalog-import jobs show a
+  progress bar ("7 / 20 · skoda (3 / 12)" - source and its documents for
+  the scraper, document and brand for the import), elapsed time and an
+  estimate of the time left. The estimate blends how long the last
+  successful run took (remembered per job in NiceGUI's general storage)
+  with the progress so far, trusting progress more as the run advances.
+  When idle, each job shows how long its last successful run took.
+- `scraper/progress.py`: the scraper prints machine-readable
+  `PROGRESS {json}` lines per source and per document;
+  `scripts/import_scraper_data.py` prints the same format per document.
+  The admin console turns them into the bar and keeps them out of the log.
+
+### Fixed
+- The jobs' live log arrived in bursts or only at the end: piped Python
+  output was block-buffered. Both jobs now run unbuffered (`-u`) and with
+  UTF-8 output, so Czech names in the log are no longer garbled on Windows.
+- The jobs never started when the server ran as `uvicorn --reload` on
+  Windows: that runs the app on a `SelectorEventLoop`, which can't start
+  asyncio subprocesses, and the button stayed on "Běží…" forever. Jobs now
+  start via `subprocess.Popen` with a reader thread (works on any event
+  loop), and a job that can't start ends as "Chyba" with the reason in the
+  log instead of hanging.
+
+---
+
 ## 0.2.48 — 2026-10-08
 
 ### Changed

@@ -67,6 +67,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import sqlite3
 import sys
@@ -170,6 +171,20 @@ _SCRAPER_TO_AVAILABILITY_STATUS = {
     "OPTIONAL": AvailabilityStatus.optional,
     "NOT_AVAILABLE": AvailabilityStatus.unavailable,
 }
+
+
+def report_progress(step: int, steps: int, item: str) -> None:
+    """Prints one machine-readable progress line for the admin console's
+    progress bar (`backend/app/ui/admin.py`) - same `PROGRESS {json}` format
+    as `scraper/progress.py`, repeated here rather than imported to keep
+    this script's imports to `backend/` only.
+
+    Args:
+        step: 1-based index of the document being imported.
+        steps: Total number of documents.
+        item: The document's brand.
+    """
+    print("PROGRESS " + json.dumps({"step": step, "steps": steps, "item": item}, ensure_ascii=False), flush=True)
 
 
 def humanize_equipment_name(canonical_name: str) -> str:
@@ -937,7 +952,8 @@ class ScraperDataImporter:
             "SELECT id, source_brand, file_path, release_date, downloaded_at FROM document"
         ).fetchall()
 
-        for doc_id, source_brand, file_path, release_date, downloaded_at in documents:
+        for index, (doc_id, source_brand, file_path, release_date, downloaded_at) in enumerate(documents, start=1):
+            report_progress(index, len(documents), source_brand)
             variants = self._scraper_con.execute(
                 "SELECT id, model, trim, powertrain, variant_name FROM variant WHERE document_id = ?",
                 (doc_id,),

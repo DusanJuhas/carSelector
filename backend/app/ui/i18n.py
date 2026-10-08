@@ -57,6 +57,14 @@ STRINGS: dict = {
         "running": "Běží…",
         "done": "Hotovo",
         "failed": "Chyba (kód {code})",
+        "progress": {
+            "starting": "Spouštím…",
+            "step": "{step} / {steps} · {item}",
+            "sub": "({sub} / {subs})",
+            "elapsed": "Běží {elapsed}",
+            "remaining": "zbývá asi {remaining}",
+            "lastRun": "Poslední úspěšný běh trval {duration}",
+        },
         "jobs": {
             "scraper": {
                 "title": "1. Spustit scraper",

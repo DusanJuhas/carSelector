@@ -20,6 +20,7 @@ from scraper.database.repositories import VariantRepository
 from scraper.monitors.source_monitor import SourceMonitor
 from scraper.parsers._pdf_layout import extract_release_date
 from scraper.parsers.registry import PARSERS
+from scraper.progress import report_progress
 from scraper.sources.registry import Source, SourceRegistry
 
 
@@ -87,17 +88,22 @@ class ScraperPipeline:
     def run(self) -> None:
         """Runs one full pass: for every active source, discovers and
         downloads new documents, parses each, and persists the result.
-        Prints progress per source/document to stdout; closes the DB
+        Prints progress per source/document to stdout (human-readable
+        lines plus `scraper/progress.py`'s `PROGRESS` lines); closes the DB
         session before returning.
         """
         init_db()
 
-        for source in self._source_registry.load_active():
+        sources = self._source_registry.load_active()
+        for index, source in enumerate(sources, start=1):
+            report_progress(index, len(sources), source.parser_key)
             print(f"Active source: {source.parser_key} ({source.source_url})")
             new_documents = self._monitor.fetch_new_documents(source)
             print(f"  new documents: {len(new_documents)}")
-            for document in new_documents:
+            report_progress(index, len(sources), source.parser_key, 0, len(new_documents))
+            for done, document in enumerate(new_documents, start=1):
                 self._process_document(source, document)
+                report_progress(index, len(sources), source.parser_key, done, len(new_documents))
 
         self._session.close()
 
