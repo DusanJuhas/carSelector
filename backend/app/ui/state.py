@@ -13,13 +13,14 @@ connections share - see `app/ui/db.py`.
 """
 
 import logging
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 
 from nicegui import run
 
 from app.ai.errors import AiProviderError
 from app.models.enums import Drivetrain, FuelType
-from app.schemas.catalog import BrandRead
+from app.schemas.catalog import BrandRead, TrimChoice
 from app.schemas.common import Money
 from app.schemas.requirement import StructuredRequirements, UserRequirement
 from app.schemas.sharing import SharedSnapshot
@@ -27,6 +28,7 @@ from app.schemas.vehicle import VehicleDetail, VehicleSummary
 from app.services import catalog, liked_models, saved_requirements, sharing
 from app.services.conversation import orchestrator
 from app.ui import db as ui_db
+from app.ui.compare import MAX_COMPARE
 from app.ui.i18n import DEFAULT_LANGUAGE, t
 
 # Mirrors frontend/src/types/conversation.ts's ChatMessage.
@@ -683,6 +685,112 @@ class CatalogState:
             self.error = True
         finally:
             self.is_loading_more = False
+
+
+@dataclass
+class CompareState:
+    """The cars picked for side-by-side comparison (at most
+    `MAX_COMPARE`), in pick order.
+
+    Kept in `storage` - `app.storage.user` in the app, so the pick survives
+    reloads and is shared by the browser's tabs, the same way the custom
+    sort order is. Each entry also carries its display label, so the
+    compare tray can name the cars without a DB round-trip.
+    """
+
+    storage: MutableMapping = field(default_factory=dict)
+
+    STORAGE_KEY = "compare_selection"
+
+    @property
+    def items(self) -> list[tuple[int, str]]:
+        """`(configuration_id, label)` per picked car, in pick order."""
+        return [(int(entry["id"]), str(entry["label"])) for entry in self.storage.get(self.STORAGE_KEY, [])]
+
+    @property
+    def ids(self) -> list[int]:
+        return [configuration_id for configuration_id, _ in self.items]
+
+    @property
+    def is_full(self) -> bool:
+        return len(self.items) >= MAX_COMPARE
+
+    def contains(self, configuration_id: int) -> bool:
+        return configuration_id in self.ids
+
+    def _save(self, items: list[tuple[int, str]]) -> None:
+        # A new list (not an in-place edit), so a persistent storage dict
+        # notices the change and writes it out.
+        self.storage[self.STORAGE_KEY] = [{"id": configuration_id, "label": label} for configuration_id, label in items]
+
+    def add(self, configuration_id: int, label: str) -> bool:
+        """Picks a car, unless it's already picked or the pick is full.
+
+        Args:
+            configuration_id: The car's configuration.
+            label: Name to show for it (brand, model, trim).
+
+        Returns:
+            Whether the car is picked afterwards.
+        """
+        if self.contains(configuration_id):
+            return True
+        if self.is_full:
+            return False
+        self._save([*self.items, (configuration_id, label)])
+        return True
+
+    def remove(self, configuration_id: int) -> None:
+        self._save([item for item in self.items if item[0] != configuration_id])
+
+    def toggle(self, configuration_id: int, label: str) -> bool:
+        """Unpicks a picked car, picks an unpicked one (if there's room).
+
+        Returns:
+            Whether the car is picked afterwards.
+        """
+        if self.contains(configuration_id):
+            self.remove(configuration_id)
+            return False
+        return self.add(configuration_id, label)
+
+    def replace(self, items: list[tuple[int, str]]) -> None:
+        """Replaces the whole pick (e.g. with a model's trims), keeping at
+        most `MAX_COMPARE`."""
+        self._save(items[:MAX_COMPARE])
+
+    def clear(self) -> None:
+        self._save([])
+
+
+async def fetch_comparison(configuration_ids: list[int]) -> list[VehicleDetail]:
+    """Loads full detail for each picked car.
+
+    Args:
+        configuration_ids: The cars, in column order.
+
+    Returns:
+        Detail for every car that still exists and has a price, in the
+        same order - a car dropped from the catalog since it was picked is
+        simply left out.
+    """
+
+    def _load() -> list[VehicleDetail]:
+        with ui_db.get_session() as db:
+            found, _missing = catalog.compare_vehicles(db, configuration_ids)
+            return found
+
+    return await run.io_bound(_load)
+
+
+async def fetch_trim_alternatives(configuration_id: int) -> list[TrimChoice]:
+    """See `catalog.list_trim_alternatives`."""
+
+    def _load() -> list[TrimChoice]:
+        with ui_db.get_session() as db:
+            return catalog.list_trim_alternatives(db, configuration_id)
+
+    return await run.io_bound(_load)
 
 
 async def fetch_vehicle_detail(configuration_id: int) -> VehicleDetail | None:

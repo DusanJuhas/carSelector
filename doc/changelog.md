@@ -21,6 +21,33 @@ to one or more related commits.
 
 ---
 
+## 0.2.51 — 2026-10-08
+
+### Added
+- Car comparison (2–4 cars side by side):
+  - Every result card has a "Porovnat" checkbox; picked cars collect in a
+    tray under the results ("Porovnat (n)", per-car ×, "Vymazat"; on
+    phones just the count). The pick is remembered per browser.
+  - The comparison dialog shows one column per car - overview (price,
+    AI match score when there is a recommendation), engine and drivetrain,
+    equipment, colours - with the best value in each row highlighted and a
+    "Zobrazit jen rozdíly" switch (on by default). Equipment is matched row
+    by row ("✓ v ceně" / "+ price" / "—", ignoring case and spacing) for
+    cars of one brand; mixed brands get per-car lists, since every brand
+    words its equipment differently. Car headers and row labels stay
+    pinned while scrolling; phones show two cars at a time.
+  - Car detail: "Přidat k porovnání" and "Porovnat výbavy" - a picker of
+    the model's trims, each represented by the same engine where the trim
+    offers it (else its cheapest), with the current trim and the closest
+    in price pre-ticked.
+  - "Sdílet" shares the compared cars via the existing share link;
+    "Stáhnout PDF" exports the comparison table (landscape A4, respects
+    the differences-only switch).
+  - Service: `catalog.list_trim_alternatives`. Tests:
+    `tests/ui/test_compare.py`, `tests/test_trim_alternatives.py`.
+
+---
+
 ## 0.2.50 — 2026-10-08
 
 ### Changed

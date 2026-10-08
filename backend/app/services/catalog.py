@@ -23,7 +23,7 @@ from app.models import (
     Trim,
 )
 from app.models.enums import AvailabilityStatus, Drivetrain, FuelType
-from app.schemas.catalog import BrandRead, ModelOverview, TrimOverview
+from app.schemas.catalog import BrandRead, ModelOverview, TrimChoice, TrimOverview
 from app.schemas.common import Money, Page
 from app.schemas.vehicle import (
     ColorOption,
@@ -335,6 +335,88 @@ def compare_vehicles(
         else:
             found.append(detail)
     return found, missing
+
+
+def list_trim_alternatives(
+    db: Session, configuration_id: int, *, market: str = DEFAULT_MARKET
+) -> list[TrimChoice]:
+    """Every priced trim of `configuration_id`'s model, each represented by
+    one configuration - for comparing a model's trims ("flavours") side by
+    side. The configuration's own trim is represented by the configuration
+    itself; every other trim by its configuration with the same powertrain
+    when it offers one (so only the equipment differs), else by its
+    cheapest configuration.
+
+    Args:
+        db: Database session to query through.
+        configuration_id: The configuration the comparison starts from.
+        market: Market to price against; trims with no priced
+            configuration in it are left out.
+
+    Returns:
+        One choice per trim, in the model's trim display order - empty if
+        `configuration_id` doesn't exist.
+    """
+    origin = db.execute(
+        select(Configuration).where(Configuration.id == configuration_id).options(joinedload(Configuration.trim))
+    ).scalar_one_or_none()
+    if origin is None:
+        return []
+
+    current_price_join = and_(
+        Price.configuration_id == Configuration.id,
+        Price.market == market,
+        Price.valid_to.is_(None),
+    )
+    rows = (
+        db.execute(
+            select(Configuration, Price)
+            .join(Price, current_price_join)
+            .join(Trim, Trim.id == Configuration.trim_id)
+            .where(Trim.model_id == origin.trim.model_id)
+            .options(*_SUMMARY_LOAD_OPTIONS)
+        )
+        .unique()
+        .all()
+    )
+
+    by_trim: dict[int, list[tuple[Configuration, Price]]] = {}
+    for configuration, price in rows:
+        by_trim.setdefault(configuration.trim_id, []).append((configuration, price))
+
+    choices: list[tuple[Trim, TrimChoice]] = []
+    for trim_rows in by_trim.values():
+        trim = trim_rows[0][0].trim
+        is_current = trim.id == origin.trim_id
+        same_engine = [row for row in trim_rows if row[0].powertrain_id == origin.powertrain_id]
+        if is_current:
+            pool = [row for row in trim_rows if row[0].id == origin.id] or same_engine or trim_rows
+        else:
+            pool = same_engine or trim_rows
+        configuration, price = min(pool, key=lambda row: row[1].price_incl_vat)
+        choices.append(
+            (
+                trim,
+                TrimChoice(
+                    trim_id=trim.id,
+                    trim_name=trim.name,
+                    vehicle=_build_vehicle_summary(configuration, price),
+                    same_engine=configuration.powertrain_id == origin.powertrain_id,
+                    is_current=is_current,
+                ),
+            )
+        )
+    # Imported trims may have no display order - those go last, cheapest
+    # first (trims usually step up in price), then by name.
+    choices.sort(
+        key=lambda pair: (
+            pair[0].display_order is None,
+            pair[0].display_order or 0,
+            pair[1].vehicle.price.amount,
+            pair[0].name,
+        )
+    )
+    return [choice for _, choice in choices]
 
 
 def list_brands(db: Session) -> list[BrandRead]:

@@ -47,12 +47,21 @@ def _detail_field(label: str, value: str | None) -> None:
 
 def vehicle_detail_modal(
     on_share: Callable[[VehicleDetail], Awaitable[None]] | None = None,
+    is_compared: Callable[[int], bool] | None = None,
+    on_toggle_compare: Callable[[VehicleDetail], bool] | None = None,
+    on_compare_trims: Callable[[int], Awaitable[None]] | None = None,
 ) -> Callable[[int], None]:
     """Builds the (initially closed) vehicle detail dialog.
 
     Args:
         on_share: Called with the shown vehicle when its "Sdílet" button
             is clicked; no button without it.
+        is_compared: Whether a configuration is in the comparison pick -
+            drives the "Přidat k porovnání" toggle's look.
+        on_toggle_compare: Adds/removes the shown vehicle to/from the
+            comparison pick; no toggle without it.
+        on_compare_trims: Opens the trim picker for the shown vehicle's
+            model ("Porovnat výbavy"); no button without it.
 
     Returns:
         A function to call with a configuration id to load and open it.
@@ -86,6 +95,11 @@ def vehicle_detail_modal(
                 return
             ui.download.content(content, pdf_filename(detail), "application/pdf")
 
+        async def _compare_trims(configuration_id: int) -> None:
+            dialog.close()
+            if on_compare_trims is not None:
+                await on_compare_trims(configuration_id)
+
         @ui.refreshable
         def _content() -> None:
             if state.is_loading:
@@ -111,6 +125,29 @@ def vehicle_detail_modal(
                 with ui.column().classes("gap-0"):
                     ui.label(f"{detail.brand} {detail.model} {detail.trim}").classes("text-[18px] font-bold text-text")
                     ui.label(format_money(detail.price)).classes("mt-0.5 text-[14px] text-subtext")
+                    with ui.row().classes("mt-1 flex-wrap items-center gap-1"):
+                        if on_toggle_compare is not None:
+                            picked = is_compared is not None and is_compared(detail.configuration_id)
+
+                            def _toggle_compare() -> None:
+                                on_toggle_compare(detail)
+                                _content.refresh()
+
+                            ui.button(
+                                t("compare.added") if picked else t("compare.add"),
+                                icon="check_box" if picked else "check_box_outline_blank",
+                                on_click=_toggle_compare,
+                            ).props("flat dense no-caps").classes(
+                                "-ml-1 px-1 text-[12.5px] font-semibold " + ("text-accent" if picked else "text-subtext")
+                            ).mark("detail-compare")
+                        if on_compare_trims is not None:
+                            ui.button(
+                                t("compare.compareTrims"),
+                                icon="compare_arrows",
+                                on_click=lambda: _compare_trims(detail.configuration_id),
+                            ).props("flat dense no-caps").classes("px-1 text-[12.5px] font-semibold text-subtext").mark(
+                                "detail-compare-trims"
+                            )
                 with ui.row().classes("shrink-0 items-center gap-2"):
                     if on_share is not None:
                         ui.button(t("share.button"), icon="share", on_click=lambda: on_share(detail)).props(

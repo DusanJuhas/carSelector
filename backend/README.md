@@ -242,18 +242,20 @@ app/ui/
   db.py                     per-action database sessions (see its docstring for why - `Depends`
                              only resolves once, at the initial page load, not on every later
                              click/message send)
-  i18n.py                   Czech UI copy (the only language this app ships - see its docstring)
+  i18n.py, i18n_en.py       UI copy - Czech (default) and English, see i18n.py's docstring
   money.py, sort.py         format_money() / sort_cars(), small pure helpers
+  compare.py                comparison rows for 2-4 cars (shared by the dialog and its PDF)
   styles.py                 the design tokens (see doc/design-tokens.md), injected once via
                              ui.add_css - NiceGUI ships Tailwind support built in, so the same
                              utility classes work directly
   components/                one file per screen section (header, chat column, results grid,
-                             requirements drawer, vehicle detail modal)
+                             requirements drawer, vehicle detail modal, comparison dialog)
 ```
 
-**Language:** Czech only, same as every other user-facing string in this codebase (see
-`doc/prompt/CLAUDE.md`'s language convention) — all UI copy goes through `app/ui/i18n.py`'s `t()`/
-`t_count()` against its `STRINGS` dict, not hardcoded strings in `components/`. Prices are always a
+**Language:** Czech by default, English via the account menu (remembered per browser) — all UI
+copy goes through `app/ui/i18n.py`'s `t()`/`t_count()` against its `STRINGS` (Czech) and
+`app/ui/i18n_en.py`'s `STRINGS_EN` dicts, not hardcoded strings in `components/`; the assistant's
+chat replies and AI explanations follow the chosen language too. Prices are always a
 `Money` (`{amount, currency}`), formatted via `app/ui/money.py`'s `format_money()`.
 
 **Browsing mode vs. narrowed mode:** the results area shows one of two things, decided by

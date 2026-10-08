@@ -21,15 +21,24 @@ from app.ui.components.filter_bar import filter_bar
 from app.ui.components.header import app_header
 from app.ui.components.login_dialog import login_dialog
 from app.ui.components.requirements_drawer import requirements_drawer
-from app.ui.components.results_grid import LikeButtons, append_car_cards, results_grid, sort_control
+from app.ui.components.compare_dialog import compare_dialog, trim_picker_dialog
+from app.ui.components.results_grid import (
+    CompareToggles,
+    LikeButtons,
+    append_car_cards,
+    results_grid,
+    sort_control,
+)
 from app.ui.components.share_dialog import share_dialog
 from app.ui.components.vehicle_detail_modal import vehicle_detail_modal
 from app.ui.components.wizard import wizard_dialog
 from app.ui.i18n import LANGUAGES, STRINGS, current_language, set_language, t, t_count
 from app.ui.sort import BACKEND_SORT_OPTIONS, sort_cars
+from app.ui.compare import MAX_COMPARE, MIN_COMPARE
 from app.ui.state import (
     PAGE_SIZE,
     CatalogState,
+    CompareState,
     ConversationState,
     LikedModelsState,
     WizardState,
@@ -165,6 +174,8 @@ async def index() -> None:
     conv.is_loading = True
     catalog_state.is_loading = True
     like_buttons = LikeButtons(liked.is_liked, liked.toggle)
+    # Remembered per browser, like the custom sort order.
+    compare_state = CompareState(storage=app.storage.user)
     wizard_state = WizardState()
     sort_state = _SortState()
     narrowed_paging = _NarrowedPaging()
@@ -225,7 +236,58 @@ async def index() -> None:
         card = next((car for car in displayed_cars() if car.configuration_id == detail.configuration_id), None)
         await share([card or VehicleSummary.model_validate(detail.model_dump(include=set(VehicleSummary.model_fields)))])
 
-    open_detail = vehicle_detail_modal(share_vehicle)
+    def toggle_compare(car: VehicleSummary) -> bool:
+        """Flips a car's place in the comparison pick (cards' and the
+        detail's toggle) - refusing, with a note, once 4 are picked."""
+        was_picked = compare_state.contains(car.configuration_id)
+        picked = compare_state.toggle(car.configuration_id, f"{car.brand} {car.model} {car.trim}")
+        if not was_picked and not picked:
+            ui.notify(t("compare.full", max=MAX_COMPARE))
+        on_compare_changed()
+        return picked
+
+    def on_compare_changed() -> None:
+        compare_toggles.sync()
+        compare_tray.refresh()
+
+    compare_toggles = CompareToggles(compare_state.contains, toggle_compare)
+
+    def match_scores() -> dict[int, int]:
+        """Match scores of the current recommendation, for the comparison's
+        "Shoda" row - none while just browsing the catalog."""
+        if not conv.has_narrowed:
+            return {}
+        return {car.configuration_id: car.match_score for car in conv.cars if car.match_score is not None}
+
+    # The dialogs below reference each other (comparison -> detail ->
+    # trim picker -> comparison), hence the late-bound wrappers.
+    async def open_detail_for(configuration_id: int) -> None:
+        await open_detail(configuration_id)
+
+    async def open_comparison_now() -> None:
+        await open_comparison()
+
+    async def open_comparison_after_picker() -> None:
+        on_compare_changed()
+        await open_comparison()
+
+    open_trim_picker = trim_picker_dialog(compare_state, open_comparison_after_picker)
+    open_detail = vehicle_detail_modal(share_vehicle, compare_state.contains, toggle_compare, open_trim_picker)
+    open_comparison = compare_dialog(compare_state, on_compare_changed, open_detail_for, share, match_scores)
+
+    async def start_comparison() -> None:
+        if len(compare_state.ids) < MIN_COMPARE:
+            ui.notify(t("compare.needTwo"))
+            return
+        await open_comparison_now()
+
+    def remove_from_comparison(configuration_id: int) -> None:
+        compare_state.remove(configuration_id)
+        on_compare_changed()
+
+    def clear_comparison() -> None:
+        compare_state.clear()
+        on_compare_changed()
 
     def refresh_all() -> None:
         chrome.refresh()
@@ -383,7 +445,11 @@ async def index() -> None:
             new_cars = all_cars[shown_before : narrowed_paging.shown]
             if results_grid_ref.row is not None and sort_state.option != "custom" and new_cars:
                 append_car_cards(
-                    results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id), like_buttons
+                    results_grid_ref.row,
+                    new_cars,
+                    lambda car: open_detail(car.configuration_id),
+                    like_buttons,
+                    compare_toggles,
                 )
             else:
                 results_body.refresh()
@@ -406,7 +472,11 @@ async def index() -> None:
         new_cars = catalog_state.cars[cars_before:]
         if results_grid_ref.row is not None and sort_state.option != "custom" and new_cars:
             append_car_cards(
-                results_grid_ref.row, new_cars, lambda car: open_detail(car.configuration_id), like_buttons
+                results_grid_ref.row,
+                new_cars,
+                lambda car: open_detail(car.configuration_id),
+                like_buttons,
+                compare_toggles,
             )
         else:
             results_body.refresh()
@@ -595,6 +665,7 @@ async def index() -> None:
                                 reorderable,
                                 reorder if reorderable else None,
                                 like_buttons,
+                                compare_toggles,
                             )
 
                     results_body()
@@ -612,6 +683,48 @@ async def index() -> None:
                                 ui.label(t("results.loadingMore")).classes("text-[13px] text-subtext")
 
                     loading_more_indicator()
+
+                @ui.refreshable
+                def compare_tray() -> None:
+                    """The comparison pick, pinned under the results (outside
+                    their scroll area) - only while something is picked."""
+                    items = compare_state.items
+                    if not items:
+                        return
+                    with ui.row().classes(
+                        "w-full shrink-0 flex-nowrap items-center justify-between gap-3 border-t border-border "
+                        "bg-panel px-4 py-2.5 md:px-7"
+                    ).mark("compare-tray"):
+                        # Phones: just the count - named pills don't fit.
+                        ui.label(t("compare.trayCount", count=len(items))).classes(
+                            "text-[13px] font-semibold text-text md:hidden!"
+                        )
+                        with ui.row().classes("min-w-0 flex-wrap items-center gap-1.5 max-md:hidden!"):
+                            ui.label(t("compare.trayTitle")).classes(
+                                "text-[11.5px] font-bold uppercase tracking-wide text-subtext"
+                            )
+                            for configuration_id, label in items:
+                                with ui.row().classes(
+                                    "flex-nowrap items-center gap-0.5 rounded-full border border-border bg-panel-2 "
+                                    "py-0.5 pl-2.5 pr-0.5 text-[12px] text-text"
+                                ):
+                                    ui.label(label).classes("max-w-[180px] truncate")
+                                    ui.button(
+                                        icon="close", on_click=lambda c=configuration_id: remove_from_comparison(c)
+                                    ).props("flat round dense size=xs").classes("text-subtext").tooltip(
+                                        t("compare.remove")
+                                    )
+                        with ui.row().classes("shrink-0 flex-nowrap items-center gap-2"):
+                            ui.button(t("compare.clear"), on_click=clear_comparison).props("flat dense no-caps").classes(
+                                "text-[12.5px] text-subtext"
+                            )
+                            ui.button(
+                                t("compare.open", count=len(items)), icon="compare_arrows", on_click=start_comparison
+                            ).props("no-caps unelevated").classes(
+                                "rounded-control bg-accent px-3 py-1.5 text-[13px] font-semibold text-accent-text"
+                            ).mark("compare-open")
+
+                compare_tray()
 
             @ui.refreshable
             def drawer() -> None:

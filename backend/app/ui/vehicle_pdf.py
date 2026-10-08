@@ -1,6 +1,7 @@
 """PDF export of one vehicle's detail - the same content the detail dialog
 (`app/ui/components/vehicle_detail_modal.py`) shows, as an A4 document to
-print or take to a dealership.
+print or take to a dealership - and of a comparison of 2-4 vehicles (the
+comparison dialog's rows, landscape).
 
 Built server-side with fpdf2 (pure Python, no Node.js - see the tech stack
 in `doc/prompt/CLAUDE.md`). fpdf2's built-in fonts only cover Latin-1, so
@@ -20,6 +21,7 @@ from fpdf.fonts import FontFace
 
 from app.core import config
 from app.schemas.vehicle import VehicleDetail
+from app.ui.compare import build_sections, vehicle_title, visible_rows
 from app.ui.i18n import t
 from app.ui.money import format_money
 from app.ui.vehicle_format import co2_label, consumption_label, power_label
@@ -75,8 +77,8 @@ class _VehiclePdf(FPDF):
     """A4 page with the app's name in the header and a disclaimer + page
     number in the footer."""
 
-    def __init__(self, unicode_fonts: tuple[str, str] | None) -> None:
-        super().__init__(format="A4")
+    def __init__(self, unicode_fonts: tuple[str, str] | None, orientation: str = "portrait") -> None:
+        super().__init__(orientation=orientation, format="A4")
         self._unicode = unicode_fonts is not None
         if unicode_fonts is not None:
             self.add_font(_FAMILY, "", unicode_fonts[0])
@@ -100,7 +102,7 @@ class _VehiclePdf(FPDF):
             with diacritics stripped too when only the Latin-1 core font
             is available.
         """
-        text = text.replace("₂", "2")
+        text = text.replace("₂", "2").replace("✓", "•")
         if self._unicode:
             return text
         for src, dst in (("–", "-"), ("…", "..."), ("•", "-"), ("·", "-"), ("×", "x"), ("\u00a0", " ")):
@@ -268,3 +270,82 @@ def build_vehicle_pdf(detail: VehicleDetail, today: date | None = None) -> bytes
 
     return bytes(pdf.output())
 
+
+
+def comparison_pdf_filename(details: list[VehicleDetail]) -> str:
+    """Args:
+        details: The compared vehicles.
+
+    Returns:
+        An ASCII-only file name, e.g. `"porovnani-mazda-cx-5-prime-line-mazda-cx-5-centre-line.pdf"`.
+    """
+    slugs = [pdf_filename(detail).removesuffix(".pdf") for detail in details]
+    return f"porovnani-{'-'.join(slugs)}"[:120].rstrip("-") + ".pdf"
+
+
+def build_comparison_pdf(
+    details: list[VehicleDetail],
+    differences_only: bool,
+    match_scores: dict[int, int] | None = None,
+    today: date | None = None,
+) -> bytes:
+    """Renders a comparison as a landscape A4 table - the same rows the
+    comparison dialog shows (see `app/ui/compare.py`), best values in bold
+    accent.
+
+    Args:
+        details: The compared vehicles, one column each.
+        differences_only: Leave out the rows where every car is the same,
+            as the dialog's switch does.
+        match_scores: AI match score per configuration id, if any.
+        today: Date printed as "created on"; defaults to today.
+
+    Returns:
+        The PDF file's bytes.
+    """
+    pdf = _VehiclePdf(_find_fonts(), orientation="landscape")
+    pdf.add_page()
+
+    pdf.use_font(16, bold=True)
+    pdf.cell(0, 8, pdf.clean(t("compare.pdf.title")), new_x="LMARGIN", new_y="NEXT")
+    pdf.use_font(8.5)
+    pdf.set_text_color(*_SUBTEXT)
+    created = (today or date.today()).strftime(t("common.dateFormat"))
+    pdf.cell(0, 5, pdf.clean(t("vehicleDetail.pdf.created", date=created)), new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(*_TEXT)
+    pdf.ln(3)
+
+    col_widths = (3, *([4] * len(details)))
+    best = FontFace(emphasis="BOLD", color=_ACCENT)
+    muted = FontFace(color=_SUBTEXT)
+    section_face = FontFace(emphasis="BOLD", color=_SUBTEXT, fill_color=_PANEL_2)
+
+    pdf.use_font(8.5)
+    with pdf.table(
+        col_widths=col_widths,
+        first_row_as_headings=True,
+        headings_style=FontFace(emphasis="BOLD", color=_TEXT),
+        borders_layout="HORIZONTAL_LINES",
+        line_height=4.6,
+        padding=(1, 1.5),
+        text_align="LEFT",
+        repeat_headings=1,
+    ) as table:
+        heading = table.row()
+        heading.cell("")
+        for detail in details:
+            heading.cell(pdf.clean(vehicle_title(detail) + "\n" + format_money(detail.price)))
+
+        for section in build_sections(details, match_scores):
+            rows = visible_rows(section, differences_only)
+            if not rows:
+                continue
+            section_row = table.row()
+            section_row.cell(pdf.clean(section.title.upper()), colspan=len(details) + 1, style=section_face)
+            for row in rows:
+                cells = table.row()
+                cells.cell(pdf.clean(row.label), style=muted)
+                for index, cell in enumerate(row.cells):
+                    cells.cell(pdf.clean(cell.text), style=best if index in row.best else None)
+
+    return bytes(pdf.output())

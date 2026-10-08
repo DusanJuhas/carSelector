@@ -76,6 +76,67 @@ class LikeButtons:
             self._apply(button, liked)
 
 
+class CompareToggles:
+    """The "Porovnat" checkbox on every result card. Like `LikeButtons`,
+    one instance per page that outlives `results_grid` rebuilds and keeps a
+    registry of the toggles on screen, so `sync` can update them all when
+    the pick changes elsewhere (the compare tray, the comparison dialog).
+    """
+
+    def __init__(self, is_picked: Callable[[int], bool], on_toggle: Callable[[VehicleSummary], bool]) -> None:
+        """Args:
+        is_picked: Whether a configuration is currently picked.
+        on_toggle: Flips a car's pick and returns whether it's picked
+            afterwards (see `CompareState.toggle`) - may refuse when the
+            pick is full.
+        """
+        self._is_picked = is_picked
+        self._on_toggle = on_toggle
+        self._toggles: dict[int, list[ui.button]] = {}
+
+    @staticmethod
+    def _apply(button: ui.button, picked: bool) -> None:
+        button.props(f"icon={'check_box' if picked else 'check_box_outline_blank'}")
+        button.props(f'aria-pressed={"true" if picked else "false"}')
+        button.classes(add="text-accent" if picked else "text-subtext", remove="text-subtext" if picked else "text-accent")
+
+    def render(self, car: VehicleSummary) -> ui.button:
+        """Builds the toggle for one card.
+
+        Args:
+            car: The card's car.
+
+        Returns:
+            The button (already registered for syncing).
+        """
+        button = (
+            ui.button(t("compare.toggle"), on_click=lambda: self._toggle(car), color=None)
+            .props("flat dense no-caps")
+            .classes("-ml-1 px-1 text-[12px] font-semibold")
+            .mark(f"compare-{car.configuration_id}")
+        )
+        # The card itself opens the detail on click - the toggle must not.
+        button.on("click.stop", js_handler="() => {}")
+        self._apply(button, self._is_picked(car.configuration_id))
+        self._toggles.setdefault(car.configuration_id, []).append(button)
+        return button
+
+    def _toggle(self, car: VehicleSummary) -> None:
+        self._on_toggle(car)
+        self.sync()
+
+    def sync(self) -> None:
+        """Re-applies the current pick to every toggle still on screen."""
+        for configuration_id, buttons in list(self._toggles.items()):
+            alive = [button for button in buttons if not button.is_deleted]
+            if alive:
+                self._toggles[configuration_id] = alive
+                for button in alive:
+                    self._apply(button, self._is_picked(configuration_id))
+            else:
+                del self._toggles[configuration_id]
+
+
 def sort_control(value: str, on_change: Callable[[str], None]) -> None:
     """Builds the "Seřadit podle" sort dropdown.
 
@@ -92,7 +153,10 @@ def sort_control(value: str, on_change: Callable[[str], None]) -> None:
 
 
 def car_card(
-    car: VehicleSummary, on_select: Callable[[VehicleSummary], None] | None, like: LikeButtons | None = None
+    car: VehicleSummary,
+    on_select: Callable[[VehicleSummary], None] | None,
+    like: LikeButtons | None = None,
+    compare: CompareToggles | None = None,
 ) -> None:
     """Renders one result card - make/model/trim, price, match score,
     spec tags, an optional flag/AI-explanation line, and the like heart.
@@ -102,6 +166,7 @@ def car_card(
         on_select: Called with `car` when clicked/Enter-activated; the
             card is only interactive (clickable, focusable) when given.
         like: Renders the heart button over the photo, if given.
+        compare: Renders the "Porovnat" checkbox at the card's foot, if given.
     """
     is_high_score = car.match_score is not None and car.match_score >= 90
     border_class = "border-accent" if car.top_pick else "border-border"
@@ -153,12 +218,16 @@ def car_card(
             if car.explanation:
                 ui.label(car.explanation).classes("w-full text-[12px] italic leading-relaxed text-subtext")
 
+            if compare is not None:
+                compare.render(car)
+
 
 def _card_slot(
     car: VehicleSummary,
     on_select: Callable[[VehicleSummary], None],
     reorderable: bool,
     like: LikeButtons | None = None,
+    compare: CompareToggles | None = None,
 ) -> None:
     """Renders one card in its grid slot (the `relative w-[230px]` wrapper -
     full-width on phones - plus the optional drag handle) - the loop body shared by `results_grid`
@@ -169,6 +238,7 @@ def _card_slot(
         on_select: Called when the card is clicked/activated.
         reorderable: Shows the "⠿" drag handle when true.
         like: Renders the card's like heart, if given.
+        compare: Renders the card's compare toggle, if given.
     """
     with ui.column().classes("relative w-full sm:w-[230px] gap-0"):
         if reorderable:
@@ -179,7 +249,7 @@ def _card_slot(
                 "justify-center rounded-full bg-panel-2/90 text-[13px] text-subtext "
                 "pointer-coarse:h-10 pointer-coarse:w-10 pointer-coarse:text-[18px]"
             ).tooltip(t("results.dragHint"))
-        car_card(car, on_select, like)
+        car_card(car, on_select, like, compare)
 
 
 def results_grid(
@@ -188,6 +258,7 @@ def results_grid(
     reorderable: bool,
     on_reorder: Callable[[list[int]], None] | None,
     like: LikeButtons | None = None,
+    compare: CompareToggles | None = None,
 ) -> ui.row | None:
     """Renders the responsive card grid, or an empty-state message.
 
@@ -207,6 +278,7 @@ def results_grid(
             order once a drag completes. Required when `reorderable` is
             `True`.
         like: Renders each card's like heart, if given.
+        compare: Renders each card's compare toggle, if given.
 
     Returns:
         The card row container, so a caller doing infinite-scroll paging
@@ -225,7 +297,7 @@ def results_grid(
 
     with ui.row().classes("w-full gap-4") as container:
         for car in cars:
-            _card_slot(car, on_select, reorderable, like)
+            _card_slot(car, on_select, reorderable, like, compare)
 
     if reorderable and on_reorder is not None:
         order = [car.configuration_id for car in cars]
@@ -250,6 +322,7 @@ def append_car_cards(
     cars: list[VehicleSummary],
     on_select: Callable[[VehicleSummary], None],
     like: LikeButtons | None = None,
+    compare: CompareToggles | None = None,
 ) -> None:
     """Appends more cards into an already-rendered `results_grid` container,
     for infinite-scroll paging - without this, loading the next page would
@@ -273,7 +346,8 @@ def append_car_cards(
             the full accumulated list.
         on_select: Same callback passed to the original `results_grid` call.
         like: Same `LikeButtons` passed to the original `results_grid` call.
+        compare: Same `CompareToggles` passed to the original `results_grid` call.
     """
     with container:
         for car in cars:
-            _card_slot(car, on_select, reorderable=False, like=like)
+            _card_slot(car, on_select, reorderable=False, like=like, compare=compare)
