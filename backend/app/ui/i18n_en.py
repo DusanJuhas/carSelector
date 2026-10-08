@@ -53,6 +53,7 @@ STRINGS_EN: dict = {
         },
         "tabs": {
             "data": "Data",
+            "controls": "Controls",
             "aiTrace": "AI communication",
         },
         "trace": {

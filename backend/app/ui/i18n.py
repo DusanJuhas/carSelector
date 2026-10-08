@@ -76,6 +76,7 @@ STRINGS: dict = {
         },
         "tabs": {
             "data": "Data",
+            "controls": "Ovládání",
             "aiTrace": "AI komunikace",
         },
         "trace": {

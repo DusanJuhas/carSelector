@@ -21,6 +21,15 @@ to one or more related commits.
 
 ---
 
+## 0.2.48 — 2026-10-08
+
+### Changed
+- Admin console: the scraper and catalog-import jobs moved from the "Data"
+  tab to a new "Ovládání" (Controls) tab. "Data" now only lists the
+  configured sources. Test: `tests/ui/test_admin_tabs.py`.
+
+---
+
 ## 0.2.47 — 2026-10-08
 
 ### Added

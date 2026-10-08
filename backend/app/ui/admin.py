@@ -1,7 +1,9 @@
-"""Admin console (`/admin`), two tabs:
+"""Admin console (`/admin`), three tabs:
 
-- "Data": lets a developer trigger the scraper and the scraper -> catalog
-  import from the browser instead of a terminal, with live streamed output.
+- "Data": the configured OEM sources (`config/sources.yaml`) - read-only.
+- "Ovládání" (Controls): lets a developer trigger the scraper and the
+  scraper -> catalog import from the browser instead of a terminal, with
+  live streamed output.
 - "AI komunikace": the full trace of LLM (Groq / Anthropic) requests and
   responses - see `app/ui/components/llm_trace_panel.py`.
 
@@ -228,26 +230,33 @@ def register_admin_page() -> None:
 
             with ui.tabs().props("no-caps align=left").classes("text-text") as tabs:
                 data_tab = ui.tab(t("admin.tabs.data"))
+                controls_tab = ui.tab(t("admin.tabs.controls"))
                 trace_tab = ui.tab(t("admin.tabs.aiTrace"))
 
             with ui.tab_panels(tabs, value=data_tab).classes("w-full bg-transparent"):
                 with ui.tab_panel(data_tab).classes("p-0"):
-                    _data_panel(scraper_state, import_state)
+                    _data_panel()
+                with ui.tab_panel(controls_tab).classes("p-0"):
+                    _controls_panel(scraper_state, import_state)
                 with ui.tab_panel(trace_tab).classes("p-0"):
                     with ui.column().classes("w-full max-w-[1100px]"):
                         llm_trace_panel()
 
 
-def _data_panel(scraper_state: JobState, import_state: JobState) -> None:
-    """The "Data" tab: configured sources plus the scraper and import jobs.
+def _data_panel() -> None:
+    """The "Data" tab: the configured sources, read-only."""
+    with ui.column().classes("w-full max-w-[720px] gap-6"):
+        _sources_table()
+
+
+def _controls_panel(scraper_state: JobState, import_state: JobState) -> None:
+    """The "Ovládání" (Controls) tab: the scraper and import jobs.
 
     Args:
         scraper_state: State of the scraper job (fresh per page load).
         import_state: State of the catalog import job (fresh per page load).
     """
     with ui.column().classes("w-full max-w-[720px] gap-6"):
-        _sources_table()
-
         _job_section(
             t("admin.jobs.scraper.title"),
             t("admin.jobs.scraper.description"),
