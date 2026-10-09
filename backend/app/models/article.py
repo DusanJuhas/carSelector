@@ -21,11 +21,6 @@ class Article(Base):
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    title: Mapped[str] = mapped_column(String(200), nullable=False)
-    # HTML straight from the editor. Stored as written; it is sanitized
-    # where it is rendered (DOMPurify in the reader's browser, NiceGUI's
-    # `ui.html` default), never trusted as-is.
-    content_html: Mapped[str] = mapped_column(Text, nullable=False, default="")
     # `"draft"` | `"restricted"` | `"public"` - plain string, see
     # `AuthorRequest.status` for why.
     visibility: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
@@ -34,6 +29,26 @@ class Article(Base):
     # First time it left draft; kept when it is unpublished and published
     # again, so the date readers saw doesn't jump.
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ArticleTranslation(Base):
+    """One language version of an article. A reader gets the version in
+    their UI language, or another one with a notice that theirs is missing
+    (see `app/services/articles.py`).
+    """
+
+    __tablename__ = "article_translations"
+    __table_args__ = (UniqueConstraint("article_id", "language"),)
+
+    id: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
+    article_id: Mapped[int] = mapped_column(ForeignKey("articles.id", ondelete="CASCADE"), nullable=False, index=True)
+    # `"cs"` | `"en"` - see `app.schemas.article.ARTICLE_LANGUAGES`.
+    language: Mapped[str] = mapped_column(String(8), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    # HTML straight from the editor. Stored as written; it is sanitized
+    # where it is rendered (DOMPurify in the reader's browser, NiceGUI's
+    # `ui.html` default), never trusted as-is.
+    content_html: Mapped[str] = mapped_column(Text, nullable=False, default="")
 
 
 class ArticleRecipient(Base):

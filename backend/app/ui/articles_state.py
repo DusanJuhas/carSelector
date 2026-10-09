@@ -5,6 +5,10 @@ short-lived session (see `app/ui/db.py`), like `app/ui/state.py`'s.
 Refusals come back as the service's error code, never as an exception, so
 the pages can show the matching `articles.errors.*`/`authors.errors.*`
 text; anything unexpected is logged and reported as `"unknown_error"`.
+
+Article reads pass the browser's UI language (`current_language()`, read
+here on the event loop - the worker thread can't see it), so the service
+returns the matching language version where there is one.
 """
 
 import logging
@@ -20,6 +24,7 @@ from app.services import articles, authors
 from app.services.articles import ArticleError
 from app.services.authors import AuthorError
 from app.ui import db as ui_db
+from app.ui.i18n import current_language
 
 logger = logging.getLogger(__name__)
 
@@ -60,19 +65,23 @@ async def _call(action: Callable[[Session], T]) -> Outcome[T]:
 
 
 async def list_visible(viewer_id: int | None) -> Outcome[list[ArticleSummary]]:
-    return await _call(lambda db: articles.list_visible(db, viewer_id))
+    language = current_language()
+    return await _call(lambda db: articles.list_visible(db, viewer_id, language))
 
 
 async def get_for_reader(article_id: int, viewer_id: int | None) -> Outcome[ArticleRead | None]:
-    return await _call(lambda db: articles.get_for_reader(db, article_id, viewer_id))
+    language = current_language()
+    return await _call(lambda db: articles.get_for_reader(db, article_id, viewer_id, language))
 
 
 async def list_own(author_id: int) -> Outcome[list[ArticleSummary]]:
-    return await _call(lambda db: articles.list_own(db, author_id))
+    language = current_language()
+    return await _call(lambda db: articles.list_own(db, author_id, language))
 
 
 async def get_for_edit(author_id: int, article_id: int) -> Outcome[ArticleRead]:
-    return await _call(lambda db: articles.get_for_edit(db, author_id, article_id))
+    language = current_language()
+    return await _call(lambda db: articles.get_for_edit(db, author_id, article_id, language))
 
 
 async def save_article(author_id: int, draft: ArticleDraft, article_id: int | None) -> Outcome[ArticleRead]:

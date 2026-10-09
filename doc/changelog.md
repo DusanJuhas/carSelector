@@ -24,6 +24,30 @@ to one or more related commits.
 
 ---
 
+## 0.3.2 — 2026-10-09
+
+### Added
+- Articles in Czech and/or English: the editor has one tab per language
+  (a tab without a title is marked "empty"); one version is enough.
+  Readers get the version matching their UI language. If it's missing
+  they get the other one with a notice ("Tento článek je zatím dostupný
+  jen v angličtině."), and the list marks it "Jen anglicky" / "Czech
+  only". When both exist, the article offers "Read in English" / "Číst
+  česky". The portal's top bar got the language toggle, and "Moje články"
+  shows which versions each article has.
+
+### Changed
+- Article title and body moved to a new `article_translations` table
+  (Alembic migration `d5a8c3e1f720`); existing articles become their
+  Czech version. `ArticleDraft` now carries `translations` instead of
+  `title`/`content_html`.
+
+## 0.3.1 — 2026-10-09
+
+### Added
+- `scripts/fast-run.bat`: starts the app like `scripts/run.bat` but skips
+  `alembic upgrade head` and the scraper data import, for quick restarts.
+
 ## 0.3.0 — 2026-10-09
 
 ### Added

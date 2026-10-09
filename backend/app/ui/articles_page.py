@@ -6,7 +6,12 @@
 - `/articles/{id}`: one article;
 - `/author`: an author's own articles, drafts included;
 - `/author/new`, `/author/edit/{id}`: the WYSIWYG editor (NiceGUI's
-  `ui.editor`, i.e. Quasar's QEditor), with the choice of who may read it.
+  `ui.editor`, i.e. Quasar's QEditor) - one tab per language, Czech and/or
+  English - with the choice of who may read it.
+
+Readers get the language version matching the UI language (switchable in
+the top bar); an article missing it is shown in the language it has, with
+a notice saying so.
 
 Author pages build nothing but a "no rights" note for users who can't
 write (same wall as `app/ui/admin.py`), and every save/delete is checked
@@ -22,12 +27,12 @@ from collections.abc import Awaitable, Callable
 
 from nicegui import ui
 
-from app.schemas.article import ArticleDraft, ArticleRead, ArticleSummary
+from app.schemas.article import ARTICLE_LANGUAGES, ArticleDraft, ArticleRead, ArticleSummary, ArticleTranslation
 from app.ui import articles_state
 from app.ui.auth import AuthState
 from app.ui.components.author_request_dialog import error_text
 from app.ui.components.login_dialog import login_dialog
-from app.ui.i18n import t
+from app.ui.i18n import LANGUAGES, current_language, set_language, t
 from app.ui.pages import MOBILE_VIEWPORT
 from app.ui.styles import register_styles
 
@@ -93,6 +98,13 @@ def _page_shell(auth_state: AuthState) -> ui.column:
 
     open_login = login_dialog(auth_state, reload_page)
 
+    def switch_language() -> None:
+        # Same toggle as the main page's (`app/ui/pages.py`) - the reload
+        # rebuilds the page and refetches articles in the new language.
+        language = current_language()
+        set_language(LANGUAGES[(LANGUAGES.index(language) + 1) % len(LANGUAGES)])
+        reload_page()
+
     with ui.column().classes("min-h-[100dvh] w-full bg-bg text-text gap-0"):
         with ui.row().classes(
             "w-full flex-nowrap items-center justify-between gap-3 border-b border-border bg-panel px-4 py-3 md:px-7"
@@ -104,12 +116,16 @@ def _page_shell(auth_state: AuthState) -> ui.column:
                     ui.link(t("header.myArticles"), "/author").classes(
                         "text-[13px] font-semibold text-subtext no-underline"
                     ).mark("nav-my-articles")
-            if auth_state.user is None:
-                ui.button(t("header.login"), icon="login", on_click=open_login).props("flat no-caps").classes(
-                    _BUTTON_SECONDARY
-                ).mark("login")
-            else:
-                ui.label(auth_state.user.email).classes("text-[12.5px] text-subtext max-md:hidden!")
+            with ui.row().classes("flex-nowrap items-center gap-2"):
+                ui.button(t("header.switchLanguage"), icon="translate", on_click=switch_language).props(
+                    "flat dense no-caps"
+                ).classes("text-[13px] text-subtext").mark("language-toggle")
+                if auth_state.user is None:
+                    ui.button(t("header.login"), icon="login", on_click=open_login).props("flat no-caps").classes(
+                        _BUTTON_SECONDARY
+                    ).mark("login")
+                else:
+                    ui.label(auth_state.user.email).classes("text-[12.5px] text-subtext max-md:hidden!")
         content = ui.column().classes("w-full max-w-[820px] self-center gap-0 px-4 py-5 md:px-7 md:py-7")
     return content
 
@@ -128,6 +144,8 @@ def _articles_list(auth_state: AuthState, items: list[ArticleSummary]) -> None:
                 ui.label(article.title).classes("text-[16px] font-bold text-text")
                 with ui.row().classes("mt-1 items-center gap-2"):
                     ui.label(_byline(article)).classes("text-[12.5px] text-subtext")
+                    if article.language != current_language():
+                        _badge(t(f"articles.onlyInBadge.{article.language}"))
                     if article.visibility == "restricted":
                         # The author sees their own restricted articles here too.
                         own = article.author_id == viewer_id
@@ -145,8 +163,34 @@ def _article_view(auth_state: AuthState, article: ArticleRead) -> None:
             ui.link(t("articles.edit"), f"/author/edit/{article.id}").classes("ml-auto text-[13px] text-accent")
         elif article.visibility == "restricted":
             _badge(t("articles.sharedWithYou"), accent=True)
+    _language_note(article)
     # sanitize=True (the default): DOMPurify in the reader's browser.
     ui.html(article.content_html).classes("article-body mt-5 w-full text-text").mark("article-body")
+
+
+def _language_note(article: ArticleRead) -> None:
+    """Says the article isn't in the reader's language, or - when it is
+    and another version exists too - offers that one."""
+    language = current_language()
+    if article.language != language:
+        with ui.row().classes(
+            "mt-4 w-full flex-nowrap items-center gap-2 rounded-control border border-border bg-panel-2 px-3.5 py-2.5"
+        ).mark("article-language-notice"):
+            ui.icon("translate").classes("text-[18px] text-subtext")
+            ui.label(t(f"articles.onlyIn.{article.language}")).classes("text-[13px] text-text")
+        return
+    client = ui.context.client
+
+    def read_in(other: str) -> None:
+        set_language(other)
+        with client:
+            ui.navigate.reload()
+
+    for other in article.languages:
+        if other != language:
+            ui.button(t(f"articles.readIn.{other}"), icon="translate", on_click=lambda other=other: read_in(other)).props(
+                "flat dense no-caps"
+            ).classes("mt-2 text-[13px] text-accent").mark("article-read-in")
 
 
 def _not_allowed(auth_state: AuthState) -> None:
@@ -176,7 +220,11 @@ def _own_list(items: list[ArticleSummary]) -> None:
                         ui.label(
                             t("articles.author.updated", date=article.updated_at.strftime(t("common.dateFormat")))
                         ).classes("text-[12px] text-subtext")
-                    _badge(t(f"articles.visibility.{article.visibility}"), accent=article.visibility != "draft")
+                    with ui.row().classes("flex-nowrap items-center gap-1.5"):
+                        for language in article.languages:
+                            # A language code, not prose - the same in both UIs.
+                            _badge(language.upper())
+                        _badge(t(f"articles.visibility.{article.visibility}"), accent=article.visibility != "draft")
 
 
 def _editor(auth_state: AuthState, article: ArticleRead | None) -> None:
@@ -196,15 +244,47 @@ def _editor(auth_state: AuthState, article: ArticleRead | None) -> None:
         "mt-3 text-[22px] font-bold text-text"
     )
 
+    existing = {version.language: version for version in article.translations} if article else {}
+    titles: dict[str, ui.input] = {}
+    editors: dict[str, ui.editor] = {}
+    tabs_by_language: dict[str, ui.tab] = {}
+
+    def refresh_tab_label(language: str) -> None:
+        """Marks a language tab whose version has no title yet as empty."""
+        name = t(f"articles.languages.{language}")
+        filled = (titles[language].value or "").strip()
+        tab = tabs_by_language[language]
+        tab.props["label"] = name if filled else f"{name} ({t('articles.editor.emptyVersion')})"
+        tab.update()
+
     with ui.column().classes("mt-4 w-full gap-3"):
-        title = ui.input(t("articles.editor.titleLabel"), value=article.title if article else "").props(
-            "outlined dense maxlength=200"
-        ).classes("w-full").mark("article-title-input")
-        editor = ui.editor(
-            value=article.content_html if article else "", placeholder=t("articles.editor.placeholder")
-        ).classes("article-body w-full bg-panel").mark("article-editor")
-        editor.props["toolbar"] = _TOOLBAR_GROUPS
-        editor.props["min-height"] = "18rem"
+        ui.label(t("articles.editor.languagesHint")).classes("text-[12.5px] text-subtext")
+        with ui.tabs().props("dense no-caps align=left").classes("w-full text-text") as tabs:
+            for language in ARTICLE_LANGUAGES:
+                tabs_by_language[language] = ui.tab(language, label=t(f"articles.languages.{language}")).mark(
+                    f"article-tab-{language}"
+                )
+        # Opens on the version the reader-facing title came from: the UI
+        # language's if the article has it (always, for a new article).
+        with ui.tab_panels(tabs, value=article.language if article else current_language()).classes(
+            "w-full bg-transparent"
+        ) as panels:
+            for language in ARTICLE_LANGUAGES:
+                version = existing.get(language)
+                with ui.tab_panel(language).classes("w-full gap-3 p-0 pt-2"):
+                    titles[language] = ui.input(
+                        t("articles.editor.titleLabel"),
+                        value=version.title if version else "",
+                        on_change=lambda _, language=language: refresh_tab_label(language),
+                    ).props("outlined dense maxlength=200").classes("w-full").mark(f"article-title-input-{language}")
+                    editor = ui.editor(
+                        value=version.content_html if version else "", placeholder=t("articles.editor.placeholder")
+                    ).classes("article-body w-full bg-panel").mark(f"article-editor-{language}")
+                    editor.props["toolbar"] = _TOOLBAR_GROUPS
+                    editor.props["min-height"] = "18rem"
+                    editors[language] = editor
+        for language in ARTICLE_LANGUAGES:
+            refresh_tab_label(language)
 
         with ui.column().classes("w-full gap-1 rounded-control border border-border bg-panel px-3.5 py-3"):
             ui.label(t("articles.visibility.label")).classes("text-[12px] font-bold uppercase tracking-wide text-subtext")
@@ -231,8 +311,12 @@ def _editor(auth_state: AuthState, article: ArticleRead | None) -> None:
             save_button.set_enabled(False)
             error_label.set_visibility(False)
             draft = ArticleDraft(
-                title=title.value or "",
-                content_html=editor.value or "",
+                translations=[
+                    ArticleTranslation(
+                        language=language, title=titles[language].value or "", content_html=editors[language].value or ""
+                    )
+                    for language in ARTICLE_LANGUAGES
+                ],
                 visibility=visibility.value,
                 recipients=split_recipients(recipients.value or ""),
             )
@@ -240,7 +324,11 @@ def _editor(auth_state: AuthState, article: ArticleRead | None) -> None:
             state["busy"] = False
             save_button.set_enabled(True)
             if not outcome.ok:
-                error_label.set_text(error_text("articles", outcome.error, outcome.detail))
+                detail = outcome.detail
+                if outcome.error == "missing_title":
+                    panels.set_value(detail)  # show the version lacking it
+                    detail = t(f"articles.languages.{detail}")
+                error_label.set_text(error_text("articles", outcome.error, detail))
                 error_label.set_visibility(True)
                 return
             ui.notify(t("articles.editor.saved") if draft.visibility == "draft" else t("articles.editor.published"))

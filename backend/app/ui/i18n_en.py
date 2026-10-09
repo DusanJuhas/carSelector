@@ -150,6 +150,13 @@ STRINGS_EN: dict = {
         "backToList": "← All articles",
         "backToApp": "← Back to choosing a car",
         "edit": "Edit",
+        "languages": {"cs": "Czech", "en": "English"},
+        "onlyIn": {
+            "cs": "This article is only available in Czech so far.",
+            "en": "This article is only available in English so far.",
+        },
+        "onlyInBadge": {"cs": "Czech only", "en": "English only"},
+        "readIn": {"cs": "Číst česky", "en": "Read in English"},
         "visibility": {
             "label": "Who can see the article",
             "draft": "Only me (draft)",
@@ -171,6 +178,11 @@ STRINGS_EN: dict = {
             "editTitle": "Edit article",
             "titleLabel": "Title",
             "placeholder": "Start writing…",
+            "languagesHint": (
+                "You can write the article in Czech, English, or both. One tab is enough - readers of the "
+                "other language get the available version with a notice."
+            ),
+            "emptyVersion": "empty",
             "recipientsLabel": "Readers' emails (separate with commas or new lines)",
             "recipientsHint": "They'll see the article after logging in with that email - even if they don't have an account yet.",
             "saveDraft": "Save draft",
@@ -187,7 +199,8 @@ STRINGS_EN: dict = {
         "errors": {
             "forbidden": "You aren't allowed to do this.",
             "not_found": "The article doesn't exist.",
-            "empty_title": "Please fill in a title.",
+            "empty_title": "Please fill in the title and text of at least one language version.",
+            "missing_title": "Please add a title (version: {detail}).",
             "title_too_long": "The title is too long (at most 200 characters).",
             "content_too_long": "The article is too long - try shrinking or removing embedded images.",
             "invalid_recipient": "Invalid email address: {detail}",

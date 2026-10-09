@@ -173,6 +173,16 @@ STRINGS: dict = {
         "backToList": "← Všechny články",
         "backToApp": "← Zpět na výběr auta",
         "edit": "Upravit",
+        "languages": {"cs": "Čeština", "en": "Angličtina"},
+        # Shown when the reader's language version is missing - keyed by
+        # the language the article IS available in.
+        "onlyIn": {
+            "cs": "Tento článek je zatím dostupný jen v češtině.",
+            "en": "Tento článek je zatím dostupný jen v angličtině.",
+        },
+        "onlyInBadge": {"cs": "Jen česky", "en": "Jen anglicky"},
+        # Named in the language it switches TO, like `header.switchLanguage`.
+        "readIn": {"cs": "Číst česky", "en": "Read in English"},
         "visibility": {
             "label": "Kdo článek uvidí",
             "draft": "Jen já (koncept)",
@@ -194,6 +204,11 @@ STRINGS: dict = {
             "editTitle": "Úprava článku",
             "titleLabel": "Nadpis",
             "placeholder": "Začněte psát…",
+            "languagesHint": (
+                "Článek můžete napsat česky, anglicky, nebo v obou jazycích. Stačí vyplnit jednu záložku - "
+                "čtenáři druhého jazyka uvidí dostupnou verzi s upozorněním."
+            ),
+            "emptyVersion": "prázdné",
             "recipientsLabel": "E-maily čtenářů (oddělte čárkou nebo novým řádkem)",
             "recipientsHint": "Článek uvidí po přihlášení na tento e-mail - i ten, kdo zatím účet nemá.",
             "saveDraft": "Uložit koncept",
@@ -210,7 +225,8 @@ STRINGS: dict = {
         "errors": {
             "forbidden": "Na tuto akci nemáte oprávnění.",
             "not_found": "Článek neexistuje.",
-            "empty_title": "Vyplňte prosím nadpis.",
+            "empty_title": "Vyplňte prosím nadpis a text aspoň jedné jazykové verze.",
+            "missing_title": "Doplňte prosím nadpis (verze: {detail}).",
             "title_too_long": "Nadpis je příliš dlouhý (nejvýše 200 znaků).",
             "content_too_long": "Článek je příliš dlouhý - zkuste zmenšit nebo odebrat vložené obrázky.",
             "invalid_recipient": "Neplatná e-mailová adresa: {detail}",

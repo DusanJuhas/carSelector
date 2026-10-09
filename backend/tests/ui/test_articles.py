@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.models.article import Article
 from app.models.user import User as UserRow
-from app.schemas.article import ArticleDraft
+from app.schemas.article import ArticleDraft, ArticleTranslation
 from app.services import articles, authors
 
 pytestmark = [
@@ -32,6 +32,14 @@ def _author(session: Session, email: str = "author@example.cz") -> UserRow:
     session.add(row)
     session.commit()
     return row
+
+
+def _draft(title: str, content_html: str, visibility: str, recipients: list[str] | None = None, *, language: str = "cs") -> ArticleDraft:
+    return ArticleDraft(
+        translations=[ArticleTranslation(language=language, title=title, content_html=content_html)],
+        visibility=visibility,
+        recipients=recipients or [],
+    )
 
 
 def _set(user: User, marker: str, value: object) -> None:
@@ -91,15 +99,17 @@ async def test_author_publishes_article_to_everyone(user: User, log_in, patch_ui
     await user.should_see("Moje články", retries=100)
 
     await user.open("/author/new")
-    user.find(marker="article-title-input").type("Jak vybrat SUV")
-    _set(user, "article-editor", "<h2>Úvod</h2><p>Text článku.</p>")
+    user.find(marker="article-title-input-cs").type("Jak vybrat SUV")
+    _set(user, "article-editor-cs", "<h2>Úvod</h2><p>Text článku.</p>")
     _set(user, "article-visibility", "public")
     await user.should_see("Publikovat")
     user.find(marker="save-article").click()
 
     assert await _wait_for(lambda: patch_ui_session.query(Article).count() == 1)
     article = patch_ui_session.query(Article).one()
-    assert article.visibility == "public" and article.content_html == "<h2>Úvod</h2><p>Text článku.</p>"
+    assert article.visibility == "public"
+    (version,) = articles.get_for_edit(patch_ui_session, article.author_id, article.id).translations
+    assert (version.language, version.content_html) == ("cs", "<h2>Úvod</h2><p>Text článku.</p>")
 
     await user.open("/articles")
     await user.should_see("Jak vybrat SUV", retries=100)
@@ -107,10 +117,10 @@ async def test_author_publishes_article_to_everyone(user: User, log_in, patch_ui
 
 async def test_anonymous_reader_sees_public_but_not_restricted(user: User, patch_ui_session: Session) -> None:
     author = _author(patch_ui_session)
-    public = articles.save(patch_ui_session, author.id, ArticleDraft(title="Veřejný", content_html="<p>Pro všechny</p>", visibility="public"))
+    public = articles.save(patch_ui_session, author.id, _draft("Veřejný", "<p>Pro všechny</p>", "public"))
     restricted = articles.save(
         patch_ui_session, author.id,
-        ArticleDraft(title="Tajný", content_html="<p>Jen pro Petra</p>", visibility="restricted", recipients=["petr@example.cz"]),
+        _draft("Tajný", "<p>Jen pro Petra</p>", "restricted", ["petr@example.cz"]),
     )
 
     await user.open("/articles")
@@ -129,7 +139,7 @@ async def test_recipient_sees_restricted_article(user: User, log_in, patch_ui_se
     author = _author(patch_ui_session)
     restricted = articles.save(
         patch_ui_session, author.id,
-        ArticleDraft(title="Tajný", content_html="<p>Jen pro Petra</p>", visibility="restricted", recipients=["petr@example.cz"]),
+        _draft("Tajný", "<p>Jen pro Petra</p>", "restricted", ["petr@example.cz"]),
     )
 
     await user.open("/")
@@ -139,3 +149,40 @@ async def test_recipient_sees_restricted_article(user: User, log_in, patch_ui_se
     await user.should_see("Sdíleno s vámi")
     await user.open(f"/articles/{restricted.id}")
     await user.should_see(marker="article-body", retries=100)
+
+
+async def test_missing_language_version_shows_notice(user: User, patch_ui_session: Session) -> None:
+    author = _author(patch_ui_session)
+    english = articles.save(patch_ui_session, author.id, _draft("Choosing an SUV", "<p>Hi</p>", "public", language="en"))
+
+    await user.open("/articles")
+    await user.should_see("Choosing an SUV", retries=100)
+    await user.should_see("Jen anglicky")
+    await user.open(f"/articles/{english.id}")
+    await user.should_see("Tento článek je zatím dostupný jen v angličtině.", retries=100)
+
+    user.find(marker="language-toggle").click()
+    await user.open(f"/articles/{english.id}")
+    await user.should_see(marker="article-body", retries=100)
+    await user.should_not_see(marker="article-language-notice")
+
+
+async def test_author_writes_both_language_versions(user: User, log_in, patch_ui_session: Session) -> None:
+    author = _author(patch_ui_session)
+    await user.open("/")
+    await log_in(user, "author@example.cz")
+    await user.open("/author/new")
+    user.find(marker="article-title-input-cs").type("Jak vybrat SUV")
+    _set(user, "article-editor-cs", "<p>Česky</p>")
+    user.find(marker="article-title-input-en").type("Choosing an SUV")
+    _set(user, "article-editor-en", "<p>English</p>")
+    user.find(marker="save-article").click()
+
+    assert await _wait_for(lambda: patch_ui_session.query(Article).count() == 1)
+    article = patch_ui_session.query(Article).one()
+    versions = articles.get_for_edit(patch_ui_session, author.id, article.id).translations
+    assert [(v.language, v.title) for v in versions] == [("cs", "Jak vybrat SUV"), ("en", "Choosing an SUV")]
+
+    await user.open(f"/articles/{article.id}")
+    await user.should_see("Read in English", retries=100)
+    await user.should_not_see(marker="article-language-notice")
