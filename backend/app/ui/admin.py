@@ -43,8 +43,10 @@ from pathlib import Path
 
 from nicegui import app, ui
 
+from app.ui import feedback_state
 from app.ui.auth import AuthState
 from app.ui.components.authors_admin_panel import authors_admin_panel
+from app.ui.components.feedback_admin_panel import feedback_admin_panel
 from app.ui.components.llm_trace_panel import llm_trace_panel
 from app.ui.components.login_dialog import login_dialog
 from app.ui.i18n import t
@@ -469,6 +471,12 @@ def register_admin_page() -> None:
                 controls_tab = ui.tab(t("admin.tabs.controls"))
                 trace_tab = ui.tab(t("admin.tabs.aiTrace"))
                 authors_tab = ui.tab(t("admin.tabs.authors"))
+                new_feedback = await feedback_state.count_new(auth_state.user.id)
+                feedback_tab = ui.tab(
+                    t("admin.tabs.feedbackNew", count=new_feedback.value)
+                    if new_feedback.ok and new_feedback.value
+                    else t("admin.tabs.feedback")
+                ).mark("feedback-tab")
 
             with ui.tab_panels(tabs, value=data_tab).classes("w-full bg-transparent"):
                 with ui.tab_panel(data_tab).classes("p-0"):
@@ -480,6 +488,8 @@ def register_admin_page() -> None:
                         llm_trace_panel()
                 with ui.tab_panel(authors_tab).classes("p-0"):
                     await authors_admin_panel(auth_state.user.id)
+                with ui.tab_panel(feedback_tab).classes("p-0"):
+                    await feedback_admin_panel(auth_state.user.id)
 
 
 def _data_panel() -> None:

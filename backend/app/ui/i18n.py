@@ -42,6 +42,7 @@ STRINGS: dict = {
         "articles": "Články",
         "myArticles": "Moje články",
         "becomeAuthor": "Stát se autorem",
+        "sendFeedback": "Napsat zpětnou vazbu",
         # Named in the language it switches TO, so it's recognizable to
         # someone who can't read the current one.
         "switchLanguage": "English",
@@ -89,6 +90,8 @@ STRINGS: dict = {
             "controls": "Ovládání",
             "aiTrace": "AI komunikace",
             "authors": "Autoři",
+            "feedback": "Zpětná vazba",
+            "feedbackNew": "Zpětná vazba ({count})",
         },
         "trace": {
             "title": "Komunikace s AI ({provider})",
@@ -158,6 +161,53 @@ STRINGS: dict = {
             "forbidden": "Na tuto akci nemáte oprávnění.",
             "not_found": "Žádost ani uživatel nebyli nalezeni.",
             "already_decided": "O žádosti už bylo rozhodnuto.",
+            "unknown_error": "Něco se nepovedlo. Zkuste to prosím znovu.",
+        },
+    },
+    "feedback": {
+        "dialog": {
+            "title": "Napsat zpětnou vazbu",
+            "description": (
+                "Narazili jste na chybu, máte nápad na vylepšení, nebo vás něco potěšilo? "
+                "Napište nám - zprávu si přečte administrátor."
+            ),
+            "textLabel": "Vaše zpráva",
+            "textPlaceholder": "Co se stalo, co byste chtěli, nebo co se vám líbí…",
+            "attachRequirements": "Přiložit moje aktuální požadavky na auto",
+            "contextNote": "Spolu se zprávou odešleme: verzi aplikace ({version}), jazyk a část aplikace ({page}).",
+            "submit": "Odeslat",
+            "sending": "Odesílám…",
+            "close": "Zavřít",
+            "sent": "Děkujeme! Zprávu jsme dostali.",
+        },
+        "types": {"bug": "Chyba", "idea": "Nápad", "praise": "Pochvala", "other": "Jiné"},
+        "statuses": {
+            "new": "Nové",
+            "in_progress": "Řeší se",
+            "resolved": "Vyřešeno",
+            "wont_fix": "Nebude se řešit",
+            "duplicate": "Duplicita",
+        },
+        "pages": {"search": "výběr auta"},
+        "admin": {
+            "empty": "Žádná zpětná vazba.",
+            "allTypes": "Všechny typy",
+            "allStatuses": "Všechny stavy",
+            "context": "Odesláno z: {page} · verze {version} · jazyk {language}",
+            "requirements": "Přiložené požadavky",
+            "note": "Interní poznámka",
+            "save": "Uložit",
+            "saved": "Uloženo.",
+        },
+        "errors": {
+            "empty_text": "Napište prosím zprávu.",
+            "text_too_long": "Zpráva je příliš dlouhá (nejvýše 4000 znaků).",
+            "note_too_long": "Poznámka je příliš dlouhá (nejvýše 4000 znaků).",
+            "invalid_type": "Vyberte prosím, o co jde (chyba, nápad, pochvala, jiné).",
+            "invalid_status": "Neplatný stav.",
+            "rate_limited": "Dnes jste už poslali hodně zpráv. Zkuste to prosím zítra.",
+            "forbidden": "Na tuto akci nemáte oprávnění.",
+            "not_found": "Zpětná vazba nebyla nalezena.",
             "unknown_error": "Něco se nepovedlo. Zkuste to prosím znovu.",
         },
     },

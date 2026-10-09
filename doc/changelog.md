@@ -24,6 +24,23 @@ to one or more related commits.
 
 ---
 
+## 0.3.4 — 2026-10-09
+
+### Added
+- User feedback (variant A of `doc/po/Feedback-proposal.md`). Logged-in
+  users get "Napsat zpětnou vazbu" / "Send feedback" in the account menu:
+  pick a type (bug, idea, praise, other), write a message, and optionally
+  attach the current car requirements. The dialog says what is sent along
+  (app version, UI language, app section). Max 4000 characters and 10
+  messages per user per 24 hours.
+- Admin console tab "Zpětná vazba" / "Feedback" (shows the count of new
+  items in its label): newest first, filter by type and status, set the
+  status (new, in progress, resolved, won't fix, duplicate) and an
+  internal note. The user isn't notified of changes (that's variant C).
+- New `feedback` table (Alembic migration `f2b6a9d4c381`), service
+  `app/services/feedback.py`. The app version comes from this changelog's
+  newest heading (`app/core/version.py`).
+
 ## 0.3.3 — 2026-10-09
 
 ### Changed

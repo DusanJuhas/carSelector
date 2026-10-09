@@ -23,6 +23,7 @@ def app_header(
     on_logout: Callable[[], None],
     on_switch_language: Callable[[], None],
     on_request_author: Callable[[], Any],
+    on_send_feedback: Callable[[], Any],
 ) -> None:
     """Builds the top bar: brand/tagline on the left; on the right the two
     car-finding actions (wizard, requirements drawer), a restart icon, and
@@ -54,6 +55,9 @@ def app_header(
         on_request_author: Called when "Stát se autorem" is clicked - opens
             `app/ui/components/author_request_dialog.py`. Offered only to
             logged-in users who can't write articles yet.
+        on_send_feedback: Called when "Napsat zpětnou vazbu" is clicked -
+            opens `app/ui/components/feedback_dialog.py`. Offered only to
+            logged-in users.
     """
     is_admin = user is not None and user.is_admin
     key_missing = is_admin and not ai_configured
@@ -88,7 +92,15 @@ def app_header(
             ).tooltip(t("header.restart")).mark("restart")
 
             _account_menu(
-                user, is_admin, key_missing, on_open_api_key, on_login, on_logout, on_switch_language, on_request_author
+                user,
+                is_admin,
+                key_missing,
+                on_open_api_key,
+                on_login,
+                on_logout,
+                on_switch_language,
+                on_request_author,
+                on_send_feedback,
             )
 
 
@@ -101,6 +113,7 @@ def _account_menu(
     on_logout: Callable[[], None],
     on_switch_language: Callable[[], None],
     on_request_author: Callable[[], Any],
+    on_send_feedback: Callable[[], Any],
 ) -> None:
     """The round account button and its dropdown - see `app_header`.
 
@@ -115,6 +128,7 @@ def _account_menu(
         on_logout: See `app_header`.
         on_switch_language: See `app_header`.
         on_request_author: See `app_header`.
+        on_send_feedback: See `app_header`.
     """
     avatar_classes = "relative shrink-0 rounded-full w-9 h-9 min-h-0 "
     if user is not None:
@@ -143,6 +157,8 @@ def _account_menu(
                 _menu_item("edit_note", t("header.myArticles"), lambda: ui.navigate.to("/author")).mark("menu-my-articles")
             elif user is not None:
                 _menu_item("history_edu", t("header.becomeAuthor"), on_request_author).mark("menu-become-author")
+            if user is not None:
+                _menu_item("feedback", t("header.sendFeedback"), on_send_feedback).mark("menu-feedback")
             if is_admin:
                 _menu_item("admin_panel_settings", t("header.admin"), lambda: ui.navigate.to("/admin")).mark("menu-admin")
                 _menu_item(
