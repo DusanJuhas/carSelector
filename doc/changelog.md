@@ -35,6 +35,8 @@ to one or more related commits.
   only". When both exist, the article offers "Read in English" / "Číst
   česky". The portal's top bar got the language toggle, and "Moje články"
   shows which versions each article has.
+- Author's manual for article editing: `doc/manuals/article-editing.md`
+  (indexed in `doc/README.md`).
 
 ### Changed
 - Article title and body moved to a new `article_translations` table

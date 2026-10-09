@@ -15,6 +15,12 @@ for context rather than as instructions to follow today. This index says which i
 | [`arch/webScraping/`](arch/webScraping/) | The scraper's real, implemented architecture and current brand/model coverage — see `IMPLEMENTATION_PLAN.md` for status, `Car_Price_List_Architecture.md` for the longer-term target. |
 | [`prompt/CLAUDE.md`](prompt/CLAUDE.md) | Repo-wide conventions for Claude Code / any coding agent working in this repo. |
 
+## User manuals (current — update when the described UI changes)
+
+| Doc | Covers |
+|---|---|
+| [`manuals/article-editing.md`](manuals/article-editing.md) | Author's guide to the articles portal: getting the author role, the editor (NiceGUI `ui.editor` / Quasar QEditor) and its toolbar, Czech/English versions, visibility, publishing, deleting, limits and error messages. |
+
 ## Scope decisions
 
 | Doc | Covers |
