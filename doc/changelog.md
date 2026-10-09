@@ -24,6 +24,20 @@ to one or more related commits.
 
 ---
 
+## 0.3.3 — 2026-10-09
+
+### Changed
+- `scripts/statistics.py` counts every file, not only `.py`. Files are
+  sorted into categories by extension (source, docs, config, data, media,
+  office, other). Lines are counted for text files only; binary ones
+  (PDFs, databases, images) count towards files and size and show "-".
+  An unknown extension counts as text if its first 8 KB hold no NUL byte.
+- Two tables: by directory (with one sub-row per category) and by type
+  (category + extension). New options: `--by dir|type|both`,
+  `--category`, `--ext` (`--ext py` gives the old Python-only report),
+  `--exclude <dir>`, `--tracked` (only files from `git ls-files`).
+- Tests: `scripts/tests/test_statistics.py`.
+
 ## 0.3.2 — 2026-10-09
 
 ### Added
