@@ -17,6 +17,7 @@ from app.schemas.vehicle import VehicleSummary
 from app.ui.auth import AuthState
 from app.ui.components.api_key_dialog import api_key_dialog
 from app.ui.components.author_request_dialog import author_request_dialog
+from app.ui.components.feedback_dialog import feedback_dialog
 from app.ui.components.chat_column import chat_column
 from app.ui.components.filter_bar import filter_bar
 from app.ui.components.header import app_header
@@ -346,6 +347,11 @@ async def index() -> None:
 
     open_login_dialog = login_dialog(auth_state, on_logged_in)
     open_author_request_dialog = author_request_dialog(auth_state)
+    open_feedback_dialog = feedback_dialog(
+        auth_state,
+        "search",
+        lambda: None if conv.structured_requirements == StructuredRequirements() else conv.structured_requirements,
+    )
 
     def logout() -> None:
         auth_state.logout()
@@ -549,6 +555,7 @@ async def index() -> None:
                 logout,
                 switch_language,
                 open_author_request_dialog,
+                open_feedback_dialog,
             )
 
         chrome()
