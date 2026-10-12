@@ -14,6 +14,7 @@ from nicegui.testing import User
 from sqlalchemy.orm import Session
 
 from app.models.article import Article
+from app.models.article import ArticleTranslation as ArticleTranslationRow
 from app.models.user import User as UserRow
 from app.schemas.article import ArticleDraft, ArticleTranslation
 from app.services import articles, authors
@@ -111,7 +112,7 @@ async def test_author_publishes_article_to_everyone(user: User, log_in, patch_ui
     await user.should_see("Publikovat")
     user.find(marker="save-article").click()
 
-    assert await _wait_for(lambda: patch_ui_session.query(Article).count() == 1)
+    assert await _wait_for(lambda: patch_ui_session.query(ArticleTranslationRow).count() == 1)
     article = patch_ui_session.query(Article).one()
     assert article.visibility == "public"
     (version,) = articles.get_for_edit(patch_ui_session, article.author_id, article.id).translations
@@ -188,7 +189,7 @@ async def test_author_writes_both_language_versions(user: User, log_in, patch_ui
     _set(user, "article-editor-en", "<p>English</p>")
     user.find(marker="save-article").click()
 
-    assert await _wait_for(lambda: patch_ui_session.query(Article).count() == 1)
+    assert await _wait_for(lambda: patch_ui_session.query(ArticleTranslationRow).count() == 2)
     article = patch_ui_session.query(Article).one()
     versions = articles.get_for_edit(patch_ui_session, author.id, article.id).translations
     assert [(v.language, v.title) for v in versions] == [("cs", "Jak vybrat SUV"), ("en", "Choosing an SUV")]

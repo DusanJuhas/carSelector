@@ -24,6 +24,12 @@ to one or more related commits.
 
 ---
 
+## 0.3.7 — 2026-10-13
+
+### Fixed
+- Article editor: the H2 and H3 toolbar buttons no longer share the same
+  icon. They now show "H2" / "H3" text labels.
+
 ## 0.3.6 — 2026-10-11
 
 ### Added

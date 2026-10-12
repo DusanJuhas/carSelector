@@ -50,6 +50,13 @@ _TOOLBAR_GROUPS: list[list] = [
     ["viewsource"],
 ]
 
+# Quasar draws every heading button with the same "format_size" icon (Material
+# Icons has no per-level heading glyph), so show the level as a text label.
+_TOOLBAR_DEFINITIONS: dict[str, dict] = {
+    "h2": {"icon": None, "label": "H2"},
+    "h3": {"icon": None, "label": "H3"},
+}
+
 _BUTTON_PRIMARY = "rounded-control bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-text"
 _BUTTON_SECONDARY = "rounded-control border border-border bg-panel-2 px-3.5 py-2 text-[13px] font-semibold text-text"
 
@@ -304,6 +311,7 @@ def _editor(auth_state: AuthState, article: ArticleRead | None) -> None:
                         .mark(f"article-editor-{language}")
                     )
                     editor.props["toolbar"] = _TOOLBAR_GROUPS
+                    editor.props["definitions"] = _TOOLBAR_DEFINITIONS
                     editor.props["min-height"] = "18rem"
                     editors[language] = editor
         for language in ARTICLE_LANGUAGES:
