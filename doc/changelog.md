@@ -29,9 +29,10 @@ to one or more related commits.
 ### Added
 - Car photos on result cards: a model with a photo in
   `backend/app/ui/car_photos.py` shows it instead of the striped
-  placeholder, with an author/licence credit linking to the source. The
-  first photo is the Toyota RAV4 (Wikimedia Commons, CC0, ~320px thumbnail
-  in `storage/car_photos/`, served at `/car-photos/`).
+  placeholder, with an author/licence credit linking to the source. 29
+  models have one so far (Škoda, VW, BMW, Audi, Toyota, Hyundai, Kia, ...) -
+  ~330px Wikimedia Commons thumbnails (CC BY-SA 4.0, the RAV4 CC0) in
+  `storage/car_photos/`, served at `/car-photos/`.
 
 ## 0.3.7 — 2026-10-13
 
