@@ -497,6 +497,7 @@ STRINGS_EN: dict = {
     },
     "car": {
         "photoPlaceholder": "car photo — {make} {model}",
+        "photoCredit": "Photo: {author}, {license}",
         "topMatch": "Top match",
         "like": "I like it — favourite models get priority in search",
     },

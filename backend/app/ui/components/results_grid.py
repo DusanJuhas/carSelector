@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable
 from nicegui import ui
 
 from app.schemas.vehicle import VehicleSummary
+from app.ui.car_photos import photo_for
 from app.ui.i18n import t
 from app.ui.money import format_money
 from app.ui.sort import SORT_OPTIONS
@@ -185,17 +186,30 @@ def car_card(
                 "uppercase tracking-wide text-accent-text"
             )
 
-        with (
-            ui.element("div")
-            .classes(
-                "relative flex h-[110px] sm:h-[140px] w-full items-center justify-center px-3 text-center font-mono text-[11px] text-subtext"
-            )
-            .style(
-                "background-image: repeating-linear-gradient(45deg, var(--color-panel-2), var(--color-panel-2) 10px, "
-                "var(--color-border) 10px, var(--color-border) 20px)"
-            )
-        ):
-            ui.label(t("car.photoPlaceholder", make=car.brand, model=car.model))
+        photo = photo_for(car.brand, car.model)
+        with ui.element("div").classes(
+            "relative flex h-[110px] sm:h-[140px] w-full items-center justify-center px-3 text-center font-mono text-[11px] text-subtext"
+        ) as photo_box:
+            if photo is not None:
+                photo_box.classes("bg-panel-2")
+                image = ui.element("img").classes("absolute inset-0 h-full w-full object-cover").mark("car-photo")
+                image.props.update(src=photo.url, alt=f"{car.brand} {car.model}", loading="lazy", decoding="async")
+                credit = (
+                    ui.link(t("car.photoCredit", author=photo.author, license=photo.license), photo.source_url)
+                    .props('target=_blank rel="noopener noreferrer"')
+                    .classes(
+                        "absolute bottom-1 left-1.5 rounded bg-black/45 px-1.5 py-0.5 font-sans text-[9.5px] "
+                        "text-white! no-underline hover:underline"
+                    )
+                )
+                # The card itself opens the detail on click - the link must not.
+                credit.on("click.stop", js_handler="() => {}")
+            else:
+                photo_box.style(
+                    "background-image: repeating-linear-gradient(45deg, var(--color-panel-2), var(--color-panel-2) 10px, "
+                    "var(--color-border) 10px, var(--color-border) 20px)"
+                )
+                ui.label(t("car.photoPlaceholder", make=car.brand, model=car.model))
             if like is not None:
                 like.render(car.model_id).classes("absolute bottom-2 right-2")
 

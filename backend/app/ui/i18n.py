@@ -535,6 +535,7 @@ STRINGS: dict = {
     },
     "car": {
         "photoPlaceholder": "fotka auta — {make} {model}",
+        "photoCredit": "Foto: {author}, {license}",
         "topMatch": "Nejlepší shoda",
         "like": "Líbí se mi — oblíbené modely mají přednost ve vyhledávání",
     },

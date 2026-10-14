@@ -58,11 +58,13 @@ from app.services.mailer import log_email_backend_status  # noqa: E402
 from app.ui import pages as _ui_pages  # noqa: E402, F401
 from app.ui.admin import register_admin_page  # noqa: E402
 from app.ui.articles_page import register_articles_pages  # noqa: E402
+from app.ui.car_photos import register_car_photos  # noqa: E402
 from app.ui.shared_page import register_shared_page  # noqa: E402
 
 register_admin_page()
 register_articles_pages()
 register_shared_page()
+register_car_photos()
 # Say at startup how login codes will be delivered (see there) - a forgotten
 # EMAIL_BACKEND=smtp should be visible now, not when someone waits for a mail.
 log_email_backend_status()

@@ -24,6 +24,15 @@ to one or more related commits.
 
 ---
 
+## 0.3.8 — 2026-10-14
+
+### Added
+- Car photos on result cards: a model with a photo in
+  `backend/app/ui/car_photos.py` shows it instead of the striped
+  placeholder, with an author/licence credit linking to the source. The
+  first photo is the Toyota RAV4 (Wikimedia Commons, CC0, ~320px thumbnail
+  in `backend/app/ui/static/car_photos/`, served at `/car-photos/`).
+
 ## 0.3.7 — 2026-10-13
 
 ### Fixed
