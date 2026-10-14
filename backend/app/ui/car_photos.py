@@ -1,5 +1,5 @@
 """Car photos shown on result cards, served as static files from
-`app/ui/static/car_photos/`. A hand-picked set of freely licensed images
+`storage/car_photos/` (see storage/README.md). A hand-picked set of freely licensed images
 from Wikimedia Commons - the catalog itself has no image source (see
 doc/api-contract.md's `thumbnail_url` note), so a model without an entry
 here keeps the card's striped placeholder.
@@ -11,11 +11,11 @@ image, which `results_grid.car_card` does. Files are Commons' small
 """
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from nicegui import app
 
-PHOTOS_DIR = Path(__file__).parent / "static" / "car_photos"
+from app.core.config import CAR_PHOTOS_DIR as PHOTOS_DIR
+
 PHOTOS_URL = "/car-photos"
 
 

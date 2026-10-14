@@ -169,6 +169,10 @@ NICEGUI_STORAGE_PATH = os.environ.setdefault(
     "NICEGUI_STORAGE_PATH", str(Path(__file__).resolve().parents[3] / "storage" / "nicegui")
 )
 
+# Car photos shown on result cards (see app/ui/car_photos.py) - committed,
+# hand-picked freely licensed images, served as static files.
+CAR_PHOTOS_DIR = Path(__file__).resolve().parents[3] / "storage" / "car_photos"
+
 # Unicode TrueType fonts for the vehicle PDF export (app/ui/vehicle_pdf.py).
 # Optional: without them, DejaVu Sans / Arial is looked up in the usual
 # system font folders. Set these where neither exists (e.g. a slim Docker

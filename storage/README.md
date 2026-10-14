@@ -12,6 +12,9 @@ storage/
 ├── cars/              hand-picked source price-list PDFs used to hand-seed backend/'s demo data
 │   ├── mazda/cx-5/*.pdf         (see backend/app/db/seed.py, backend/README.md's Tests section)
 │   └── vw/tiguan/*.pdf
+├── car_photos/        hand-picked, freely licensed car photos (Wikimedia Commons) for the UI's
+│                     result cards — committed; each file's author/licence is recorded in
+│                     backend/app/ui/car_photos.py, served at /car-photos/
 └── scraper/            PDFs scraper/ has downloaded, organized <brand>/<year>/<sha256>.pdf —
     ├── kia/2026/*.pdf   committed alongside scraper.db (same reproducibility reason); re-running
     ├── skoda/2026/*.pdf  the scraper against live sources adds to this, never overwrites (hash-
