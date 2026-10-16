@@ -237,8 +237,11 @@ no database query on purpose (see `app/api/health.py`).
 
 The public deployment is described by `render.yaml` (repo root): one free Render web service
 `mycar` in Frankfurt, Postgres at Neon (`DATABASE_URL`), login codes via Resend over SMTP port
-2587 (Render's free plan blocks 25/465/587). Migrations and the catalog import run in the build;
-uvicorn runs as a single worker with `--proxy-headers --forwarded-allow-ips '*'` so the per-IP
+2587 (Render's free plan blocks 25/465/587). Migrations run in the build; the catalog does not
+(the direct import makes ~170,000 queries - hours over a home connection, minutes even from Render).
+Instead the first load into the empty Neon database is done once from a developer machine with
+`TARGET_DATABASE_URL=<Neon direct URL> python scripts/load_catalog.py`: it builds the catalog
+locally and copies it in batches (about a minute; see the script's docstring). Uvicorn runs as a single worker with `--proxy-headers --forwarded-allow-ips '*'` so the per-IP
 limits see real client addresses. Secrets are entered in the Render dashboard, never committed -
 `backend/.env` stays local. Daily local backups of the Neon database: `scripts/backup_neon.bat`
 (see `scripts/backup_neon.py`'s docstring for setup and restore). The full go-live plan and

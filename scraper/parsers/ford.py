@@ -32,8 +32,11 @@ discount/base pair for whatever description text accumulated between them
 
 Trim columns are read off the header dynamically, not hardcoded - the
 header itself needs the same word-clustering technique as Dacia's engine
-column (`_HEADER_GAP_THRESHOLD`, ~1.6-1.7pt within one trim's own name,
-21.8pt+ between trims, verified against real coordinates) because a
+column (`_HEADER_GAP_THRESHOLD`, ~1.5-1.7pt within one trim's own name,
+13.5pt+ between trims, verified against real coordinates - the 1 October
+2026 Puma list squeezes "ST-Line X" and "BlueCruise Edition" that close;
+earlier lists had 21.8pt+, and a 15pt threshold merged those two columns,
+gluing their prices into one 12-digit number) because a
 multi-word trim name ("ST-Line X", "BlueCruise Edition") can wrap onto a
 line of its own above or below the header's main line. Once a trim's own
 left edge is known, `_pdf_layout.column_for_x` (the same helper Škoda's
@@ -94,7 +97,10 @@ from .base import BaseParser, ExtractedVariant
 _MARKETING_PREFIXES = ("NOVÁ ", "NOVÝ ", "NOVÉ ")
 _LEFT_LABELS = {"Motor", "Palivo", "Výkon", "Převodovka", "Pohon"}
 _END_OF_TABLE_MARKER = "Všechny ceny jsou platné"
-_HEADER_GAP_THRESHOLD = 15.0  # pt; intra-trim-name gaps are ~1.6-1.7pt, the smallest real column gap is 21.8pt+
+_HEADER_GAP_THRESHOLD = (
+    6.0  # pt; intra-trim-name gaps are ~1.5-1.7pt, the smallest real column gap is 13.5pt (Puma 1.10.2026)
+)
+_PRICE_WORD_GAP_THRESHOLD = 6.0  # pt; thousands-separator gaps within one price are ~1.3-1.6pt, between columns 18pt+
 _HEADER_TOP_WINDOW = (
     8.0  # pt; captures a trim header word wrapped onto its own line just above/below the main header line
 )
@@ -187,7 +193,10 @@ def _classify_row_words(words: list[dict], trim_columns: list[tuple[str, float]]
         continuations together - see module docstring). A trim column
         whose content on this line is neither all-digit nor a lone "-"
         (shouldn't happen, but see e.g. a stray header continuation word)
-        is simply omitted, not guessed at.
+        is simply omitted, not guessed at - likewise one whose digit words
+        have a gap wider than `_PRICE_WORD_GAP_THRESHOLD` between them,
+        i.e. two adjacent prices that landed in one column (a missed
+        header column), which must never be concatenated into one number.
     """
     anchors = [x0 for _, x0 in trim_columns]
     names = [name for name, _ in trim_columns]
@@ -207,7 +216,7 @@ def _classify_row_words(words: list[dict], trim_columns: list[tuple[str, float]]
         texts = [w["text"] for w in column_words]
         if texts == ["-"]:
             cells[name] = "-"
-        elif all(t.isdigit() for t in texts):
+        elif all(t.isdigit() for t in texts) and len(_cluster_by_gap(column_words, _PRICE_WORD_GAP_THRESHOLD)) == 1:
             cells[name] = "".join(texts)
     return left, cells
 

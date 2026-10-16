@@ -117,3 +117,43 @@ def test_ford_parser_raw_text_traceable_to_source() -> None:
     assert "629" in variant.raw_text
     assert "500" in variant.raw_text
     assert variant.source_page == 2
+
+
+PUMA_2026_10 = FIXTURES / "ford_puma_cenik_2026_10.pdf"
+
+
+def test_ford_parser_keeps_closely_spaced_trim_columns_apart() -> None:
+    # The 1 October 2026 Puma list (5 trims, adds EDITION REPRE) prints
+    # "ST-Line X" and "BlueCruise Edition" only 13.5pt apart - a 15pt header
+    # gap threshold merged them into one column and glued their two prices
+    # into one number (780 500 + 845 500 -> 780500845500). Rows: 4 (manual,
+    # BlueCruise dashed) + 5 (125k Powershift) + 4 (155k, Titanium dashed).
+    variants = FordParser().parse(PUMA_2026_10)
+    assert len(variants) == 13
+    assert {v.trim for v in variants} == {"Titanium", "ST-Line", "EDITION REPRE", "ST-Line X", "BlueCruise Edition"}
+    assert all(v.price < 10_000_000 for v in variants)
+
+    assert _variant(variants, "ST-Line X", "125 k (92 kW) 7st. Powershift").price == 780_500.0
+    assert _variant(variants, "BlueCruise Edition", "125 k (92 kW) 7st. Powershift").price == 845_500.0
+    assert _variant(variants, "ST-Line X", "155 k (114 kW) 7st. Powershift").price == 810_500.0
+    assert _variant(variants, "BlueCruise Edition", "155 k (114 kW) 7st. Powershift").price == 875_500.0
+
+    manual = [v for v in variants if "6st. manuální" in v.variant_name]
+    assert "BlueCruise Edition" not in {v.trim for v in manual}
+    assert _variant(variants, "ST-Line X", "6st. manuální").price == 725_500.0
+
+
+def test_ford_parser_never_concatenates_two_prices_in_one_column() -> None:
+    # Defensive guard: if a header column is ever missed again, a cell
+    # holding two separate prices must be dropped, not glued together.
+    from scraper.parsers.ford import _classify_row_words
+
+    def word(text: str, x0: float) -> dict:
+        return {"text": text, "x0": x0, "x1": x0 + 12.0, "top": 100.0}
+
+    columns = [("ST-Line X", 485.5)]
+    one_price = [word("780", 490.6), word("500", 503.9)]
+    two_prices = one_price + [word("845", 541.2), word("500", 554.8)]
+
+    assert _classify_row_words(one_price, columns)[1] == {"ST-Line X": "780500"}
+    assert _classify_row_words(two_prices, columns)[1] == {}

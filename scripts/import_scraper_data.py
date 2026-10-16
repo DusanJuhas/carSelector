@@ -105,6 +105,11 @@ from app.models.enums import (  # noqa: E402
 
 SCRAPER_DB_PATH = REPO_ROOT / "storage" / "scraper.db"
 MARKET = "CZ"
+# prices' amount columns are NUMERIC(12, 2) (app/models/price.py), so
+# anything from 10^10 up can't be stored - Postgres rejects it, SQLite
+# would silently keep it. Amounts that large are parse errors (e.g. two
+# adjacent prices read as one number: "780 500 845 500"), never real cars.
+MAX_PRICE_AMOUNT = 10**10
 LOCALE = "cs-CZ"
 
 # scraper/'s source_brand keys are already valid slugs (lowercase, no
@@ -506,6 +511,7 @@ class ImportStats:
     source_documents: int = 0
     prices_inserted: int = 0
     prices_unchanged: int = 0
+    prices_skipped: int = 0
     option_items: int = 0
     option_availabilities_inserted: int = 0
     option_availabilities_updated: int = 0
@@ -744,7 +750,10 @@ class ScraperDataImporter:
         """Inserts a new current-price row for `configuration`, closing
         out the previous one - unless the current row already matches
         (no-op) or `valid_from` would rewrite history backwards (also a
-        no-op). Updates `self.stats.prices_inserted`/`prices_unchanged`.
+        no-op). An amount that doesn't fit the price columns (see
+        MAX_PRICE_AMOUNT) is skipped with a warning instead - the
+        configuration then keeps whatever price it had. Updates
+        `self.stats.prices_inserted`/`prices_unchanged`/`prices_skipped`.
 
         Args:
             configuration: The configuration this price is for.
@@ -754,6 +763,13 @@ class ScraperDataImporter:
             currency: New price's currency.
             valid_from: New price's effective date (`YYYY-MM-DD`).
         """
+        if abs(amount) >= MAX_PRICE_AMOUNT:
+            self.stats.prices_skipped += 1
+            self.stats.warnings.append(
+                f"price {amount:,.0f} {currency} for configuration {configuration.id} "
+                f"(source document {source_document.id}) is out of range - skipped, likely a parse error"
+            )
+            return
         valid_from_date = date.fromisoformat(valid_from)
         current = self._db.scalar(
             select(Price).where(
@@ -1035,7 +1051,12 @@ def main() -> None:
     print(f"  brands: {stats.brands}, models: {stats.models}, trims: {stats.trims}")
     print(f"  powertrains: {stats.powertrains}, configurations: {stats.configurations}")
     print(f"  source_documents: {stats.source_documents}")
-    print(f"  prices: {stats.prices_inserted} inserted, {stats.prices_unchanged} already up to date")
+    print(
+        f"  prices: {stats.prices_inserted} inserted, {stats.prices_unchanged} already up to date, "
+        f"{stats.prices_skipped} skipped (out of range)"
+    )
+    for warning in stats.warnings:
+        print(f"  WARNING: {warning}")
     print(
         f"  option_items: {stats.option_items}, option_availability: "
         f"{stats.option_availabilities_inserted} inserted, "

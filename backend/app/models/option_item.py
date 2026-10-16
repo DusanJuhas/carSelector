@@ -27,7 +27,9 @@ class OptionItem(Base):
     # VW's "WBQ"/"PL5"-style codes; null for Mazda, which names items
     # without an internal SKU code in the consumer-facing brochure.
     code: Mapped[str | None] = mapped_column(String(32))
-    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    # Text, not VARCHAR: some scraped items are whole sentences (warranty
+    # terms, up to ~900 characters) - see migration c91d4e7a2b15.
+    name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
 
     model: Mapped["CarModel"] = relationship(back_populates="option_items")

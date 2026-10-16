@@ -15,14 +15,15 @@ services:
     # 0.5c-512mb instance.
     plan: free
     region: frankfurt
-    # The free plan has no preDeployCommand, so migrations and the catalog
-    # import (storage/scraper.db -> Postgres, safe to re-run) run in the
-    # build. A migration must therefore stay compatible with the previous
-    # release's code, which keeps serving until the new instance is healthy.
+    # The free plan has no preDeployCommand, so migrations run in the build.
+    # A migration must therefore stay compatible with the previous release's
+    # code, which keeps serving until the new instance is healthy.
+    # The catalog is NOT imported here: scripts/import_scraper_data.py makes
+    # ~170,000 queries, far too slow for every deploy. The first load is done
+    # once from a developer machine with scripts/load_catalog.py (see there).
     buildCommand: >-
       pip install -r requirements.txt
       && cd backend && python -m alembic upgrade head
-      && cd .. && python scripts/import_scraper_data.py
     # One worker only: NiceGUI keeps per-connection state in the process.
     # Only Render's load balancer can reach the instance, so trusting its
     # X-Forwarded-For is safe - and needed for the per-IP rate limits.

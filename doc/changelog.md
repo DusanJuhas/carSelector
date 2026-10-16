@@ -24,6 +24,51 @@ to one or more related commits.
 
 ---
 
+## 0.3.11 — 2026-10-16
+
+### Fixed
+- Ford parser: the 1 October 2026 Puma price list prints the "ST-Line X"
+  and "BlueCruise Edition" columns only 13.5pt apart, which the header
+  clustering (15pt threshold) merged into one column, gluing two prices
+  into one number (e.g. 780 500 + 845 500 → 780 500 845 500 CZK). The
+  threshold is now 6pt, and a cell holding two separate prices is dropped
+  instead of concatenated. `storage/scraper.db`'s affected Puma document
+  was re-parsed (13 variants instead of 11, no Ford price ≥ 10⁹), so
+  `import_scraper_data.py` no longer skips any price. Tests:
+  `scraper/tests/test_ford_parser.py` (new fixture
+  `ford_puma_cenik_2026_10.pdf`).
+
+## 0.3.10 — 2026-10-16
+
+### Added
+- `scripts/load_catalog.py`: first load of the vehicle catalog into a
+  remote, empty Postgres (Neon). It builds the catalog locally (Alembic +
+  `import_scraper_data.py` into a temporary SQLite file, ~1 min), migrates
+  the target, then copies the catalog tables in batches, keeping ids, and
+  moves the id sequences past them. It refuses a target whose catalog isn't
+  empty or whose schema version differs, and never touches user data.
+  Configured by `TARGET_DATABASE_URL`; `--dry-run`, `--source`. The direct
+  import over the network makes ~170,000 queries (about 3 hours from a home
+  connection); this load takes about a minute. Tests:
+  `scripts/tests/test_load_catalog.py`.
+
+### Changed
+- `render.yaml`: the build no longer runs the catalog import (it would make
+  every deploy take minutes); the first load is done once with
+  `scripts/load_catalog.py`.
+
+### Fixed
+- `option_items.name` is now `TEXT` instead of `VARCHAR(256)` (migration
+  `c91d4e7a2b15`, Postgres only): 57 scraped equipment items are longer
+  (up to 907 characters). SQLite never enforced the length, so the catalog
+  couldn't be loaded into Postgres until now.
+- `scripts/import_scraper_data.py` skips prices that can't fit the price
+  columns (10 billion and up - parse errors) and lists them as warnings in
+  the summary instead of storing them. This affects 2 Ford Puma prices from
+  one price list (e.g. 780,500,845,500 CZK, two prices read as one number);
+  the scraper's parsing is not fixed yet. Tests:
+  `scripts/tests/test_import_price_guard.py`.
+
 ## 0.3.9 — 2026-10-16
 
 ### Added
@@ -31,8 +76,8 @@ to one or more related commits.
   Blueprint for one free web service `mycar` in Frankfurt
   (https://mycar.onrender.com), using Neon's free Postgres via
   `DATABASE_URL` and Resend over SMTP port 2587 for login codes. Migrations
-  and the catalog import run in the build. `.python-version` pins Python
-  3.12.
+  run in the build (the catalog import did too, until 0.3.10).
+  `.python-version` pins Python 3.12.
 - `GET /healthz` (outside `/api`) for the platform's health checks. It
   deliberately runs no database query, so it doesn't keep a scale-to-zero
   database awake.
