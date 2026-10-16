@@ -17,7 +17,37 @@ load_dotenv()
 # DATABASE_URL, e.g.:
 #   postgresql+psycopg://drivewise:drivewise@localhost:5432/drivewise
 _DEFAULT_SQLITE_PATH = Path(__file__).resolve().parents[3] / "storage" / "drivewise.db"
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{_DEFAULT_SQLITE_PATH}")
+
+# The only Postgres driver installed is psycopg 3 (requirements.txt), which
+# SQLAlchemy only picks for the "postgresql+psycopg://" scheme - a bare
+# "postgresql://" means psycopg2 to it (not installed), and "postgres://" is
+# no longer accepted at all.
+_POSTGRES_SCHEMES = ("postgres://", "postgresql://")
+
+
+def normalize_database_url(url: str) -> str:
+    """Points a plain Postgres URL at the psycopg 3 driver.
+
+    Hosting providers (Neon, Render, Heroku-style) hand out `postgres://` or
+    `postgresql://` connection strings, and a Render Blueprint can't rewrite
+    a value it copies in - so the app accepts them as given instead of
+    making every deployment remember to edit the scheme. Everything after
+    the scheme (credentials, host, `?sslmode=require&...`) is kept as is.
+
+    Args:
+        url: A SQLAlchemy database URL, as configured.
+
+    Returns:
+        The URL with a `postgresql+psycopg://` scheme if it was a plain
+        Postgres one; any other URL (SQLite, an explicit driver) unchanged.
+    """
+    for scheme in _POSTGRES_SCHEMES:
+        if url.startswith(scheme):
+            return "postgresql+psycopg://" + url[len(scheme) :]
+    return url
+
+
+DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL") or f"sqlite:///{_DEFAULT_SQLITE_PATH}")
 
 # Which LLM provider app/ai/client.py builds - "anthropic" (default) or
 # "groq". Both are exposed behind the same LlmClient.complete() interface

@@ -24,6 +24,31 @@ to one or more related commits.
 
 ---
 
+## 0.3.9 — 2026-10-16
+
+### Added
+- Deployment to Render (first step of going live): a `render.yaml`
+  Blueprint for one free web service `mycar` in Frankfurt
+  (https://mycar.onrender.com), using Neon's free Postgres via
+  `DATABASE_URL` and Resend over SMTP port 2587 for login codes. Migrations
+  and the catalog import run in the build. `.python-version` pins Python
+  3.12.
+- `GET /healthz` (outside `/api`) for the platform's health checks. It
+  deliberately runs no database query, so it doesn't keep a scale-to-zero
+  database awake.
+- `scripts/backup_neon.py` (+ `backup_neon.bat` for Task Scheduler): backs
+  up the production database with `pg_dump` into a local folder, checks the
+  dump with `pg_restore --list`, and keeps the newest 14 dumps plus the
+  first of each of the last 12 months. Configured by `NEON_BACKUP_URL`,
+  `NEON_BACKUP_DIR` and optionally `PG_BIN`. Tests:
+  `scripts/tests/test_backup_neon.py`.
+
+### Changed
+- `DATABASE_URL` accepts `postgres://` and `postgresql://` URLs as hosting
+  providers hand them out; they are rewritten to `postgresql+psycopg://`
+  (the installed psycopg 3 driver). An empty `DATABASE_URL=` now falls
+  back to the local SQLite file instead of failing.
+
 ## 0.3.8 — 2026-10-14
 
 ### Added

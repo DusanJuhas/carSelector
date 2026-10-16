@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import brands, conversations, models, vehicles
+from app.api import brands, conversations, health, models, vehicles
 from app.core.config import CORS_ALLOWED_ORIGINS
 from app.core.security_headers import SecurityHeadersMiddleware
 
@@ -41,6 +41,7 @@ app.include_router(brands.router, prefix="/api")
 app.include_router(models.router, prefix="/api")
 app.include_router(vehicles.router, prefix="/api")
 app.include_router(conversations.router, prefix="/api")
+app.include_router(health.router)
 
 # The UI (see app/ui/) is mounted last and at "/" on purpose: ui.run_with
 # mounts NiceGUI's own sub-app as a catch-all at mount_path, so mounting it

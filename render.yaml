@@ -1,0 +1,79 @@
+# Render Blueprint (https://render.com/docs/blueprint-spec) for the public
+# DriveWise deployment: one free web service in Frankfurt. Postgres is NOT
+# defined here - it lives at Neon (Free plan, AWS eu-central-1), and its
+# connection string is pasted in as DATABASE_URL. See doc/arch/deployment.md.
+#
+# Python version: pinned by .python-version in the repo root.
+# Values marked `sync: false` are secrets: Render asks for them once, when
+# the Blueprint is created, and keeps them in the dashboard (Service ->
+# Environment) - change them there later, never in this file.
+services:
+  - type: web
+    name: mycar # -> https://mycar.onrender.com
+    runtime: python
+    # Must be explicit - a Blueprint service without `plan` gets the paid
+    # 0.5c-512mb instance.
+    plan: free
+    region: frankfurt
+    # The free plan has no preDeployCommand, so migrations and the catalog
+    # import (storage/scraper.db -> Postgres, safe to re-run) run in the
+    # build. A migration must therefore stay compatible with the previous
+    # release's code, which keeps serving until the new instance is healthy.
+    buildCommand: >-
+      pip install -r requirements.txt
+      && cd backend && python -m alembic upgrade head
+      && cd .. && python scripts/import_scraper_data.py
+    # One worker only: NiceGUI keeps per-connection state in the process.
+    # Only Render's load balancer can reach the instance, so trusting its
+    # X-Forwarded-For is safe - and needed for the per-IP rate limits.
+    startCommand: >-
+      cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+      --proxy-headers --forwarded-allow-ips '*'
+    # No database query in it - see backend/app/api/health.py.
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    buildFilter:
+      ignoredPaths:
+        - "doc/**"
+        - "**/*.md"
+        - "storage/scraper/**"
+        - "storage/cars/**"
+    envVars:
+      # Neon's *direct* (not -pooler) connection string; the
+      # postgresql:// scheme is rewritten by app/core/config.py.
+      - key: DATABASE_URL
+        sync: false
+      - key: NICEGUI_STORAGE_SECRET
+        generateValue: true
+      - key: AI_PROVIDER # "anthropic" or "groq"
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      # The Resend account's own email: the sandbox sender below only
+      # delivers there, so for now only that address can log in.
+      - key: ADMIN_EMAILS
+        sync: false
+      # Resend over SMTP. Render's free plan blocks outbound 25/465/587;
+      # Resend also listens on 2587 (STARTTLS).
+      - key: EMAIL_BACKEND
+        value: smtp
+      - key: SMTP_HOST
+        value: smtp.resend.com
+      - key: SMTP_SECURITY
+        value: starttls
+      - key: SMTP_PORT
+        value: "2587"
+      - key: SMTP_USER
+        value: resend
+      - key: SMTP_PASSWORD # Resend API key (re_...)
+        sync: false
+      # Sandbox sender until a domain is verified in Resend.
+      - key: SMTP_FROM
+        value: onboarding@resend.dev
+      - key: SMTP_FROM_NAME
+        value: Rovis
+      # https -> the session cookie is Secure and HSTS is sent.
+      - key: PUBLIC_BASE_URL
+        value: https://mycar.onrender.com

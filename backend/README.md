@@ -217,6 +217,10 @@ whatever `scraper/` has found in `storage/scraper.db` — see that script's docs
 `storage/README.md` for what it does and doesn't carry over. Both can populate the same DB; run
 either or both.
 
+A Postgres `DATABASE_URL` may use the plain `postgres://` / `postgresql://` scheme hosting
+providers hand out (Neon, Render) - `app/core/config.py`'s `normalize_database_url` rewrites it to
+`postgresql+psycopg://`, the installed psycopg 3 driver, keeping the rest (e.g. `?sslmode=require`).
+
 ## Run (API + UI)
 
 ```bash
@@ -226,7 +230,19 @@ uvicorn app.main:app --reload
 One process, one command: `http://localhost:8000/` serves the UI, interactive API docs are at
 `http://localhost:8000/docs`, and `GET /api/brands` / `GET /api/vehicles` serve the REST API
 directly (for any client other than the bundled UI). Try the API routes after seeding to see real
-data.
+data. `GET /healthz` answers `{"status": "ok"}` for a hosting platform's health checks - it runs
+no database query on purpose (see `app/api/health.py`).
+
+## Deploy (Render)
+
+The public deployment is described by `render.yaml` (repo root): one free Render web service
+`mycar` in Frankfurt, Postgres at Neon (`DATABASE_URL`), login codes via Resend over SMTP port
+2587 (Render's free plan blocks 25/465/587). Migrations and the catalog import run in the build;
+uvicorn runs as a single worker with `--proxy-headers --forwarded-allow-ips '*'` so the per-IP
+limits see real client addresses. Secrets are entered in the Render dashboard, never committed -
+`backend/.env` stays local. Daily local backups of the Neon database: `scripts/backup_neon.bat`
+(see `scripts/backup_neon.py`'s docstring for setup and restore). The full go-live plan and
+runbook will land in `doc/arch/deployment.md`.
 
 ## UI
 
