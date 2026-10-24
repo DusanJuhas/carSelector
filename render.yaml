@@ -9,7 +9,9 @@
 # Environment) - change them there later, never in this file.
 services:
   - type: web
-    name: mycar # -> https://mycar.onrender.com
+    # mycar.onrender.com was taken by the time the service was created, so
+    # Render added a suffix: the live URL is https://mycar-sg4s.onrender.com.
+    name: mycar
     runtime: python
     # Must be explicit - a Blueprint service without `plan` gets the paid
     # 0.5c-512mb instance.
@@ -46,8 +48,9 @@ services:
         sync: false
       - key: NICEGUI_STORAGE_SECRET
         generateValue: true
-      - key: AI_PROVIDER # "anthropic" or "groq"
-        sync: false
+      # Not a secret, so set here: unset, the app falls back to "anthropic".
+      - key: AI_PROVIDER
+        value: groq
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: GROQ_API_KEY
@@ -77,4 +80,4 @@ services:
         value: Rovis
       # https -> the session cookie is Secure and HSTS is sent.
       - key: PUBLIC_BASE_URL
-        value: https://mycar.onrender.com
+        value: https://mycar-sg4s.onrender.com

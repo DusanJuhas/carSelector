@@ -20,6 +20,11 @@ _BODY_TYPE_OPTIONS = ("Hatchback", "Kombi", "SUV", "MPV")
 _FUEL_OPTIONS = ("electric", "hybrid", "diesel", "petrol")
 _CARGO_OPTIONS = ("stroller", "sports", "tools", "trailer", "none")
 _PRIORITY_OPTIONS = ("cost", "repairs", "power", "comfort")
+# Pre-filled budget (the same figure the placeholder suggests), so the
+# arrows start from a realistic price instead of 0 and move by 50 000 Kč.
+# As with mileage below, "Přeskočit" still leaves `budget` unset.
+DEFAULT_BUDGET = 800_000
+BUDGET_STEP = 50_000
 # Pre-filled annual mileage: roughly the average for a Czech passenger car,
 # so the arrows start from a realistic value instead of 0. Only the input
 # is pre-filled - "Přeskočit" still leaves `annual_km` unset.
@@ -163,8 +168,14 @@ def wizard_dialog(
             if step == 0:
                 ui.label(t("wizard.questions.budget.title")).classes("mb-3 text-[14px] font-semibold text-text")
                 budget_input = (
-                    ui.number(placeholder=t("wizard.questions.budget.placeholder"), value=wizard.budget, min=0)
+                    ui.number(
+                        placeholder=t("wizard.questions.budget.placeholder"),
+                        value=wizard.budget if wizard.budget is not None else DEFAULT_BUDGET,
+                        min=0,
+                        step=BUDGET_STEP,
+                    )
                     .props(f'borderless dense suffix="{t("wizard.questions.budget.unit")}"')
+                    .mark("budget-input")
                     .classes(
                         "w-full rounded-control border border-border bg-panel-2 px-3.5 py-2.5 text-[14px] text-text"
                     )

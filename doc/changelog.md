@@ -24,6 +24,15 @@ to one or more related commits.
 
 ---
 
+## 0.3.12 — 2026-10-24
+
+### Fixed
+- Wizard step 1 (budget): the price input started empty, so its arrows
+  jumped to 0 and moved by 1 Kč. It is now pre-filled with 800 000 Kč (the
+  figure the placeholder suggests) and steps by 50 000 Kč; "Nevím /
+  přeskočit" still leaves the budget unset. Tests:
+  `backend/tests/ui/test_wizard_budget.py`.
+
 ## 0.3.11 — 2026-10-16
 
 ### Fixed
