@@ -24,6 +24,24 @@ to one or more related commits.
 
 ---
 
+## 0.3.13 — 2026-10-25
+
+### Changed
+- Colour scheme: the page background (`bg`) and secondary surfaces
+  (`panel-2` — chips, spec tags, wizard options, compare-table section rows)
+  are now a soft blue (`oklch(0.975 0.01 245)` / `oklch(0.95 0.016 245)`)
+  instead of warm beige. The vehicle and comparison PDF exports use the same
+  colours, and their other colours (text, subtext, border, accent) now match
+  the UI tokens exactly instead of drifted approximations. Options and
+  inventory: `doc/gui/driveWise_Colour_Scheme.md`.
+
+### Fixed
+- Primary buttons, accent links and badges rendered in Quasar's default
+  purple (`#9c27b0`) instead of the DriveWise accent blue: Quasar's own
+  `.bg-accent`/`.text-accent` classes (with `!important`) overrode the
+  Tailwind token classes of the same name. Quasar's `accent` and `primary`
+  brand colors now point at the `accent` token (`app/ui/styles.py`).
+
 ## 0.3.12 — 2026-10-24
 
 ### Fixed

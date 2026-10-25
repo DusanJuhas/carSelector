@@ -22,11 +22,11 @@ Defined once as Tailwind `@theme` variables and used as classes like `bg-panel`,
 
 | --- | --- | --- | --- | --- |
 
-|  | `bg` bg-bg | 0.975 0.012 75 | #FCF6EE | Page background: body, main page, admin, articles, shared page. |
+|  | `bg` bg-bg | 0.975 0.01 245 | #F1F8FD | Page background: body, main page, admin, articles, shared page. |
 
 |  | `panel` bg-panel, bg-panel/85 | 0.995 0.004 75 | #FFFDFA | Cards, dialogs, requirements drawer, header, chat column. Used in almost every component. The 85 % version is the sticky header. |
 
-|  | `panel-2` bg-panel-2, bg-panel-2/90 | 0.95 0.015 75 | #F5EDE4 | Secondary surfaces: chips, spec tags, wizard options, section rows in the compare table, the inactive state of badges and source chips, secondary buttons (share). PDF table fill. |
+|  | `panel-2` bg-panel-2, bg-panel-2/90 | 0.95 0.016 245 | #E6F0F9 | Secondary surfaces: chips, spec tags, wizard options, section rows in the compare table, the inactive state of badges and source chips, secondary buttons (share). PDF table fill. |
 
 | Aa | `text` text-text | 0.27 0.02 55 | #2E241D | Main text everywhere: headings, values, input text, the AI chat bubble. |
 
@@ -74,15 +74,15 @@ Hard-coded or framework-default colours. These won't change if you edit the toke
 
 | Aa | ui.notify type=negative | #C10015 | Error toasts: PDF export failed, share failed, admin errors. | pages.py:228, compare\_dialog.py:124, vehicle\_detail\_modal.py:97, admin panels |
 
-| Aa | \\\_TEXT (58, 47, 40) | #3A2F28 | PDF export: main text. Hand-copied approximation of `text` (#2E241D). | vehicle\_pdf.py:40 |
+| Aa | \\\_TEXT (46, 36, 29) | #2E241D | PDF export: main text. Matches `text`. | vehicle\_pdf.py:41 |
 
-| Aa | \\\_SUBTEXT (122, 109, 100) | #7A6D64 | PDF export: labels and muted cells. Approximation of `subtext` (#72665E). | vehicle\_pdf.py:41 |
+| Aa | \\\_SUBTEXT (114, 102, 94) | #72665E | PDF export: labels and muted cells. Matches `subtext`. | vehicle\_pdf.py:42 |
 
-|  | \\\_BORDER (236, 227, 216) | #ECE3D8 | PDF export: table lines. Approximation of `border` (#E5DCD4). | vehicle\_pdf.py:42 |
+|  | \\\_BORDER (229, 220, 212) | #E5DCD4 | PDF export: table lines. Matches `border`. | vehicle\_pdf.py:43 |
 
-|  | \\\_PANEL\_2 (248, 244, 238) | #F8F4EE | PDF export: table and section-row fill. Approximation of `panel-2` (#F5EDE4). | vehicle\_pdf.py:43 |
+|  | \\\_PANEL\_2 (230, 240, 249) | #E6F0F9 | PDF export: table and section-row fill. Matches `panel-2`. | vehicle\_pdf.py:44 |
 
-| Aa | \\\_ACCENT (47, 111, 196) | #2F6FC4 | PDF export: title and "best value" cells. Has drifted from the UI `accent` (#1F7DCF). | vehicle\_pdf.py:44 |
+| Aa | \\\_ACCENT (31, 125, 207) | #1F7DCF | PDF export: title and "best value" cells. Matches `accent`. | vehicle\_pdf.py:45 |
 
 | Aa | color:#222 | #222222 | Login-code e-mail: body text. | services/mailer.py:120 |
 

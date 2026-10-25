@@ -17,9 +17,9 @@ from nicegui import ui
 
 CSS = """
 @theme {
-  --color-bg: oklch(0.975 0.012 75);
+  --color-bg: oklch(0.975 0.01 245);
   --color-panel: oklch(0.995 0.004 75);
-  --color-panel-2: oklch(0.95 0.015 75);
+  --color-panel-2: oklch(0.95 0.016 245);
   --color-text: oklch(0.27 0.02 55);
   --color-subtext: oklch(0.52 0.02 55);
   --color-border: oklch(0.9 0.015 70);
@@ -63,6 +63,13 @@ body {
   margin: 0;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   background: var(--color-bg);
+  /* Quasar ships its own `.bg-accent`/`.text-accent` (and `-primary`)
+     classes with `!important`, which beat the Tailwind token classes of the
+     same name - point Quasar's brand colors (set inline on <body>, NiceGUI
+     defaults: accent #9c27b0 purple, primary #5898d4) at our accent token so
+     both resolve to the same color. */
+  --q-accent: var(--color-accent) !important;
+  --q-primary: var(--color-accent) !important;
 }
 
 /* NiceGUI wraps page content in its own root elements - match the

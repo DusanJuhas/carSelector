@@ -1,6 +1,8 @@
 # Design tokens — Rovis (AI Car Finder)
 
 Zdroj: `doc/gui/AI Car Finder Concepts2.html`, varianta **1a — Friendly, warm-light**.
+Odchylka od konceptu: `bg` a `panel-2` jsou modravé (hue 245, varianta "A — soft sky" z
+`doc/gui/driveWise_Colour_Scheme.md`) místo teplé béžové; ostatní neutrály zůstávají teplé.
 Tyto tokeny se používají v UI vrstvě (`backend/app/ui/styles.py`) — vloženy jako Tailwind v4
 `@theme` blok přes `ui.add_head_html`.
 
@@ -8,9 +10,9 @@ Tyto tokeny se používají v UI vrstvě (`backend/app/ui/styles.py`) — vlože
 
 | Token         | Hodnota                        | Použití                                  |
 |---------------|---------------------------------|-------------------------------------------|
-| `bg`          | `oklch(0.975 0.012 75)`         | pozadí aplikace                            |
+| `bg`          | `oklch(0.975 0.01 245)`         | pozadí aplikace                            |
 | `panel`       | `oklch(0.995 0.004 75)`         | pozadí karet, panelů, drawer               |
-| `panel-2`     | `oklch(0.95 0.015 75)`          | druhotné pozadí (chip pozadí, spec tagy)   |
+| `panel-2`     | `oklch(0.95 0.016 245)`         | druhotné pozadí (chip pozadí, spec tagy)   |
 | `text`        | `oklch(0.27 0.02 55)`           | primární text                              |
 | `subtext`     | `oklch(0.52 0.02 55)`           | sekundární text, popisky                   |
 | `border`      | `oklch(0.9 0.015 70)`           | oddělovače, rámečky                        |

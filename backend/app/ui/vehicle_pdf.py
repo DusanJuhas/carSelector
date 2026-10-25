@@ -36,12 +36,13 @@ _FONT_CANDIDATES: list[tuple[str, str]] = [
     ("/Library/Fonts/Arial.ttf", "/Library/Fonts/Arial Bold.ttf"),
 ]
 
-# Approximate sRGB of doc/design-tokens.md's OKLCH colors.
-_TEXT = (58, 47, 40)
-_SUBTEXT = (122, 109, 100)
-_BORDER = (236, 227, 216)
-_PANEL_2 = (248, 244, 238)
-_ACCENT = (47, 111, 196)
+# sRGB of doc/design-tokens.md's OKLCH colors (fpdf2 has no OKLCH support) -
+# keep in sync with app/ui/styles.py when a token changes.
+_TEXT = (46, 36, 29)
+_SUBTEXT = (114, 102, 94)
+_BORDER = (229, 220, 212)
+_PANEL_2 = (230, 240, 249)
+_ACCENT = (31, 125, 207)
 
 _FAMILY = "Body"
 
