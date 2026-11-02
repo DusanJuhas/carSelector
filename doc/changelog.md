@@ -24,6 +24,24 @@ to one or more related commits.
 
 ---
 
+## 0.3.18 — 2026-11-02
+
+### Added
+- Car photos for 197 more models — 226 of the catalog's 230 now show a
+  real photo on their result card instead of the striped placeholder
+  (`storage/car_photos/`, 156 new files, ~5.8 MB in total;
+  `backend/app/ui/car_photos.py`). All are freely licensed Wikimedia
+  Commons images (CC BY-SA, CC BY or CC0), each recorded with its
+  author, licence and source page, which the card's credit line shows.
+  Most were found via the model's English Wikipedia lead image, every
+  one checked by eye for the right make, model and current generation;
+  body or performance variants without a free photo of their own share
+  their base model's image (e.g. Audi S5/RS 5 show the A5).
+- Still on the placeholder: Mitsubishi Grandis, Fiat Qubo L / Qubo L
+  Maxi and MG S9 PHEV — Commons has no correctly badged free photo of
+  them yet (only, e.g., the Grandis's Renault Symbioz twin, which would
+  show the wrong badge).
+
 ## 0.3.17 — 2026-11-02
 
 ### Added
