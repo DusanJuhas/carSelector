@@ -13,18 +13,24 @@ from .bmw import BmwDiscoverer
 from .citroen import CitroenDiscoverer
 from .cupra import CupraDiscoverer
 from .dacia import DaciaDiscoverer
+from .fiat import FiatDiscoverer
 from .ford import FordDiscoverer
+from .honda import HondaDiscoverer
 from .hyundai import HyundaiDiscoverer
 from .kia import KiaDiscoverer
+from .lexus import LexusDiscoverer
 from .mazda import MazdaDiscoverer
 from .mercedes_benz import MercedesBenzDiscoverer
 from .mg import MgDiscoverer
 from .mitsubishi import MitsubishiDiscoverer
+from .nissan import NissanDiscoverer
 from .opel import OpelDiscoverer
 from .peugeot import PeugeotDiscoverer
 from .renault import RenaultDiscoverer
 from .seat import SeatDiscoverer
 from .skoda import SkodaDiscoverer
+from .subaru import SubaruDiscoverer
+from .suzuki import SuzukiDiscoverer
 from .tesla import TeslaDiscoverer
 from .toyota import ToyotaDiscoverer
 from .volkswagen import VolkswagenDiscoverer
@@ -54,4 +60,10 @@ DISCOVERERS: dict[str, type[BaseDiscoverer]] = {
     "volvo": VolvoDiscoverer,
     "mitsubishi": MitsubishiDiscoverer,
     "citroen": CitroenDiscoverer,
+    "suzuki": SuzukiDiscoverer,
+    "nissan": NissanDiscoverer,
+    "honda": HondaDiscoverer,
+    "fiat": FiatDiscoverer,
+    "subaru": SubaruDiscoverer,
+    "lexus": LexusDiscoverer,
 }

@@ -24,6 +24,47 @@ to one or more related commits.
 
 ---
 
+## 0.3.17 — 2026-11-02
+
+### Added
+- Suzuki, Nissan, Honda, Fiat, Subaru and Lexus support in the scraper —
+  discovery, parser, `sources.yaml` entry, PDF fixtures and parser tests
+  for each (`scraper/parsers/<brand>.py`,
+  `scraper/monitors/discovery/<brand>.py`):
+  - **Suzuki** — Swift, Vitara, S-Cross (each also as a Black Edition
+    price list) and e Vitara. Vitara/e Vitara don't print their own name
+    as text, so the parser infers the model from each row's engine.
+  - **Nissan** — Micra, Juke, Qashqai, X-Trail and the X-Trail Summer
+    Edition. Prices come from the homepage's links (the "Brožury a
+    ceníky" page still links outdated files). Columns are matched by
+    position, and marketing panels printed outside the page edge are
+    ignored; Micra's transposed table has its own reader.
+  - **Honda** — Jazz, Civic, HR-V, ZR-V, CR-V (hybrid and plug-in) and
+    Prelude, newest model year only. The CO₂ figure printed right before
+    each price is never merged into it; the cover's "Platnost od" date
+    is read as the release date.
+  - **Fiat** — 500 (Hybrid and 500e), 600 (and 600e), Grande Panda (and
+    Electric), Pandina, Tipo Sedan and Qubo L (+ Maxi). fiatcz.com blocks
+    the browser header set the other Stellantis brands need, but answers
+    a plain request. Electric twins are filed under their nameplate.
+  - **Subaru** — Impreza, Forester, Solterra, Uncharted and e-Outback
+    (Crosstrek and Outback currently have no price list). Two table
+    shapes: a row table whose run-together prices are split by column
+    position, and the EVs' transposed trim-column table.
+  - **Lexus** — LBX, UX, NX (350h, 450h+), ES, RX (350h, 450h+, 500h),
+    RZ and LM, newest model year where two are listed. Every price page
+    is a trim × engine matrix with order-code columns between the
+    prices; cells are assigned to the nearest engine column.
+- `scripts/import_scraper_data.py`: display names and body types for the
+  six brands.
+
+### Not covered yet
+- Equipment for all six brands; release dates except Honda's (the others
+  word their validity as a window or a written-out month).
+- Commercial vehicles (Nissan Interstar/Townstar, Fiat Professional),
+  Fiat Topolino (a light quadricycle), and Subaru Crosstrek/Outback until
+  their pages link a price list again.
+
 ## 0.3.16 — 2026-11-02
 
 ### Added

@@ -558,3 +558,81 @@ sources:
     parser_key: citroen
     active: true
     models: [C3, C3 Aircross, C4, C4 X, C5 Aircross, Berlingo]
+
+  # Verified 2026-11-02, no bot-blocking. The listing page embeds every
+  # price list's CloudFront URL ("<YYYYMMDD>-<slug>.pdf") in its own state
+  # payload - see monitors/discovery/suzuki.py. One key per DOCUMENT (the
+  # Black Editions are separate price lists); SuzukiParser infers the
+  # nameplate from each row (Vitara/e Vitara don't print their own name as
+  # text - see its module docstring).
+  - brand: suzuki
+    country: cz
+    source_url: "https://auto.suzuki.cz/prodej/ceniky-katalogy"
+    pdf_pattern: null
+    parser_key: suzuki
+    active: true
+    models: [Swift, Vitara, Vitara Black Edition, S-Cross, S-Cross Black Edition, e Vitara]
+
+  # Verified 2026-11-02, no bot-blocking. The homepage (not the outdated
+  # "Brožury a ceníky" page) links the current price lists - see
+  # monitors/discovery/nissan.py. Interstar/Townstar are commercial
+  # vehicles; Ariya has no price list. Two table shapes, see
+  # parsers/nissan.py.
+  - brand: nissan
+    country: cz
+    source_url: "https://www.nissan.cz/"
+    pdf_pattern: null
+    parser_key: nissan
+    active: true
+    models: [Micra, Juke, Qashqai, X-Trail, X-Trail Summer Edition]
+
+  # Verified 2026-11-02, no bot-blocking. All six current models are
+  # hybrids (CR-V also as a plug-in); the newest model year's regular
+  # "CZ_cenik_<Model>_MR<yy>_..." file is used, not the short promotional
+  # "Akční ceník" one - see monitors/discovery/honda.py.
+  - brand: honda
+    country: cz
+    source_url: "https://www.honda.cz/cars/get-a-brochure.html"
+    pdf_pattern: null
+    parser_key: honda
+    active: true
+    models: [Jazz, Civic, HR-V, ZR-V, CR-V, Prelude]
+
+  # Verified 2026-11-02. fiatcz.com (fiat.cz redirects there) blocks the
+  # browser header set other Stellantis brands need, but answers a bare
+  # request - see monitors/discovery/fiat.py. One key per DOCUMENT; the
+  # electric twins are filed under their nameplate by FiatParser ("600e"
+  # -> "600"). Topolino (a light quadricycle) and Fiat Professional
+  # (commercial) aren't covered.
+  - brand: fiat
+    country: cz
+    source_url: "https://www.fiatcz.com/prodej/ceniky"
+    pdf_pattern: null
+    parser_key: fiat
+    active: true
+    models: [500 Hybrid, 500e, "600", 600e, Grande Panda, Grande Panda Electric, Pandina, Tipo Sedan, Qubo L]
+
+  # Verified 2026-11-02, no bot-blocking. Each model page links its own
+  # price list - see monitors/discovery/subaru.py. Crosstrek's and
+  # Outback's pages currently link none, so they won't be found until
+  # they do. Two table shapes (petrol e-Boxer vs. EVs), see
+  # parsers/subaru.py.
+  - brand: subaru
+    country: cz
+    source_url: "https://www.subaru.cz/ceniky.html"
+    pdf_pattern: null
+    parser_key: subaru
+    active: true
+    models: [Impreza, Crosstrek, Forester, Outback, e-Outback, Solterra, Uncharted]
+
+  # Verified 2026-11-02, no bot-blocking. One PDF per model, or per engine
+  # for NX and RX; the newest model year wins where two are listed - see
+  # monitors/discovery/lexus.py for the document keys. Every document's
+  # page 2 is a trim x engine price matrix, see parsers/lexus.py.
+  - brand: lexus
+    country: cz
+    source_url: "https://www.lexus.cz/pricelists"
+    pdf_pattern: null
+    parser_key: lexus
+    active: true
+    models: [LBX, UX 300, NX 350, NX 450, ES, RX 350h, RX 450h, RX 500h, RZ, LM]

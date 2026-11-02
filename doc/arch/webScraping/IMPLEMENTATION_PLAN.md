@@ -180,7 +180,12 @@ lists - trims matched to rows via the table's own drawn cell borders) -
 see each parser's module docstring. Citroën (C3/C3 Aircross/C4/C4 X/
 C5 Aircross/Berlingo M+XL - citroen.cz is Akamai-blocked, but discovery
 reads the unblocked Stellantis webforms JSON API behind its price-list
-form). Volvo/Mitsubishi/Citroën equipment isn't extracted yet.
+form). Suzuki, Nissan, Honda, Fiat, Subaru and Lexus (2026-11-02) - see
+each parser's module docstring for its layout; Fiat's site answers only
+requests WITHOUT the browser header set, Nissan's current price lists are
+linked from the homepage rather than its "ceníky" page, and Subaru/Nissan
+each have two table shapes. Volvo/Mitsubishi/Citroën/Suzuki/Nissan/Honda/
+Fiat/Subaru/Lexus equipment isn't extracted yet.
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/
