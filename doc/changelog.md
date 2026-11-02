@@ -24,6 +24,29 @@ to one or more related commits.
 
 ---
 
+## 0.3.19 — 2026-11-02
+
+### Fixed
+- Ford Puma listed a non-existent trim "ST-Line X BlueCruise Edition"
+  priced 780 500 845 500 Kč (two price columns glued together). The
+  parser bug behind it was fixed in 0.3.11, but rows imported before
+  that fix stayed in the catalog, because the import only ever added and
+  updated configurations. The bogus trim was removed from
+  `storage/drivewise.db`.
+- `scripts/import_scraper_data.py` now retires variants dropped from a
+  price list: when a newer version of the same price list (same scraper
+  `document_url`) no longer contains a configuration the previous
+  version had, that configuration's current price is closed at the newer
+  version's date, so the catalog stops listing it. Nothing is deleted
+  (price history stays); a configuration still priced by another price
+  list is left alone, a failed parse with no variants retires nothing,
+  and re-running the import never brings a retired variant back. The
+  summary line reports how many were retired. The first run retired 77
+  outdated configurations (Škoda Kodiaq/Karoq/Kamiq/Fabia/Octavia/
+  Scala/Superb/Epiq, Opel Astra/Corsa/Grandland/Mokka, Ford Kuga "Top
+  Edition", Audi Q4 "Standard"). Tests:
+  `scripts/tests/test_import_retire.py`.
+
 ## 0.3.18 — 2026-11-02
 
 ### Added

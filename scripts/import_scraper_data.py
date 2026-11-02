@@ -16,6 +16,17 @@ up by natural key before creating, and prices only get a new row when the
 price actually changed (closing the previous one) - matching the
 append-only design in app/models/price.py.
 
+Variants dropped from a price list are retired: scraper keeps every
+version of a price list it has downloaded (one `document` per content
+hash, same `document_url`), and when a newer version no longer contains a
+configuration the previous version had (a discontinued trim/engine, or a
+row an earlier parser version misread - e.g. Ford Puma's merged
+"ST-Line X BlueCruise Edition" columns), that configuration's current
+price is closed at the newer version's date (`retire_configuration`), so
+the catalog stops listing it. Nothing is deleted - the price history
+stays. Only prices that came from that same URL's documents are retired,
+so a configuration still priced by another price list is left alone.
+
 Equipment/options: scraper's equipment_assignment now carries a
 surcharge_amount for the one format that has one so far (Škoda's
 "Samostatné prvky výbavy" page, see parsers/skoda_equipment.py) - those
@@ -576,6 +587,7 @@ class ImportStats:
     prices_inserted: int = 0
     prices_unchanged: int = 0
     prices_skipped: int = 0
+    prices_retired: int = 0
     option_items: int = 0
     option_availabilities_inserted: int = 0
     option_availabilities_updated: int = 0
@@ -610,6 +622,11 @@ class ScraperDataImporter:
         self._configuration_cache: dict[tuple[int, int], Configuration] = {}
         self._source_document_cache: dict[tuple[str, int], SourceDocument] = {}
         self._option_item_cache: dict[tuple[int, str], OptionItem] = {}
+        # Per scraper `document_url`: configurations the most recently
+        # processed version touched, and every version's file_path so far
+        # (see `retire_configuration`).
+        self._previous_version: dict[str, set[int]] = {}
+        self._url_file_paths: dict[str, set[str]] = {}
 
     def get_or_create_brand(self, slug: str) -> Brand:
         """Args:
@@ -816,7 +833,11 @@ class ScraperDataImporter:
         (no-op) or `valid_from` would rewrite history backwards (also a
         no-op). An amount that doesn't fit the price columns (see
         MAX_PRICE_AMOUNT) is skipped with a warning instead - the
-        configuration then keeps whatever price it had. Updates
+        configuration then keeps whatever price it had. A configuration
+        with no current price whose closed history already covers
+        `valid_from` (it was retired by a newer price list - see
+        `retire_configuration`) is also a no-op, so re-reading an older
+        version of that price list never brings it back. Updates
         `self.stats.prices_inserted`/`prices_unchanged`/`prices_skipped`.
 
         Args:
@@ -856,6 +877,21 @@ class ScraperDataImporter:
                 self.stats.prices_unchanged += 1
                 return
             current.valid_to = valid_from_date
+        else:
+            latest = self._db.scalar(
+                select(Price)
+                .where(Price.configuration_id == configuration.id, Price.market == MARKET)
+                .order_by(Price.valid_from.desc())
+                .limit(1)
+            )
+            if latest is not None and (
+                latest.valid_from >= valid_from_date
+                or (latest.valid_to is not None and latest.valid_to > valid_from_date)
+            ):
+                # Retired by a newer price list - an older version must
+                # not reinstate it (see retire_configuration).
+                self.stats.prices_unchanged += 1
+                return
 
         self._db.add(
             Price(
@@ -880,6 +916,43 @@ class ScraperDataImporter:
         # partial unique index on the second insert.
         self._db.flush()
         self.stats.prices_inserted += 1
+
+    def retire_configuration(self, configuration_id: int, url_file_paths: set[str], retired_on: date) -> None:
+        """Closes a configuration's current price because the newest
+        version of its price list no longer contains it (see module
+        docstring). Updates `self.stats.prices_retired`, or adds a warning
+        if the price can't be closed on `retired_on` (its own `valid_from`
+        is not earlier - the prices table requires `valid_to >
+        valid_from`).
+
+        Args:
+            configuration_id: The configuration missing from the newer version.
+            url_file_paths: file_paths of every version of that price list
+                (same scraper `document_url`) - the current price is only
+                closed if it came from one of them.
+            retired_on: The newer version's effective date, used as `valid_to`.
+        """
+        current = self._db.scalar(
+            select(Price).where(
+                Price.configuration_id == configuration_id,
+                Price.market == MARKET,
+                Price.valid_to.is_(None),
+            )
+        )
+        if current is None:
+            return
+        source = self._db.get(SourceDocument, current.source_document_id)
+        if source is None or source.file_path not in url_file_paths:
+            return  # priced by a different price list - not this one's to retire
+        if retired_on <= current.valid_from:
+            self.stats.warnings.append(
+                f"configuration {configuration_id} is missing from a newer price list dated {retired_on}, "
+                f"but its current price is valid from {current.valid_from} - left as is"
+            )
+            return
+        current.valid_to = retired_on
+        self._db.flush()
+        self.stats.prices_retired += 1
 
     def get_or_create_option_item(self, model: CarModel, name: str) -> OptionItem:
         """Args:
@@ -1021,11 +1094,15 @@ class ScraperDataImporter:
             immediately after this returns, for callers that want it
             without capturing the return value).
         """
+        # Oldest first, so each price list's versions are compared in the
+        # order they were downloaded (see retire_configuration).
         documents = self._scraper_con.execute(
-            "SELECT id, source_brand, file_path, release_date, downloaded_at FROM document"
+            "SELECT id, source_brand, file_path, release_date, downloaded_at, document_url FROM document ORDER BY id"
         ).fetchall()
 
-        for index, (doc_id, source_brand, file_path, release_date, downloaded_at) in enumerate(documents, start=1):
+        for index, (doc_id, source_brand, file_path, release_date, downloaded_at, document_url) in enumerate(
+            documents, start=1
+        ):
             report_progress(index, len(documents), source_brand)
             variants = self._scraper_con.execute(
                 "SELECT id, model, trim, powertrain, variant_name FROM variant WHERE document_id = ?",
@@ -1048,6 +1125,7 @@ class ScraperDataImporter:
             variants_by_model: dict[str, list] = {}
             for variant_row in variants:
                 variants_by_model.setdefault(variant_row[1], []).append(variant_row)
+            touched: set[int] = set()
 
             for model_name, model_variants in variants_by_model.items():
                 model = self.get_or_create_model(brand, model_name)
@@ -1062,6 +1140,7 @@ class ScraperDataImporter:
                     signature = powertrain_signature(variant_name, trim_name)
                     powertrain = self.get_or_create_powertrain(model, signature, fuel_type, drivetrain, power_kw)
                     configuration = self.get_or_create_configuration(trim, powertrain)
+                    touched.add(configuration.id)
 
                     price_row = self._scraper_con.execute(
                         "SELECT price, currency, valid_from FROM price_history "
@@ -1073,6 +1152,19 @@ class ScraperDataImporter:
                         self.upsert_price(configuration, source_document, amount, currency, valid_from)
 
                     self.import_equipment(model, configuration, variant_id)
+
+            # A document with no variants (a failed parse) was skipped above,
+            # so it never retires anything.
+            url_file_paths = self._url_file_paths.setdefault(document_url, set())
+            url_file_paths.add(file_path)
+            previous = self._previous_version.get(document_url)
+            if previous is not None:
+                retired_on = (
+                    date.fromisoformat(release_date) if release_date else datetime.fromisoformat(downloaded_at).date()
+                )
+                for configuration_id in sorted(previous - touched):
+                    self.retire_configuration(configuration_id, url_file_paths, retired_on)
+            self._previous_version[document_url] = touched
 
         self.stats.brands = len(self._brand_cache)
         self.stats.models = len(self._model_cache)
@@ -1117,7 +1209,8 @@ def main() -> None:
     print(f"  source_documents: {stats.source_documents}")
     print(
         f"  prices: {stats.prices_inserted} inserted, {stats.prices_unchanged} already up to date, "
-        f"{stats.prices_skipped} skipped (out of range)"
+        f"{stats.prices_skipped} skipped (out of range), "
+        f"{stats.prices_retired} retired (dropped from a newer price list)"
     )
     for warning in stats.warnings:
         print(f"  WARNING: {warning}")
