@@ -24,6 +24,19 @@ to one or more related commits.
 
 ---
 
+## 0.3.15 — 2026-11-02
+
+### Fixed
+- A scraper run (including one started from the admin console) no longer
+  aborts on the first HTTP error. A model whose download fails, a source
+  whose discovery fails and a document whose parsing fails are each
+  skipped, and the run continues with the next one; a failed document is
+  deleted again so the next run retries it. Everything skipped is listed
+  in a "Finished with N skipped item(s)" summary at the end of the log
+  (`scraper/main.py`, `scraper/monitors/source_monitor.py`; tests:
+  `scraper/tests/test_pipeline_resilience.py`). Prompted by BMW's listing
+  page currently linking a November 2026 price list that returns 404.
+
 ## 0.3.14 — 2026-11-02
 
 ### Added
@@ -60,9 +73,9 @@ to one or more related commits.
 
 ### Not covered yet
 - Volvo and Mitsubishi standard equipment (prices, trims and powertrains
-  only). Release dates for all three fall back to the download date
-  (their "valid from" text isn't on the cover page in the format
-  `extract_release_date` reads).
+  only). Release dates fall back to the download date for all but
+  Mitsubishi Grandis (the others' "valid from" text isn't on the cover
+  page in the format `extract_release_date` reads).
 
 ## 0.3.13 — 2026-10-25
 
