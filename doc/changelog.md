@@ -24,6 +24,46 @@ to one or more related commits.
 
 ---
 
+## 0.3.14 — 2026-11-02
+
+### Added
+- SEAT, Volvo and Mitsubishi support in the scraper — discovery, parser,
+  `sources.yaml` entry, PDF fixtures and parser tests for each:
+  - **SEAT** — Ibiza, Arona, Leon, Leon Sportstourer
+    (`scraper/parsers/seat.py`, `scraper/monitors/discovery/seat.py`).
+    SEAT and CUPRA share an importer and the exact same price-list
+    template, so `SeatParser` subclasses `CupraParser`; prices, standard
+    equipment and colours all come from the CUPRA code (whose known-model
+    list became an overridable class attribute). Ateca is sold
+    stock-only and has no price list.
+  - **Volvo** — EX30, EX40, EC40, EX60, EX90, ES90, XC40, XC60, XC90, V60
+    (`scraper/parsers/volvo.py`, `scraper/monitors/discovery/volvo.py`).
+    volvocars.com blocks scripted requests, but the PDFs sit on
+    volvodirect.cz under stable `<MODEL>_cenik.pdf` names. The price
+    table is a trim × engine matrix, one per powertrain (XC60/XC90 have
+    PHEV and MHEV tables); columns are anchored on the bottom row's
+    factory variant codes, and wrapped trim labels / engine headers are
+    put back together by position.
+  - **Mitsubishi** — Colt (petrol and hybrid), ASX, Grandis, Eclipse
+    Cross BEV, Outlander PHEV, plus the ASX Limited and Outlander PHEV
+    Black Edition / Diamond / 25 let special-edition price lists
+    (`scraper/parsers/mitsubishi.py`,
+    `scraper/monitors/discovery/mitsubishi.py`). A trim's cell is merged
+    across several engine rows; rows are matched to trims by the table's
+    own drawn cell borders rather than by distance.
+- `scripts/import_scraper_data.py`: display names (SEAT, Volvo,
+  Mitsubishi) and body types for the new models.
+- Test fixtures for these brands keep only the pages the parsers read,
+  with photos removed (~3.5 MB for 24 documents instead of ~150 MB);
+  page numbers and text are unchanged, and parser output was checked to
+  be identical on the original and reduced files.
+
+### Not covered yet
+- Volvo and Mitsubishi standard equipment (prices, trims and powertrains
+  only). Release dates for all three fall back to the download date
+  (their "valid from" text isn't on the cover page in the format
+  `extract_release_date` reads).
+
 ## 0.3.13 — 2026-10-25
 
 ### Changed

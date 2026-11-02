@@ -486,3 +486,56 @@ sources:
     active: false
     content_type: html
     models: [Model Y, Model 3]
+
+  # Verified 2026-11-02. SEAT's listing page links one sub-page per model,
+  # and each sub-page links its own "Ceník SEAT <Model>" PDF (two-step
+  # fetch, see monitors/discovery/seat.py) - pdf_pattern isn't used. SEAT
+  # shares CUPRA's importer and, verified page by page, CUPRA's exact
+  # price-list template, so SeatParser is CupraParser with its own brand
+  # and model names (see parsers/seat.py). Ateca (sold stock-only, a
+  # "Katalog" but no "Ceník" on its page) is omitted, same as CUPRA's own
+  # Ateca.
+  - brand: seat
+    country: cz
+    source_url: "https://www.seat.cz/prodej-vozu-seat/ceniky-a-katalogy"
+    pdf_pattern: null
+    parser_key: seat
+    active: true
+    models: [Ibiza, Arona, Leon, Leon Sportstourer]
+
+  # Verified 2026-11-02. volvocars.com/cz answers every scripted request
+  # with a 403 (Akamai, like opel.cz's own listing page), but each model
+  # page's "Otevřít PDF" link points at a separate, unblocked host with a
+  # stable, model-derived filename (volvodirect.cz/cenik/<MODEL>_cenik.pdf,
+  # overwritten in place on each price change) - VolvoDiscoverer builds
+  # that URL per model and keeps it if it answers with a PDF. The 10
+  # models below are every one with a current price list there (V90, S90,
+  # V60/V90 Cross Country, EX30 Cross Country, ... answer 403 - not sold
+  # new in CZ any more). Volvo's price table is a trim x engine matrix,
+  # one per powertrain (XC60/XC90 have a PHEV and an MHEV one) - see
+  # parsers/volvo.py.
+  - brand: volvo
+    country: cz
+    source_url: "https://www.volvocars.com/cz/"
+    pdf_pattern: null
+    parser_key: volvo
+    active: true
+    models: [EX30, EX40, EC40, EX60, EX90, ES90, XC40, XC60, XC90, V60]
+
+  # Verified 2026-11-02. A listing page linking one sub-page per model,
+  # each linking its own price list(s) - no bot-blocking. Like Opel's own
+  # entry, `models` lists one key per DOCUMENT (the link's own label minus
+  # "Ceník" and the "MYxx" marker), because several models have more than
+  # one price list: Colt's hybrid is a separate document, and ASX/
+  # Outlander PHEV have special-edition ones ("Limited", "Black Edition",
+  # "Diamond", "25 let"). MitsubishiParser normalizes all of them back to
+  # 5 nameplates (Colt, ASX, Grandis, Eclipse Cross, Outlander PHEV), the
+  # special edition surviving as the row's own trim label.
+  - brand: mitsubishi
+    country: cz
+    source_url: "https://www.mitsubishi-motors.cz/nakup-vozu/ceniky-a-katalogy/"
+    pdf_pattern: null
+    parser_key: mitsubishi
+    active: true
+    models: [Colt, Colt Hybrid, ASX, ASX Limited, Grandis, Eclipse Cross BEV, Outlander PHEV,
+      Outlander PHEV Black Edition, Outlander PHEV Diamond, Outlander PHEV 25 let]

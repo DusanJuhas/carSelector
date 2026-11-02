@@ -86,12 +86,14 @@ _ROW_RE = re.compile(
 )
 
 
-def _extract_model_name(pdf: pdfplumber.PDF) -> str:
+def _extract_model_name(pdf: pdfplumber.PDF, known_models: tuple[str, ...] = _KNOWN_MODELS) -> str:
     """Args:
         pdf: The opened price-list PDF.
+        known_models: Canonical model names to look for, longest first
+            (`CupraParser.known_models` - SeatParser passes its own).
 
     Returns:
-        The canonical model name matched against `_KNOWN_MODELS` (a
+        The canonical model name matched against `known_models` (a
         substring match, not a specific cover-page line - the cover's own
         layout order varies: Raval's reads "NOVÝ"/"RAVAL" on two lines
         with a marketing prefix, Leon Sportstourer's reads "LEON"/
@@ -102,7 +104,7 @@ def _extract_model_name(pdf: pdfplumber.PDF) -> str:
     """
     cover_text = (pdf.pages[0].extract_text() or "").upper()
     cover_text = re.sub(r"\s+", " ", cover_text)
-    for model in _KNOWN_MODELS:
+    for model in known_models:
         if model.upper() in cover_text:
             return model
     return "unknown"
@@ -194,6 +196,8 @@ def _parse_row(line: list[dict], model: str, trim: str | None, source_page: int)
 class CupraParser(BaseParser):
     brand = "cupra"
     powertrain = "ICE"  # nominal default; the actual powertrain is per-row, see _classify_powertrain
+    # Overridden by SeatParser (same importer, same price-list template - see parsers/seat.py).
+    known_models: tuple[str, ...] = _KNOWN_MODELS
 
     def parse(self, pdf_path: Path) -> list[ExtractedVariant]:
         """See module docstring for the row shape and known gaps.
@@ -208,7 +212,7 @@ class CupraParser(BaseParser):
         variants: list[ExtractedVariant] = []
 
         with pdfplumber.open(pdf_path) as pdf:
-            model = _extract_model_name(pdf)
+            model = _extract_model_name(pdf, self.known_models)
 
             for page in pdf.pages:
                 lines = group_into_lines(page.extract_words())

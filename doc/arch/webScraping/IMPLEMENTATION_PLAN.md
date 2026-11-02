@@ -169,7 +169,16 @@ Unlike every other brand above, this source is registered but NOT
 Playwright browser (headless or headed) from this environment, a harder
 block than Opel's/Peugeot's own WAFs (whose actual document endpoints, not
 just their listing pages, stayed reachable) - see sources.yaml's own tesla
-entry for what unblocking this would need.
+entry for what unblocking this would need. SEAT (Ibiza/Arona/Leon/Leon
+Sportstourer - same importer and price-list template as CUPRA, so
+SeatParser subclasses CupraParser, equipment and colours included), Volvo
+(EX30/EX40/EC40/EX60/EX90/ES90/XC40/XC60/XC90/V60 - a trim x engine
+matrix per powertrain; volvocars.com is Akamai-blocked but the PDFs live on
+volvodirect.cz under stable per-model names) and Mitsubishi (Colt, ASX,
+Grandis, Eclipse Cross BEV, Outlander PHEV plus special-edition price
+lists - trims matched to rows via the table's own drawn cell borders) -
+see each parser's module docstring. Volvo/Mitsubishi equipment isn't
+extracted yet.
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/

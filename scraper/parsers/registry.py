@@ -17,15 +17,18 @@ from .kia import KiaParser
 from .mazda import MazdaParser
 from .mercedes_benz import MercedesBenzParser
 from .mg import MgParser
+from .mitsubishi import MitsubishiParser
 from .opel import OpelParser
 from .peugeot import PeugeotParser
 from .renault import RenaultParser
+from .seat import SeatParser
 from .skoda_ev import SkodaEvParser
 from .skoda_ice import SkodaIceParser
 from .tesla import TeslaParser
 from .toyota import ToyotaParser
 from .volkswagen import VolkswagenParser
 from .volkswagen_ev import VolkswagenEvParser
+from .volvo import VolvoParser
 
 PARSERS: dict[str, type[BaseParser]] = {
     "skoda_ice": SkodaIceParser,
@@ -47,4 +50,7 @@ PARSERS: dict[str, type[BaseParser]] = {
     "mg": MgParser,
     "audi": AudiParser,
     "tesla": TeslaParser,
+    "seat": SeatParser,
+    "volvo": VolvoParser,
+    "mitsubishi": MitsubishiParser,
 }

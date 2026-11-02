@@ -22,13 +22,13 @@ A list of passenger car brands with an active sales/dealer presence in the Czech
 | 14 | Opel | 3,657 | 1.5% | ✓ |
 | 15 | Citroën | 3,397 | 1.4% | |
 | 16 | Audi | — | — | ✓ |
-| 17 | Seat | — | — | |
-| 18 | Volvo | — | — | |
+| 17 | Seat | — | — | ✓ |
+| 18 | Volvo | — | — | ✓ |
 | 19 | Suzuki | — | — | |
 | 20 | Mazda | — | — | ✓ |
 | 21 | Nissan | — | — | |
 | 22 | Honda | — | — | |
-| 23 | Mitsubishi | — | — | |
+| 23 | Mitsubishi | — | — | ✓ |
 | 24 | Fiat | — | — | |
 | 25 | Subaru | — | — | |
 | 26 | Lexus | — | — | |
