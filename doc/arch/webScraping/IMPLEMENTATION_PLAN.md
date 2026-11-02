@@ -177,8 +177,10 @@ matrix per powertrain; volvocars.com is Akamai-blocked but the PDFs live on
 volvodirect.cz under stable per-model names) and Mitsubishi (Colt, ASX,
 Grandis, Eclipse Cross BEV, Outlander PHEV plus special-edition price
 lists - trims matched to rows via the table's own drawn cell borders) -
-see each parser's module docstring. Volvo/Mitsubishi equipment isn't
-extracted yet.
+see each parser's module docstring. Citroën (C3/C3 Aircross/C4/C4 X/
+C5 Aircross/Berlingo M+XL - citroen.cz is Akamai-blocked, but discovery
+reads the unblocked Stellantis webforms JSON API behind its price-list
+form). Volvo/Mitsubishi/Citroën equipment isn't extracted yet.
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/

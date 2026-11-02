@@ -135,6 +135,7 @@ BRAND_NAMES = {
     "seat": "SEAT",
     "volvo": "Volvo",
     "mitsubishi": "Mitsubishi",
+    "citroen": "Citroën",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {
@@ -344,6 +345,12 @@ _MODEL_BODY_TYPES: dict[tuple[str, str], str] = {
     ("CUPRA", "Leon Sportstourer"): BODY_TYPE_KOMBI,
     ("CUPRA", "Raval"): BODY_TYPE_HATCHBACK,
     ("CUPRA", "Terramar"): BODY_TYPE_SUV,
+    ("Citroën", "Berlingo"): BODY_TYPE_MPV,
+    ("Citroën", "Berlingo XL"): BODY_TYPE_MPV,
+    ("Citroën", "C3"): BODY_TYPE_HATCHBACK,
+    ("Citroën", "C3 Aircross"): BODY_TYPE_SUV,
+    ("Citroën", "C4"): BODY_TYPE_HATCHBACK,
+    ("Citroën", "C5 Aircross"): BODY_TYPE_SUV,
     ("Dacia", "Bigster"): BODY_TYPE_SUV,
     ("Dacia", "Duster"): BODY_TYPE_SUV,
     ("Dacia", "Jogger"): BODY_TYPE_MPV,

@@ -24,6 +24,23 @@ to one or more related commits.
 
 ---
 
+## 0.3.16 — 2026-11-02
+
+### Added
+- Citroën support in the scraper: discovery, parser, `sources.yaml` entry,
+  PDF fixtures and parser tests for C3, C3 Aircross, C4, C4 X, C5 Aircross
+  and Berlingo (M and XL lengths, as "Berlingo" / "Berlingo XL")
+  (`scraper/parsers/citroen.py`, `scraper/monitors/discovery/citroen.py`).
+  citroen.cz blocks scripted requests like Opel/Peugeot, but its
+  price-list form is filled from an unblocked Stellantis webforms JSON
+  API that lists every current model's documents, and the PDFs sit on
+  unblocked data.citroen.cz. A trim's cell is merged across several
+  engine rows and electric rows wrap over three lines; rows are anchored
+  on their price line and trims are matched by the table's drawn
+  trim-group rules. SpaceTourer (van-style price list) and the commercial
+  versions (C3 Cargo, Berlingo PROFI/Van, Jumpy, Jumper) aren't covered.
+- `scripts/import_scraper_data.py`: Citroën display name and body types.
+
 ## 0.3.15 — 2026-11-02
 
 ### Fixed

@@ -539,3 +539,22 @@ sources:
     active: true
     models: [Colt, Colt Hybrid, ASX, ASX Limited, Grandis, Eclipse Cross BEV, Outlander PHEV,
       Outlander PHEV Black Edition, Outlander PHEV Diamond, Outlander PHEV 25 let]
+
+  # Verified 2026-11-02. citroen.cz is Akamai-blocked like Opel/Peugeot,
+  # but its "Ceníky a katalogy" brochure form is filled from an unblocked
+  # Stellantis webforms JSON API listing every current model's documents,
+  # and the PDFs sit on unblocked data.citroen.cz - see
+  # monitors/discovery/citroen.py. `models` are the picker's body labels
+  # without "Nový/Nová" and "ë-" (petrol/hybrid and electric twins share
+  # one price list). Berlingo's document has two tables (M and XL),
+  # parsed as "Berlingo" and "Berlingo XL". SpaceTourer has a price list
+  # too, but a van-style one CitroenParser doesn't read (same call as
+  # Peugeot's Traveller); Jumpy/Jumper/Berlingo Van and the C3 Cargo /
+  # Berlingo PROFI versions are commercial vehicles, out of scope.
+  - brand: citroen
+    country: cz
+    source_url: "https://www.citroen.cz/nastroje/pozadat-o-brozuru.html"
+    pdf_pattern: null
+    parser_key: citroen
+    active: true
+    models: [C3, C3 Aircross, C4, C4 X, C5 Aircross, Berlingo]
