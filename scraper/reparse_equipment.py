@@ -72,7 +72,9 @@ def reparse_document(session: Session, document: Document, dry_run: bool = False
         if parser_cls is None:
             counts["skipped"] += len(stored)
             continue
-        fresh = {_key(extracted): extracted for extracted in parser_cls().parse(Path(document.file_path))}
+        parser = parser_cls()
+        parser.document_url = document.document_url
+        fresh = {_key(extracted): extracted for extracted in parser.parse(Path(document.file_path))}
         for variant in stored:
             extracted = fresh.get(_key(variant))
             if extracted is None:

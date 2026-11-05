@@ -32,11 +32,11 @@ A list of passenger car brands with an active sales/dealer presence in the Czech
 | 24 | Fiat | — | — | ✓ |
 | 25 | Subaru | — | — | ✓ |
 | 26 | Lexus | — | — | ✓ |
-| 27 | Jeep | — | — | |
-| 28 | Alfa Romeo | — | — | |
+| 27 | Jeep | — | — | ✓ |
+| 28 | Alfa Romeo | — | — | ✓ |
 | 29 | Land Rover | — | — | |
 | 30 | Jaguar | — | — | |
-| 31 | SsangYong / KGM | — | — | |
+| 31 | SsangYong / KGM | — | — | ✓ |
 | 32 | smart | — | — | |
 | 33 | Tesla | — | (-47.7% YoY) | |
 

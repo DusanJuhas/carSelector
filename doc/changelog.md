@@ -24,6 +24,61 @@ to one or more related commits.
 
 ---
 
+## 0.3.20 — 2026-11-05
+
+### Added
+- Jeep and Alfa Romeo support in the scraper — discovery, parser,
+  `sources.yaml` entry, PDF fixtures and parser tests for each
+  (`scraper/parsers/jeep.py`, `scraper/parsers/alfa_romeo.py`,
+  `scraper/monitors/discovery/jeep.py`, `.../alfa_romeo.py`). Both brands
+  share the Stellantis Czech importer's price-list table, so the row parser
+  and the DAM-folder discovery live in shared bases
+  (`scraper/parsers/_stellantis_cz.py`,
+  `scraper/monitors/discovery/_stellantis_cz.py`):
+  - **Jeep** — Avenger (petrol/MHEV, 4xe, Electric), Compass (e-Hybrid,
+    e-Hybrid Plug-in, Electric, 4xe Electric), Grand Cherokee (PHEV),
+    Wrangler (petrol, 4xe PHEV): 10 price lists, 33 variants. Stock-car
+    ("sklad_") lists are skipped.
+  - **Alfa Romeo** — Giulia, Stelvio (each incl. Quadrifoglio), Junior
+    (Ibrida MHEV, Elettrica EV), Tonale Ibrida Plug-in Q4: 7 price lists,
+    22 variants. The plain mild-hybrid Tonale list is not covered yet: the
+    file alfaromeocz.com links under that name currently contains the
+    Junior Elettrica list (an importer upload mistake), see `sources.yaml`.
+  - Both imported into the catalog (`scripts/import_scraper_data.py`:
+    brand names, SUV body types for Avenger/Compass/Grand Cherokee/
+    Wrangler/Junior/Stelvio/Tonale).
+- KGM (formerly SsangYong) support in the scraper
+  (`scraper/parsers/kgm.py`, `scraper/monitors/discovery/kgm.py`, fixtures,
+  `scraper/tests/test_kgm_parser.py`): Korando, Tivoli, Torres (petrol and
+  hybrid), Torres EVX, Actyon (petrol and hybrid), Rexton, Musso Grand and
+  Musso EV - 8 price lists, 22 variants, imported into the catalog (SUV
+  body types; the two Musso pickups have no wizard body type). kgmcars.cz
+  renders its price-list links client-side from a dealer-site widget, so
+  discovery reads the widget's public key from the page and calls its
+  JSON API like the page does; stock-car clearance lists are skipped. The
+  parser reads the price tables through pdfplumber's table detection and
+  takes each cell's list price incl. VAT (the struck-through figure above
+  the promotional price, separated by font size since the two overlap;
+  Musso Grand's with-VAT figure), and appends each trim's standard drive
+  (Rexton's base trim is RWD). Torres and Actyon print their name only as
+  artwork, so the model comes from the PDF's file name: `BaseParser` gained
+  an optional `document_url`, which the pipeline and `reparse_equipment`
+  now set before parsing.
+
+### Fixed
+- `scripts/import_scraper_data.py` read an EV's battery capacity as its
+  power whenever the name printed it first ("54 kWh 115 kW" → 54 kW); the
+  "kW" match now skips "kWh". It also recognises "RWD" as rear-wheel drive
+  (Alfa Romeo's "Q2 (RWD)"), and re-running the import now refreshes
+  fuel type, drivetrain and power of existing powertrains instead of only
+  setting them on creation. The re-run corrected 74 powertrains: real kW
+  for Fiat 500e/600e/Grande Panda Electric, VW ID.3 Neo/ID. Polo, Suzuki
+  e Vitara, Mitsubishi Eclipse Cross BEV, Jeep and Alfa Romeo EVs; Giulia
+  Quadrifoglio is now RWD; and 42 Peugeot/Citroën/CUPRA/Nissan EVs, whose
+  price lists state no kW at all (only hp or nothing), no longer show their
+  battery size as power — their power is now empty. Tests:
+  `scripts/tests/test_import_inference.py`.
+
 ## 0.3.19 — 2026-11-02
 
 ### Fixed

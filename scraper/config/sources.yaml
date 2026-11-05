@@ -636,3 +636,48 @@ sources:
     parser_key: lexus
     active: true
     models: [LBX, UX 300, NX 350, NX 450, ES, RX 350h, RX 450h, RX 500h, RZ, LM]
+
+  # Verified 2026-11-05. Same Stellantis importer and WAF quirk as Fiat
+  # (bare request only, see monitors/discovery/_stellantis_cz.py). One key
+  # per DOCUMENT; JeepParser files each powertrain twin under its nameplate
+  # ("Avenger Electric" -> "Avenger"). "sklad_..." stock-car lists are
+  # skipped.
+  - brand: jeep
+    country: cz
+    source_url: "https://www.jeep.cz/dokumenty"
+    pdf_pattern: null
+    parser_key: jeep
+    active: true
+    models: [Avenger, Avenger 4xe, Avenger Electric, Compass e-Hybrid, Compass e-Hybrid Plug-in,
+      Compass Electric, Compass 4xe Electric, Grand Cherokee, Wrangler, Wrangler 4xe]
+
+  # Verified 2026-11-05. Same table and discovery as Jeep. "Tonale" (the
+  # mild-hybrid list) is deliberately missing from `models`: the
+  # "AR_Tonale_01_11_2026.pdf" linked on that date actually contains the
+  # Junior Elettrica price list (an importer upload mistake), which would
+  # import as a duplicate Junior document - add it back once the real
+  # Tonale list is up. Only "Tonale PHEV" (Ibrida Plug-in Q4) is covered.
+  - brand: alfa-romeo
+    country: cz
+    source_url: "https://www.alfaromeocz.com/prodej/ceniky"
+    pdf_pattern: null
+    parser_key: alfa-romeo
+    active: true
+    models: [Giulia, Giulia Quadrifoglio, Stelvio, Stelvio Quadrifoglio, Junior Ibrida, Junior Elettrica,
+      Tonale PHEV]
+
+  # Verified 2026-11-05. KGM (formerly SsangYong; ssangyong.cz redirects
+  # to kgmcars.cz). The price-list page renders its links client-side
+  # from a dealer-site widget's JSON API; KgmDiscoverer reads the widget's
+  # public key from the page and calls that API the same way the page
+  # does - see monitors/discovery/kgm.py. `models` are the widget's own
+  # model titles; stock-car clearance lists are skipped. Torres and
+  # Actyon don't print their name as text, so KgmParser takes it from the
+  # PDF's file name (see parsers/kgm.py).
+  - brand: kgm
+    country: cz
+    source_url: "https://kgmcars.cz/nove-vozy/ceniky/"
+    pdf_pattern: null
+    parser_key: kgm
+    active: true
+    models: [Korando, Tivoli, Torres, Torres EVX, Actyon, Rexton, Musso Grand, Musso EV]

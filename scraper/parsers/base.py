@@ -50,6 +50,12 @@ class BaseParser:
 
     brand: str
     powertrain: Powertrain
+    # The URL the document was downloaded from, set by the pipeline (and
+    # `reparse_equipment`) before `parse` when known. Parsers normally
+    # ignore it; it exists for documents that don't name their own model
+    # anywhere in their text (KGM's Torres/Actyon - see parsers/kgm.py),
+    # where the OEM's file name is the only reliable model signal.
+    document_url: str | None = None
 
     def parse(self, pdf_path: Path) -> list[ExtractedVariant]:
         """Extracts every vehicle variant (price, trim, engine, equipment

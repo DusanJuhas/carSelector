@@ -95,7 +95,9 @@ class ScraperPipeline:
             self._session.commit()
 
         try:
-            variants = parser_cls().parse(document_path)
+            parser = parser_cls()
+            parser.document_url = document.document_url
+            variants = parser.parse(document_path)
         except NotImplementedError as exc:
             print(f"  skipped ({exc}): {document.document_url}")
             return

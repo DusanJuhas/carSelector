@@ -153,6 +153,9 @@ BRAND_NAMES = {
     "fiat": "Fiat",
     "subaru": "Subaru",
     "lexus": "Lexus",
+    "jeep": "Jeep",
+    "alfa-romeo": "Alfa Romeo",
+    "kgm": "KGM",
 }
 
 _SCRAPER_TO_FUEL_TYPE = {
@@ -163,7 +166,10 @@ _SCRAPER_TO_FUEL_TYPE = {
     # "ICE" is ambiguous (petrol vs. diesel) - resolved in infer_fuel_type.
 }
 
-_KW_RE = re.compile(r"(\d+)\s*kW", re.IGNORECASE)
+# (?!h): an EV's battery capacity ("54 kWh") often precedes its power
+# ("115 kW") in the name - Stellantis brands, Suzuki's e Vitara, VW's ID.3
+# Neo - and must not be read as the power.
+_KW_RE = re.compile(r"(\d+)\s*kW(?!h)", re.IGNORECASE)
 # "4×4" (Dacia's own marker, e.g. "hybrid 150 4×4") uses the real
 # multiplication sign U+00D7, not a literal "x" - "4x4" alone wouldn't match it.
 # "4WD" (CUPRA's own marker, e.g. "2.0 TSI 204k DSG 4WD") is yet another
@@ -177,7 +183,10 @@ _AWD_RE = re.compile(r"4x4|4×4|4wd|4motion|awd|quattro|4matic|xdrive|všech kol
 # for (see infer_drivetrain's own docstring on that gap). `\w*` (not a
 # bare `\b`) also matches Tesla's own inflected "zadních" ("... s pohonem
 # zadních kol"), which the plain word "zadní" alone never appears as.
-_RWD_RE = re.compile(r"\bzadní\w*\b", re.IGNORECASE)
+# "RWD" is Alfa Romeo's own label ("Zadní (RWD)", and Giulia
+# Quadrifoglio's bare "Q2 (RWD)"); AWD is checked first, so it can't
+# misfire on an "AWD" name.
+_RWD_RE = re.compile(r"\bzadní\w*\b|\bRWD\b", re.IGNORECASE)
 # \d{2,3}d\b: BMW's own diesel suffix ("118d", "320d", "M340d" - fused
 # directly onto the trim's number with no space, unlike Mercedes-Benz's
 # "220 d" - see bmw.py's module docstring). Doesn't need a leading \b
@@ -316,6 +325,9 @@ BODY_TYPE_MPV = "MPV"
 # appear; re-running the import backfills existing rows too (see
 # get_or_create_model), not just newly created ones.
 _MODEL_BODY_TYPES: dict[tuple[str, str], str] = {
+    ("Alfa Romeo", "Junior"): BODY_TYPE_SUV,
+    ("Alfa Romeo", "Stelvio"): BODY_TYPE_SUV,
+    ("Alfa Romeo", "Tonale"): BODY_TYPE_SUV,
     ("Audi", "A3 Sportback"): BODY_TYPE_HATCHBACK,
     ("Audi", "A5 Avant"): BODY_TYPE_KOMBI,
     ("Audi", "A6 Avant"): BODY_TYPE_KOMBI,
@@ -393,6 +405,16 @@ _MODEL_BODY_TYPES: dict[tuple[str, str], str] = {
     ("Hyundai", "Tucson"): BODY_TYPE_SUV,
     ("Hyundai", "i20"): BODY_TYPE_HATCHBACK,
     ("Hyundai", "i30"): BODY_TYPE_HATCHBACK,
+    ("Jeep", "Avenger"): BODY_TYPE_SUV,
+    ("Jeep", "Compass"): BODY_TYPE_SUV,
+    ("Jeep", "Grand Cherokee"): BODY_TYPE_SUV,
+    ("Jeep", "Wrangler"): BODY_TYPE_SUV,
+    ("KGM", "Actyon"): BODY_TYPE_SUV,
+    ("KGM", "Korando"): BODY_TYPE_SUV,
+    ("KGM", "Rexton"): BODY_TYPE_SUV,
+    ("KGM", "Tivoli"): BODY_TYPE_SUV,
+    ("KGM", "Torres"): BODY_TYPE_SUV,
+    ("KGM", "Torres EVX"): BODY_TYPE_SUV,
     ("Kia", "Ceed SW"): BODY_TYPE_KOMBI,
     ("Kia", "Niro"): BODY_TYPE_SUV,
     ("Kia", "Sportage"): BODY_TYPE_SUV,
@@ -707,13 +729,15 @@ class ScraperDataImporter:
             signature: Output of `powertrain_signature` for this variant -
                 fingerprinted (see `signature_fingerprint`) and stored in
                 `manufacturer_code` as this row's persisted identity.
-            fuel_type: Inferred fuel type (see `infer_fuel_type`) - only
-                used when actually creating a new row.
-            drivetrain: Inferred drivetrain (see `infer_drivetrain`) -
-                only used when actually creating a new row.
+            fuel_type: Inferred fuel type (see `infer_fuel_type`).
+            drivetrain: Inferred drivetrain (see `infer_drivetrain`).
             power_kw: Extracted power in kW, or `None` (see
-                `extract_power_kw`) - only used when actually creating a
-                new row.
+                `extract_power_kw`).
+            All three are derived from the name alone, so an existing
+            row's values are refreshed to them too - improving an
+            inference rule and re-running this script fixes already-
+            imported powertrains, the same backfill idea as
+            `get_or_create_model`'s `category`.
 
         Returns:
             The existing `Powertrain` row for `(model,
@@ -745,6 +769,10 @@ class ScraperDataImporter:
             )
             self._db.add(powertrain)
             self._db.flush()
+        else:
+            powertrain.fuel_type = fuel_type
+            powertrain.drivetrain = drivetrain
+            powertrain.power_kw = power_kw
         self._powertrain_cache[key] = powertrain
         return powertrain
 

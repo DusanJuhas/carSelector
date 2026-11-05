@@ -7,6 +7,7 @@ else in source_monitor.py needs to change. Same pattern as
 
 from __future__ import annotations
 
+from .alfa_romeo import AlfaRomeoDiscoverer
 from .audi import AudiDiscoverer
 from .base import BaseDiscoverer
 from .bmw import BmwDiscoverer
@@ -17,6 +18,8 @@ from .fiat import FiatDiscoverer
 from .ford import FordDiscoverer
 from .honda import HondaDiscoverer
 from .hyundai import HyundaiDiscoverer
+from .jeep import JeepDiscoverer
+from .kgm import KgmDiscoverer
 from .kia import KiaDiscoverer
 from .lexus import LexusDiscoverer
 from .mazda import MazdaDiscoverer
@@ -66,4 +69,7 @@ DISCOVERERS: dict[str, type[BaseDiscoverer]] = {
     "fiat": FiatDiscoverer,
     "subaru": SubaruDiscoverer,
     "lexus": LexusDiscoverer,
+    "jeep": JeepDiscoverer,
+    "alfa-romeo": AlfaRomeoDiscoverer,
+    "kgm": KgmDiscoverer,
 }

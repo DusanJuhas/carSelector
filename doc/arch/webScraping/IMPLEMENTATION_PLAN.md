@@ -184,8 +184,20 @@ form). Suzuki, Nissan, Honda, Fiat, Subaru and Lexus (2026-11-02) - see
 each parser's module docstring for its layout; Fiat's site answers only
 requests WITHOUT the browser header set, Nissan's current price lists are
 linked from the homepage rather than its "ceníky" page, and Subaru/Nissan
-each have two table shapes. Volvo/Mitsubishi/Citroën/Suzuki/Nissan/Honda/
-Fiat/Subaru/Lexus equipment isn't extracted yet.
+each have two table shapes. Jeep and Alfa Romeo (2026-11-05) share the
+Stellantis CZ table and discovery (`parsers/_stellantis_cz.py`,
+`monitors/discovery/_stellantis_cz.py`); Alfa's mild-hybrid Tonale list is
+skipped while the importer's file under that name holds the Junior
+Elettrica list. KGM (2026-11-05): discovery calls the dealer-site widget
+API kgmcars.cz renders its price-list links from, and the parser reads
+ruled price tables via pdfplumber's table detection (see each module's
+docstring). Volvo/Mitsubishi/Citroën/Suzuki/Nissan/Honda/Fiat/Subaru/
+Lexus/Jeep/Alfa Romeo/KGM equipment isn't extracted yet.
+
+Checked 2026-11-05 and not implemented: Land Rover (landrover.cz publishes no price-list
+PDFs, only its configurator), Jaguar (no new cars on sale in CZ - only the
+"Type 01" teaser and used cars), smart (no Czech market on smart.com),
+Tesla (still a 403 from tesla.com, see its `sources.yaml` entry).
 
 Remaining: Škoda "Pakety" (packages) and per-trim standard equipment
 (the other two equipment formats), VW/Kia/Toyota/Hyundai/Mercedes-Benz/
