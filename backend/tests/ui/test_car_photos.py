@@ -39,6 +39,8 @@ def test_photo_for_matches_exact_catalog_names() -> None:
     assert photo_for("Toyota", "RAV4") is not None
     assert photo_for("Toyota", "Rav4") is None
     assert photo_for("Fiat", "Qubo L") is None  # no correctly badged free photo exists yet
+    assert photo_for("KGM", "Torres EVX") is not None
+    assert photo_for("Alfa Romeo", "Giulia") is not None
 
 
 async def test_card_shows_photo_with_credit_or_placeholder(user: User, monkeypatch: pytest.MonkeyPatch) -> None:

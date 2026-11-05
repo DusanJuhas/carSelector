@@ -52,6 +52,30 @@ class CarPhoto:
 
 # Keyed by the catalog's exact (brand, model) names.
 CAR_PHOTOS: dict[tuple[str, str], CarPhoto] = {
+    ("Alfa Romeo", "Giulia"): CarPhoto(
+        file="alfa-romeo-giulia.jpg",
+        author="Alexander-93",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:Alfa_Romeo_Giulia_(2023)_1X7A0826.jpg",
+    ),
+    ("Alfa Romeo", "Junior"): CarPhoto(
+        file="alfa-romeo-junior.jpg",
+        author="Alexander Migl",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:Alfa_Romeo_Junior_Ibrida_DSC_7219.jpg",
+    ),
+    ("Alfa Romeo", "Stelvio"): CarPhoto(
+        file="alfa-romeo-stelvio.jpg",
+        author="Motor Verso",
+        license="CC BY 2.0",
+        source_url="https://commons.wikimedia.org/wiki/File:Alfa_Romeo_Stelvio_Suv_Free_Car_Picture_-_Give_Credit_Via_Link.(cropped).jpg",
+    ),
+    ("Alfa Romeo", "Tonale"): CarPhoto(
+        file="alfa-romeo-tonale.jpg",
+        author="Matthias v.d. Elbe",
+        license="CC BY 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:2023-AR-Tonale-01_(bearb_Sp_2).jpg",
+    ),
     ("Audi", "A2 e-tron"): CarPhoto(
         file="audi-a2-e-tron.jpg",
         author="Alexander Migl",
@@ -712,6 +736,30 @@ CAR_PHOTOS: dict[tuple[str, str], CarPhoto] = {
         license="CC BY-SA 4.0",
         source_url="https://commons.wikimedia.org/wiki/File:2024_Hyundai_i30_(PD)_DSC_8543.jpg",
     ),
+    ("Jeep", "Avenger"): CarPhoto(
+        file="jeep-avenger.jpg",
+        author="M 93",
+        license="CC BY-SA 3.0 de",
+        source_url="https://commons.wikimedia.org/wiki/File:Jeep_Avenger_Elektro_Summit_–_f_18052025.jpg",
+    ),
+    ("Jeep", "Compass"): CarPhoto(
+        file="jeep-compass.jpg",
+        author="Alexander Migl",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:Jeep_Compass_(J4U)_IMG_5656.jpg",
+    ),
+    ("Jeep", "Grand Cherokee"): CarPhoto(
+        file="jeep-grand-cherokee.jpg",
+        author="Elise240SX",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:2022_Jeep_Grand_Cherokee_Summit_Reserve_4x4_in_Bright_White,_Front_Left,_01-16-2022.jpg",
+    ),
+    ("Jeep", "Wrangler"): CarPhoto(
+        file="jeep-wrangler.jpg",
+        author="Vauxford",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:2018_Jeep_Wrangler_Sahara_Unlimited_Multijet_2.1_Front.jpg",
+    ),
     ("Kia", "Ceed SW"): CarPhoto(
         file="kia-ceed-sw.jpg",
         author="M 93",
@@ -729,6 +777,54 @@ CAR_PHOTOS: dict[tuple[str, str], CarPhoto] = {
         author="Alexander Migl",
         license="CC BY-SA 4.0",
         source_url="https://commons.wikimedia.org/wiki/File:Kia_Sportage_(NQ5)_1X7A0326.jpg",
+    ),
+    ("KGM", "Actyon"): CarPhoto(
+        file="kgm-actyon.jpg",
+        author="Damian B Oh",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:KGM_Actyon_J120_Royal_Copper_(5).jpg",
+    ),
+    ("KGM", "Korando"): CarPhoto(
+        file="kgm-korando.jpg",
+        author="Alexander Migl",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:Ssangyong_Korando_(4th_generation)_IMG_3084.jpg",
+    ),
+    ("KGM", "Musso EV"): CarPhoto(
+        file="kgm-musso-ev.jpg",
+        author="JustAnotherCarDesigner",
+        license="CC0",
+        source_url="https://commons.wikimedia.org/wiki/File:KGM_Musso_EV_001_cropped.jpg",
+    ),
+    ("KGM", "Musso Grand"): CarPhoto(
+        file="kgm-musso-grand.jpg",
+        author="Damian B Oh",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:KGM_Musso_2.2D_LET_Long_Deck_4WD_Grand_Style_M9_Q300_Grand_White_(3).jpg",
+    ),
+    ("KGM", "Rexton"): CarPhoto(
+        file="kgm-rexton.jpg",
+        author="SmartTalk",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:SsangYong_Rexton_Y450_front.jpg",
+    ),
+    ("KGM", "Tivoli"): CarPhoto(
+        file="kgm-tivoli.jpg",
+        author="Alexander-93",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:KGM_Tivoli_Auto_Zuerich_2023_1X7A1040.jpg",
+    ),
+    ("KGM", "Torres"): CarPhoto(
+        file="kgm-torres.jpg",
+        author="Alexander Migl",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:KGM_Torres_Hybrid_Automesse_Ludwigsburg_2025_DSC_2567.jpg",
+    ),
+    ("KGM", "Torres EVX"): CarPhoto(
+        file="kgm-torres-evx.jpg",
+        author="Alexander Migl",
+        license="CC BY-SA 4.0",
+        source_url="https://commons.wikimedia.org/wiki/File:KGM_Torres_EVX_Auto_Zuerich_2025_DSC_3332.jpg",
     ),
     ("Lexus", "ES"): CarPhoto(
         file="lexus-es.jpg",

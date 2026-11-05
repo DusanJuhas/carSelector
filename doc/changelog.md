@@ -24,6 +24,18 @@ to one or more related commits.
 
 ---
 
+## 0.3.21 — 2026-11-05
+
+### Added
+- Car photos for all 16 Jeep, Alfa Romeo and KGM models in the catalog
+  (`storage/car_photos/`, 16 new files, ~0.5 MB;
+  `backend/app/ui/car_photos.py`): Jeep Avenger, Compass, Grand Cherokee,
+  Wrangler; Alfa Romeo Giulia, Junior, Stelvio, Tonale; KGM Actyon,
+  Korando, Musso EV, Musso Grand, Rexton, Tivoli, Torres, Torres EVX.
+  Freely licensed Wikimedia Commons images (CC BY-SA, CC BY or CC0), each
+  with author, licence and source page, checked by eye for the right make,
+  model and generation (e.g. the 2025 Compass, not the outgoing one).
+
 ## 0.3.20 — 2026-11-05
 
 ### Added
