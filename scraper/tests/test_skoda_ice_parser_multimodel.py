@@ -28,6 +28,7 @@ from scraper.parsers.skoda_ice import SkodaIceParser
 
 SUPERB_FIXTURE = Path(__file__).parent / "fixtures" / "skoda_superb_cenik.pdf"
 FABIA_FIXTURE = Path(__file__).parent / "fixtures" / "skoda_fabia_cenik.pdf"
+KODIAQ_FIXTURE = Path(__file__).parent / "fixtures" / "skoda_kodiaq_cenik.pdf"
 
 
 def _variant(variants, trim: str, motor_fragment: str):
@@ -89,4 +90,29 @@ def test_fabia_prices_match_source_pdf_no_split_price_bleed() -> None:
     assert _variant(variants, "Monte Carlo", "1,5 TSI/110 kW").price == 609_900.0
 
     # no variant may have a price truncated to just the last ~3 digits
+    assert all(v.price is None or v.price >= 100_000 for v in variants)
+
+
+def test_kodiaq_merges_laurin_a_klement_split_across_two_header_lines() -> None:
+    """Regression (2026-11-08): on the Kodiaq price list "Laurin" sits alone
+    on the line above the header and the header line itself starts with
+    "&" "Klement". That used to produce two phantom trims "Laurin &" /
+    "Laurin Klement" splitting each price ("1" "260" -> 1 260 Kč, "000" ->
+    0 Kč), and the lone "Laurin" was taken as a body style ("Kodiaq Laurin
+    1,5 TSI/118 kW ...")."""
+    variants = SkodaIceParser().parse(KODIAQ_FIXTURE)
+
+    trims = {v.trim for v in variants}
+    assert trims == {"Selection", "Top Selection", "Laurin & Klement", "Sportline", "RS"}
+    assert not any("Kodiaq Laurin" in v.variant_name for v in variants)
+
+    # p. 3, "1,5 TSI/118 kW": "995 000 1 095 000 1 260 000 1 120 000 –"
+    # (Selection / Top Selection / Laurin & Klement / Sportline / RS)
+    assert _variant(variants, "Selection", "1,5 TSI/118 kW").price == 995_000.0
+    assert _variant(variants, "Top Selection", "1,5 TSI/118 kW").price == 1_095_000.0
+    assert _variant(variants, "Laurin & Klement", "1,5 TSI/118 kW").price == 1_260_000.0
+    assert _variant(variants, "Sportline", "1,5 TSI/118 kW").price == 1_120_000.0
+    # p. 3, "2,0 TDI/142 kW": "1 215 000 1 315 000 1 480 000 1 340 000 –"
+    assert _variant(variants, "Laurin & Klement", "2,0 TDI/142 kW").price == 1_480_000.0
+
     assert all(v.price is None or v.price >= 100_000 for v in variants)

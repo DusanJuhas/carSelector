@@ -24,6 +24,34 @@ to one or more related commits.
 
 ---
 
+## 0.3.24 — 2026-11-08
+
+### Fixed
+- Škoda Kodiaq "Laurin & Klement" showed prices of 1 260–1 495 Kč (and a
+  second copy at 0 Kč). On the Kodiaq price list "Laurin" sits alone on the
+  line above the table header and the header itself starts with "&"
+  "Klement"; the parser turned that into two phantom trims "Laurin &" /
+  "Laurin Klement" that split every price between them ("1" "260" | "000"),
+  and took the lone "Laurin" for a body style ("Kodiaq Laurin 1,5 TSI…").
+  `merge_same_line_trim_tokens` (`scraper/parsers/_pdf_layout.py`) now also
+  merges a leading "&" with the next word, and `SkodaIceParser` ignores
+  header-continuation words when looking for a body-style heading. The
+  Kodiaq document was re-parsed and re-imported (the correct "Laurin &
+  Klement" trim now also gets its 116 equipment items); regression test on
+  a new fixture `scraper/tests/fixtures/skoda_kodiaq_cenik.pdf`.
+- Every Škoda was imported as front-wheel drive: Škoda's variant names
+  carry no drivetrain, it's only in the row's "Pohon" column ("4×4" /
+  "přední" / "zadní"), which `scripts/import_scraper_data.py` never read.
+  For Škoda (whose scraper `raw_text` is exactly that one row) the importer
+  now reads the drivetrain from `raw_text` too (`drivetrain_text`) — 21
+  powertrains are now AWD (Kodiaq, Superb, Octavia, Karoq, Enyaq, Elroq,
+  Peaq) and 8 RWD (Enyaq, Elroq, Peaq), so they match an AWD request in the
+  AI chat and the drivetrain filters. The same applies to Volkswagen (its
+  own "Pohon" column: Tiguan 2,0 TDI/142 kW, ID.4/ID.7 4M → AWD; ID.3, ID.4,
+  ID.7 → RWD, 23 powertrains in total) and BMW (M4 Competition / 4 Series
+  Gran Coupé "xDrive", 4 powertrains). Other brands still read the name only
+  (e.g. Lexus' `raw_text` holds the whole table header).
+
 ## 0.3.23 — 2026-11-07
 
 ### Fixed

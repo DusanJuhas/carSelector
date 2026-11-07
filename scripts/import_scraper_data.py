@@ -275,6 +275,41 @@ def infer_fuel_type(scraper_powertrain: str, variant_name: str) -> FuelType:
     return FuelType.diesel if _DIESEL_RE.search(variant_name) else FuelType.petrol
 
 
+# Brands whose scraper `raw_text` is exactly ONE price-table row, with the
+# row's own "Pohon" (drivetrain) cell in it - so it's safe to read the
+# drivetrain from there (see `drivetrain_text`). Škoda's ICE and EV
+# parsers name a variant model + engine + trim only, so "4×4"/"zadní" never
+# reach variant_name: every Škoda 4×4 (Kodiaq 2,0 TDI/142 kW, Superb
+# 2,0 TSI/195 kW, Peaq 90x, ...) and every rear-driven Enyaq/Elroq used to
+# import as fwd. Volkswagen's row has a "Pohon" column too ("Přední" /
+# "Zadní" / "Všech kol") that its variant names leave out unless the engine
+# says "4MOTION" - Tiguan 2,0 TDI/142 kW and ID.4 Pro 4M ("Všech kol") were
+# fwd, rear-driven ID.3/ID.7 ("Zadní") as well. BMW's parser drops the M4
+# Competition's "M xDrive" from the name, but it's in the row. NOT a
+# general rule - other brands' raw_text can span the whole table header
+# (Lexus: "350h FWD 350h 4X4 E-FOUR SFX | COMFORT ..."), where a match says
+# nothing about this particular row. AWD is still checked first, so a
+# "4MOTION" name wins over a contradicting "Přední" cell (3 Passat rows).
+_ROW_SCOPED_RAW_TEXT_BRANDS = frozenset({"skoda", "volkswagen", "bmw"})
+
+
+def drivetrain_text(brand: str, variant_name: str, raw_text: str | None) -> str:
+    """Text `infer_drivetrain` should scan for one variant.
+
+    Args:
+        brand: scraper's `document.source_brand` for the variant.
+        variant_name: scraper's `variant.variant_name`.
+        raw_text: scraper's `variant.raw_text` (may be `None`).
+
+    Returns:
+        `variant_name`, plus `raw_text` for brands in
+        `_ROW_SCOPED_RAW_TEXT_BRANDS`.
+    """
+    if brand in _ROW_SCOPED_RAW_TEXT_BRANDS and raw_text:
+        return f"{variant_name} | {raw_text}"
+    return variant_name
+
+
 def infer_drivetrain(variant_name: str) -> Drivetrain:
     """Args:
         variant_name: The variant's display name to scan for an
@@ -1133,7 +1168,7 @@ class ScraperDataImporter:
         ):
             report_progress(index, len(documents), source_brand)
             variants = self._scraper_con.execute(
-                "SELECT id, model, trim, powertrain, variant_name FROM variant WHERE document_id = ?",
+                "SELECT id, model, trim, powertrain, variant_name, raw_text FROM variant WHERE document_id = ?",
                 (doc_id,),
             ).fetchall()
             if not variants:
@@ -1159,11 +1194,11 @@ class ScraperDataImporter:
                 model = self.get_or_create_model(brand, model_name)
                 source_document = self.get_or_create_source_document(model, file_path, release_date, downloaded_at)
 
-                for variant_id, _model_name, trim_name, scraper_powertrain, variant_name in model_variants:
+                for variant_id, _model_name, trim_name, scraper_powertrain, variant_name, raw_text in model_variants:
                     trim = self.get_or_create_trim(model, trim_name)
 
                     fuel_type = infer_fuel_type(scraper_powertrain, variant_name)
-                    drivetrain = infer_drivetrain(variant_name)
+                    drivetrain = infer_drivetrain(drivetrain_text(source_brand, variant_name, raw_text))
                     power_kw = extract_power_kw(variant_name)
                     signature = powertrain_signature(variant_name, trim_name)
                     powertrain = self.get_or_create_powertrain(model, signature, fuel_type, drivetrain, power_kw)

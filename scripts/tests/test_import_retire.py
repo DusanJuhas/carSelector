@@ -37,7 +37,7 @@ def _scraper_db(documents: list[tuple[int, str, str, list[tuple[str, str, float]
         CREATE TABLE document (id INTEGER PRIMARY KEY, source_brand TEXT, document_url TEXT, file_path TEXT,
                                release_date TEXT, downloaded_at TEXT);
         CREATE TABLE variant (id INTEGER PRIMARY KEY, document_id INTEGER, model TEXT, trim TEXT,
-                              powertrain TEXT, variant_name TEXT);
+                              powertrain TEXT, variant_name TEXT, raw_text TEXT);
         CREATE TABLE price_history (id INTEGER PRIMARY KEY, variant_id INTEGER, price REAL, currency TEXT,
                                     valid_from TEXT);
         CREATE TABLE equipment (id INTEGER PRIMARY KEY, canonical_name TEXT);

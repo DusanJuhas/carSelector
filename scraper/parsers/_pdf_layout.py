@@ -100,6 +100,12 @@ def merge_same_line_trim_tokens(tokens: list[dict]) -> list[dict]:
       further along the same header, so generic distance-based clustering
       wouldn't be able to tell the two cases apart.
     - "Monte" "Carlo" -> "Monte Carlo" (a Fabia/Kamiq/Scala trim).
+    - "&" "Klement" -> "& Klement" (Kodiaq) — here "Laurin" sits alone on
+      the header line ABOVE, so the main line starts with "&"; the caller
+      then prepends the continuation word ("Laurin") as with any two-line
+      trim name. Unmerged, "&" and "Klement" became two phantom columns
+      ("Laurin &" / "Laurin Klement") and split every price between them
+      ("1" "260" -> 1 260 Kč, "000" -> 0 Kč).
 
     Shared between the Škoda ICE and EV parsers (same header pattern)."""
     merged: list[dict] = []
@@ -108,6 +114,9 @@ def merge_same_line_trim_tokens(tokens: list[dict]) -> list[dict]:
         if i + 2 < len(tokens) and tokens[i + 1]["text"] == "&":
             merged.append({"text": f"{tokens[i]['text']} & {tokens[i + 2]['text']}", "x0": tokens[i]["x0"]})
             i += 3
+        elif i + 1 < len(tokens) and tokens[i]["text"] == "&":
+            merged.append({"text": f"& {tokens[i + 1]['text']}", "x0": tokens[i]["x0"]})
+            i += 2
         elif i + 1 < len(tokens) and tokens[i]["text"] == "Top" and tokens[i + 1]["text"] == "Selection":
             merged.append({"text": "Top Selection", "x0": tokens[i]["x0"]})
             i += 2

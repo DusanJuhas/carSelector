@@ -173,6 +173,11 @@ class SkodaIceParser(BaseParser):
                 # "unknown" into variant_name, now the body style is
                 # simply omitted from the name instead.
                 for line in lines[:header_at]:
+                    # a word right of "Pohon" is the first half of a
+                    # two-line trim name (e.g. Kodiaq's lone "Laurin" above
+                    # "& Klement"), not a body-style heading
+                    if all(word["x0"] > column_x[_COL_POHON] for word in line):
+                        continue
                     text = line_text(line).strip()
                     if text and len(line) == 1 and text.isalpha() and text[0].isupper():
                         body_style = text
