@@ -36,6 +36,8 @@ for context rather than as instructions to follow today. This index says which i
 
 | Doc | Covers |
 |---|---|
+| [`po/subscription-payment-proposal.md`](po/subscription-payment-proposal.md) | How to charge for a DriveWise subscription (in Czech): Stripe Checkout/Billing/Customer Portal recommended (GoPay/Comgate and Paddle as alternatives), `subscriptions` table fed by a webhook, what could be premium. |
+| [`po/euro-ncap-proposal.md`](po/euro-ncap-proposal.md) | How to show Euro NCAP safety ratings (in Czech): three UI levels (card badge, detail panel, comparison), 6-year rating validity, `safety_ratings` tables, curated data source, legal limits on logo/media use. |
 | [`arch/deployment.md`](arch/deployment.md) | Proposed Docker/Compose container architecture and free/cheap hosting options. No `Dockerfile`/`docker-compose.yml` exist yet — move to "Source of truth" once they do. |
 
 ## Historical / brainstorm (context, not current spec)
