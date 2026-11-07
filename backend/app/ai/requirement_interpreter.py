@@ -34,7 +34,7 @@ no prose, no markdown code fences, matching this shape:
 }
 
 StructuredRequirements fields: body_type (string), min_seats (int), budget_max (object with
-amount and currency), fuel_type (string), drivetrain ("fwd" | "rwd" | "awd"),
+amount and currency, currency as an ISO 4217 code, e.g. "CZK" for Kč/korun), fuel_type (string), drivetrain ("fwd" | "rwd" | "awd"),
 priorities (list of short strings), notes (string).
 
 Rules:

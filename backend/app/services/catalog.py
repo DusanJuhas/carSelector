@@ -137,7 +137,8 @@ def list_vehicles(
     Args:
         db: Database session to query through.
         brand_id: Hard filter on `brands.id`, if given.
-        body_type: Exact-match filter on `models.category`, if given.
+        body_type: Case-insensitive match on `models.category`, if given
+            (the AI layer may send "suv" for the catalog's "SUV").
         fuel_type: Hard filter on `powertrains.fuel_type`, if given.
         drivetrain: Hard filter on `powertrains.drivetrain`, if given -
             for direct catalog browsing; the recommendation engine treats
@@ -183,7 +184,7 @@ def list_vehicles(
     if brand_id is not None:
         stmt = stmt.where(Brand.id == brand_id)
     if body_type:
-        stmt = stmt.where(CarModel.category == body_type)
+        stmt = stmt.where(func.lower(CarModel.category) == body_type.strip().lower())
     if fuel_type:
         stmt = stmt.where(Powertrain.fuel_type == fuel_type)
     if drivetrain:

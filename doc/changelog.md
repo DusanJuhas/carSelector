@@ -24,6 +24,17 @@ to one or more related commits.
 
 ---
 
+## 0.3.23 — 2026-11-07
+
+### Fixed
+- The AI chat found no cars when the LLM wrote the budget currency as
+  "Kc"/"Kč" instead of "CZK" (e.g. "SUV, 1,150,000 Kc, AWD" → 0 results,
+  although 712 SUVs fit): the catalog compares currencies by exact match.
+  `StructuredRequirements` now normalizes the budget currency to its ISO
+  4217 code (`app/schemas/requirement.py`), the extraction prompt asks for
+  ISO codes, and the body-type filter in `catalog.list_vehicles` is
+  case-insensitive ("suv" matches "SUV").
+
 ## 0.3.22 — 2026-11-07
 
 ### Added

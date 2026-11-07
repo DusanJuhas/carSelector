@@ -121,3 +121,22 @@ def test_recommend_returns_every_hard_filtered_match_by_default(db_session: Sess
     )
 
     assert len(results) == 37
+
+
+def test_recommend_accepts_non_iso_currency_and_lowercase_body_type(db_session: Session) -> None:
+    """Regression: the LLM returned `budget_max.currency="Kc"` (and could
+    equally return `body_type="suv"`), and the catalog's exact-match
+    filters then dropped every car - "SUV, 1,150,000 Kc, AWD" found
+    nothing although hundreds of SUVs fit."""
+    _add_catalog(db_session, "aaa", "AAA", count=3, price=900_000, id_offset=1000)
+    db_session.commit()
+
+    requirements = StructuredRequirements(
+        body_type="suv",
+        budget_max=Money(amount=1_150_000, currency="Kc"),
+        drivetrain=Drivetrain.awd,
+    )
+
+    assert requirements.budget_max is not None
+    assert requirements.budget_max.currency == "CZK"
+    assert len(RecommendationEngine().recommend(db_session, requirements)) == 3

@@ -1,7 +1,40 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.enums import Drivetrain
 from app.schemas.common import Money
+
+# Currency spellings the LLM has been seen to (or plausibly could) emit in
+# place of the ISO 4217 code the catalog's `prices.currency` stores. The
+# catalog compares currencies by exact match, so a single "Kc" here used to
+# filter out every car (reported: "SUV, 1,150,000 Kc, AWD" found nothing).
+# Keys are lowercased and stripped of dots/whitespace before lookup.
+_CURRENCY_ALIASES = {
+    "kč": "CZK",
+    "kc": "CZK",
+    "czk": "CZK",
+    "korun": "CZK",
+    "koruna": "CZK",
+    "koruny": "CZK",
+    "€": "EUR",
+    "eur": "EUR",
+    "euro": "EUR",
+    "eura": "EUR",
+}
+
+
+def normalize_currency(currency: str) -> str:
+    """Maps a free-form currency spelling to its ISO 4217 code.
+
+    Args:
+        currency: Currency as produced by the AI layer, e.g. `"Kc"`,
+            `"Kč"`, `"czk"` or already `"CZK"`.
+
+    Returns:
+        The ISO code for a known alias, otherwise the input stripped and
+        uppercased (so an already-correct code passes through unchanged).
+    """
+    key = currency.strip().lower().replace(".", "").replace(" ", "")
+    return _CURRENCY_ALIASES.get(key, currency.strip().upper())
 
 
 class StructuredRequirements(BaseModel):
@@ -17,6 +50,15 @@ class StructuredRequirements(BaseModel):
     drivetrain: Drivetrain | None = None
     priorities: list[str] = Field(default_factory=list)
     notes: str | None = None
+
+    @field_validator("budget_max")
+    @classmethod
+    def _normalize_budget_currency(cls, value: Money | None) -> Money | None:
+        """Normalizes the budget's currency to an ISO code - see
+        `_CURRENCY_ALIASES`."""
+        if value is None:
+            return None
+        return value.model_copy(update={"currency": normalize_currency(value.currency)})
 
 
 class UserRequirement(BaseModel):
