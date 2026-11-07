@@ -18,6 +18,7 @@ from app.models.option_item import OptionItem
 from app.models.powertrain import Powertrain
 from app.models.price import Price
 from app.models.saved_requirements import SavedRequirements
+from app.models.saved_search import SavedSearch
 from app.models.shared_snapshot import SharedSnapshot
 from app.models.source_document import SourceDocument
 from app.models.trim import Trim
@@ -43,6 +44,7 @@ __all__ = [
     "Powertrain",
     "Price",
     "SavedRequirements",
+    "SavedSearch",
     "SharedSnapshot",
     "SourceDocument",
     "Trim",

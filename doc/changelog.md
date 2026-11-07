@@ -24,6 +24,39 @@ to one or more related commits.
 
 ---
 
+## 0.3.22 — 2026-11-07
+
+### Added
+- Advanced search page `/search` ("Podrobné hledání") — finding a car by
+  explicit parameters instead of the AI chat (`backend/app/ui/search_page.py`,
+  filter sidebar `backend/app/ui/components/search_filters.py`, state and
+  active-filter chips `backend/app/ui/search_state.py`). Filters: keyword
+  (brand/model/trim), price range, brands, body type, fuel, drivetrain,
+  power range and must-have equipment (standard, or optionally also as a
+  paid extra); sorting by price, power or name; removable chips for every
+  active filter; infinite scroll; the main page's car cards, detail dialog
+  and comparison (the comparison pick is shared with the main page). Phones
+  switch between the filters and the results with a bottom bar. Reached
+  from a new header button on the main page (account menu on phones).
+- The search page remembers its filters and sort without asking:
+  anonymous visitors per browser (`app.storage.user`), logged-in users in
+  their account, so the settings come back at the next login on any
+  device (new table `saved_searches`, migration `b7d2e5f81a34`,
+  `app/services/saved_searches.py`). A first login adopts what was set
+  anonymously in that browser; while logged in nothing is written to the
+  browser, so a shared computer doesn't show the account's filters after
+  logout.
+- `app/services/vehicle_search.py` + `app/schemas/search.py`: the
+  parametric search query (all filters in one SQL query, so totals and
+  paging stay exact) and the filter controls' value ranges. Keyword and
+  equipment matching ignore case including Czech capitals (SQLite's
+  `lower()` doesn't fold them). Zero-priced rows (import glitches) are
+  left out of the search. No REST endpoint yet — UI only.
+- Only parameters the catalog has data for are offered. Weight,
+  dimensions, seats, boot volume, towing, EV range and Euro NCAP aren't
+  stored at all, and torque/0–100/consumption/CO₂/colours are filled for
+  under 1 % of cars; the page says these will follow once the data exists.
+
 ## 0.3.21 — 2026-11-05
 
 ### Added

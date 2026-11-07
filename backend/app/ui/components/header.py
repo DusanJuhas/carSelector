@@ -70,6 +70,19 @@ def app_header(
             ui.label(t("header.tagline")).classes("text-[12.5px] text-subtext max-md:hidden!")
 
         with ui.row().classes("flex-nowrap items-center gap-2 md:gap-2.5"):
+            # The parameter-based alternative to the chat (app/ui/search_page.py).
+            # Phones have no room for it here - they get the account menu's item.
+            with (
+                ui.link(target="/search")
+                .classes(
+                    "shrink-0 flex flex-nowrap items-center gap-1.5 rounded-control border border-border bg-panel-2 "
+                    "px-3.5 py-2 text-[13px] font-semibold text-text no-underline max-md:hidden!"
+                )
+                .tooltip(t("search.navLink"))
+                .mark("nav-search")
+            ):
+                ui.icon("manage_search", size="18px")
+                ui.label(t("search.navLink"))
             ui.button(t("header.startWizard"), on_click=on_open_wizard).props("no-caps unelevated").classes(
                 "shrink-0 rounded-control bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-text "
                 "whitespace-nowrap max-md:px-3"
@@ -160,6 +173,7 @@ def _account_menu(
             if user is not None:
                 ui.label(user.email).classes("px-4 pt-2.5 pb-2 text-[12.5px] text-subtext break-all")
                 ui.separator()
+            _menu_item("manage_search", t("search.navLink"), lambda: ui.navigate.to("/search")).mark("menu-search")
             _menu_item("article", t("header.articles"), lambda: ui.navigate.to("/articles")).mark("menu-articles")
             if user is not None and user.can_write_articles:
                 _menu_item("edit_note", t("header.myArticles"), lambda: ui.navigate.to("/author")).mark(

@@ -7,6 +7,7 @@ import importlib
 import app.ui.admin
 import app.ui.articles_page
 import app.ui.pages
+import app.ui.search_page
 import app.ui.shared_page
 from app.ui.car_photos import register_car_photos
 
@@ -16,6 +17,7 @@ from nicegui import ui  # noqa: E402 - must follow the pages reload above
 
 app.ui.admin.register_admin_page()
 app.ui.articles_page.register_articles_pages()
+app.ui.search_page.register_search_page()
 app.ui.shared_page.register_shared_page()
 register_car_photos()
 
