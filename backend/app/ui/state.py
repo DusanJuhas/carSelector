@@ -29,7 +29,7 @@ from app.services import catalog, liked_models, saved_requirements, sharing
 from app.services.conversation import ConversationLimitError, UnknownConversationError, orchestrator
 from app.ui import db as ui_db
 from app.ui.compare import MAX_COMPARE
-from app.ui.i18n import DEFAULT_LANGUAGE, t
+from app.ui.i18n import DEFAULT_LANGUAGE, current_language, t
 
 # Mirrors frontend/src/types/conversation.ts's ChatMessage.
 ChatMessage = tuple[str, str]  # (role, text) - role is "user" | "assistant"
@@ -825,9 +825,12 @@ async def fetch_vehicle_detail(configuration_id: int) -> VehicleDetail | None:
         price (mirrors `catalog.get_vehicle_detail`'s own `None` case).
     """
 
+    # The worker thread can't see this browser's language choice.
+    language = current_language()
+
     def _load() -> VehicleDetail | None:
         with ui_db.get_session() as db:
-            return catalog.get_vehicle_detail(db, configuration_id)
+            return catalog.get_vehicle_detail(db, configuration_id, language=language)
 
     return await run.io_bound(_load)
 

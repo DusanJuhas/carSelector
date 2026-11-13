@@ -33,6 +33,7 @@ from app.schemas.vehicle import (
     VehicleDetail,
     VehicleSummary,
 )
+from app.services.external_links import build_external_links
 
 DEFAULT_MARKET = "CZ"
 
@@ -204,7 +205,9 @@ def list_vehicles(
     return Page(items=items, page=page, page_size=page_size, total=total or 0)
 
 
-def get_vehicle_detail(db: Session, configuration_id: int, *, market: str = DEFAULT_MARKET) -> VehicleDetail | None:
+def get_vehicle_detail(
+    db: Session, configuration_id: int, *, market: str = DEFAULT_MARKET, language: str = "cs"
+) -> VehicleDetail | None:
     """Full detail page for one configuration: summary + powertrain spec,
     colors, standard/optional equipment, and price history.
 
@@ -213,6 +216,8 @@ def get_vehicle_detail(db: Session, configuration_id: int, *, market: str = DEFA
         configuration_id: Id of the `configurations` row to fetch.
         market: Market to price against - also determines which price row
             counts as "current" (`valid_to IS NULL` for this market).
+        language: UI language code for the review-video search keyword
+            (see app/services/external_links.py).
 
     Returns:
         The full detail, or `None` if `configuration_id` doesn't exist or
@@ -298,6 +303,9 @@ def get_vehicle_detail(db: Session, configuration_id: int, *, market: str = DEFA
         standard_equipment=standard_equipment,
         optional_equipment=optional_equipment,
         price_history=price_history,
+        external_links=build_external_links(
+            configuration.trim.model.brand.slug, summary.brand, summary.model, language=language
+        ),
     )
 
 

@@ -665,6 +665,11 @@ STRINGS_EN: dict = {
             "standardEquipment": "Standard equipment",
             "optionalEquipment": "Optional equipment",
             "priceHistory": "Price history",
+            "externalLinks": "Links",
+        },
+        "externalLinks": {
+            "manufacturer": "Manufacturer's website",
+            "reviewVideo": "Video reviews",
         },
         "fields": {
             "fuelType": "Fuel",

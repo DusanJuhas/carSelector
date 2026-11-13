@@ -706,6 +706,11 @@ STRINGS: dict = {
             "standardEquipment": "Standardní výbava",
             "optionalEquipment": "Volitelná výbava",
             "priceHistory": "Historie ceny",
+            "externalLinks": "Odkazy",
+        },
+        "externalLinks": {
+            "manufacturer": "Web výrobce",
+            "reviewVideo": "Video recenze",
         },
         "fields": {
             "fuelType": "Palivo",

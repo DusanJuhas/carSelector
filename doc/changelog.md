@@ -24,6 +24,17 @@ to one or more related commits.
 
 ---
 
+## 0.3.25 — 2026-11-13
+
+### Added
+- External links in the vehicle detail dialog: a new "Odkazy" section with
+  the manufacturer's Czech website and video reviews of the model on
+  YouTube, both opening in a new tab. The manufacturer site is a curated
+  homepage per brand (hosts from the scraper's price-list sources), the
+  review link a YouTube search for "<brand> <model> recenze" ("review" in
+  English) so it never goes stale (`backend/app/services/external_links.py`).
+  `GET /api/vehicles/{id}` returns them as `VehicleDetail.external_links`.
+
 ## 0.3.24 — 2026-11-08
 
 ### Fixed

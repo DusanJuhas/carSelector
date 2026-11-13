@@ -38,6 +38,15 @@ class PricePoint(BaseModel):
     lowest_price_30d: Money | None
 
 
+class ExternalLinks(BaseModel):
+    """Outside sources for a model (see app/services/external_links.py)."""
+
+    # Manufacturer's Czech homepage; null for a brand without a curated site.
+    manufacturer_url: str | None
+    # YouTube search for video reviews of the model.
+    review_video_url: str
+
+
 class VehicleSummary(BaseModel):
     """The recommendation-card / results-grid shape - one row per
     `configuration`, flattened for display. Corresponds to the frontend's
@@ -70,6 +79,9 @@ class VehicleDetail(VehicleSummary):
     standard_equipment: list[str]
     optional_equipment: list[OptionLine]
     price_history: list[PricePoint]
+    # Always set by app/services/catalog.py; optional only so hand-built
+    # details (tests, older callers) stay valid.
+    external_links: ExternalLinks | None = None
 
 
 class VehicleCompareResponse(BaseModel):

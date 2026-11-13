@@ -122,6 +122,10 @@ def test_get_vehicle_detail(client: TestClient, seeded_session: SeededData):
     assert body["optional_equipment"] == []
     assert len(body["price_history"]) == 1
     assert body["price_history"][0]["lowest_price_30d"] == {"amount": 875900.0, "currency": "CZK"}
+    assert body["external_links"] == {
+        "manufacturer_url": "https://www.mazda.cz",
+        "review_video_url": "https://www.youtube.com/results?search_query=Mazda+CX-5+recenze",
+    }
 
 
 def test_get_vehicle_detail_vw_has_priced_optional_equipment(client: TestClient, seeded_session: SeededData):

@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from nicegui import run, ui
 
-from app.schemas.vehicle import VehicleDetail
+from app.schemas.vehicle import ExternalLinks, VehicleDetail
 from app.ui.i18n import current_language, t, use_language
 from app.ui.money import format_money
 from app.ui.state import fetch_vehicle_detail
@@ -43,6 +43,55 @@ def _detail_field(label: str, value: str | None) -> None:
         ui.label(value if value is not None else t("vehicleDetail.fields.noData")).classes(
             "mt-0.5 font-semibold text-text"
         )
+
+
+def _external_link(text: str, icon: str, url: str, marker: str) -> None:
+    """One outside link styled as a pill button, opening in a new tab.
+
+    Args:
+        text: Link text.
+        icon: Material icon name shown before the text.
+        url: Target URL.
+        marker: Test marker for the link element.
+    """
+    with (
+        ui.link(target=url, new_tab=True)
+        .classes(
+            "inline-flex items-center gap-1.5 rounded-control border border-border bg-panel-2 px-3 py-1.5 "
+            "text-[13px] font-semibold text-text no-underline hover:border-accent"
+        )
+        .props('rel="noopener noreferrer"')
+        .mark(marker)
+    ):
+        ui.icon(icon).classes("text-[16px] text-subtext")
+        ui.label(text)
+        ui.icon("open_in_new").classes("text-[13px] text-subtext")
+
+
+def _external_links(links: ExternalLinks) -> None:
+    """The "Odkazy" section: manufacturer's website and video reviews.
+
+    Args:
+        links: The shown vehicle's outside links.
+    """
+    with ui.column().classes("mt-5 w-full gap-2"):
+        ui.label(t("vehicleDetail.sections.externalLinks")).classes(
+            "text-[13px] font-bold uppercase tracking-wide text-subtext"
+        )
+        with ui.row().classes("w-full flex-wrap gap-2"):
+            if links.manufacturer_url is not None:
+                _external_link(
+                    t("vehicleDetail.externalLinks.manufacturer"),
+                    "language",
+                    links.manufacturer_url,
+                    "link-manufacturer",
+                )
+            _external_link(
+                t("vehicleDetail.externalLinks.reviewVideo"),
+                "smart_display",
+                links.review_video_url,
+                "link-review-video",
+            )
 
 
 def vehicle_detail_modal(
@@ -190,6 +239,9 @@ def vehicle_detail_modal(
                     _detail_field(t("vehicleDetail.fields.power"), power_label(pt))
                     _detail_field(t("vehicleDetail.fields.consumption"), consumption_label(pt))
                     _detail_field(t("vehicleDetail.fields.co2"), co2_label(pt))
+
+            if detail.external_links is not None:
+                _external_links(detail.external_links)
 
             with ui.column().classes("mt-5 w-full gap-2"):
                 ui.label(t("vehicleDetail.sections.colors")).classes(

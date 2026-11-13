@@ -77,6 +77,16 @@ Extends `VehicleSummary` for a single configuration's detail page.
 | standard_equipment | string[] | no | names only, `availability = standard` |
 | optional_equipment | OptionLine[] | no | `availability = optional`, includes surcharge |
 | price_history | PricePoint[] | no | see below |
+| external_links | ExternalLinks | no | outside sources for the model, see below |
+
+### ExternalLinks
+
+Derived, not DB columns (see `backend/app/services/external_links.py`).
+
+| field | type | null? | notes |
+|---|---|---|---|
+| manufacturer_url | string | yes | manufacturer's Czech homepage (curated per brand); null for a brand without one |
+| review_video_url | string | no | YouTube search for "<brand> <model> recenze" — a search, not one fixed video |
 
 ### PowertrainSpec
 
